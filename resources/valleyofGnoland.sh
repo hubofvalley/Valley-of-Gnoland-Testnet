@@ -10,13 +10,14 @@ RESET='\033[0m'
 
 source "$HOME/.bash_profile" 2>/dev/null
 
-if [ -z "${GNOLAND_HOME:-}" ] || [ "$GNOLAND_HOME" = "$HOME/.gnoland" ]; then
-    GNOLAND_HOME="$HOME/gnoland-data"
-fi
-GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
 if [ -z "${GNO_SOURCE_DIR:-}" ] || [ "$GNO_SOURCE_DIR" = "$HOME/gno-src-test13" ]; then
     GNO_SOURCE_DIR="$HOME/gno"
 fi
+if [ -z "${GNOLAND_HOME:-}" ] || [ "$GNOLAND_HOME" = "$HOME/.gnoland" ] || [ "$GNOLAND_HOME" = "$HOME/gnoland-data" ]; then
+    GNOLAND_HOME="$GNO_SOURCE_DIR/gnoland-data"
+fi
+GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
+GNOLAND_GENESIS=${GNOLAND_GENESIS:-$GNO_SOURCE_DIR/genesis.json}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
 if [ "$GNOROOT" = "$HOME/gno-src-test13" ]; then
     GNOROOT="$GNO_SOURCE_DIR"
@@ -78,6 +79,7 @@ ${YELLOW}| Category  | Requirements |
 - native denom: ${CYAN}ugnot${RESET}
 - binaries: ${CYAN}$HOME/go/bin/gnoland, $HOME/go/bin/gnokey${RESET}
 - node directory: ${CYAN}${GNOLAND_HOME}${RESET}
+- genesis file: ${CYAN}${GNOLAND_GENESIS}${RESET}
 - GNOROOT: ${CYAN}${GNOROOT}${RESET}
 "
 
@@ -134,10 +136,11 @@ echo -e "$ENDPOINTS"
 echo -e "\n${YELLOW}Press Enter to continue${RESET}"
 read -r
 
-sed -i '/^export GNOLAND_CHAIN_ID=/d;/^export GNOLAND_HOME=/d;/^export GNOKEY_HOME=/d;/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/^export GNOLAND_PUBLIC_REMOTE=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
+sed -i '/^export GNOLAND_CHAIN_ID=/d;/^export GNOLAND_HOME=/d;/^export GNOLAND_GENESIS=/d;/^export GNOKEY_HOME=/d;/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/^export GNOLAND_PUBLIC_REMOTE=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 {
     echo "export GNOLAND_CHAIN_ID=\"test-13\""
     echo "export GNOLAND_HOME=\"$GNOLAND_HOME\""
+    echo "export GNOLAND_GENESIS=\"$GNOLAND_GENESIS\""
     echo "export GNOKEY_HOME=\"$GNOKEY_HOME\""
     echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
     echo "export GNOROOT=\"$GNOROOT\""
@@ -211,7 +214,7 @@ function update_gnoland_binary() {
 
 function repair_test13_stdlib_root() {
     echo -e "${YELLOW}Repair Test13 stdlib root for ${GNOLAND_SERVICE_NAME}.service.${RESET}"
-    echo "This refreshes the pinned Gno source tree and rewrites the service ExecStart with GNOROOT and -gnoroot-dir."
+    echo "This refreshes the pinned Gno source tree and rewrites the service to start from the official ~/gno working directory."
     if ! prompt_back_or_continue; then
         return
     fi
@@ -237,8 +240,8 @@ function repair_test13_stdlib_root() {
         menu
         return
     fi
-    if [ ! -f "$GNOLAND_HOME/genesis.json" ] || [ ! -f "$GNOLAND_HOME/config/config.toml" ]; then
-        echo -e "${RED}Existing Gnoland config or genesis not found under $GNOLAND_HOME. Use 1a for a clean deploy.${RESET}"
+    if [ ! -f "$GNOLAND_GENESIS" ] || [ ! -f "$GNOLAND_HOME/config/config.toml" ]; then
+        echo -e "${RED}Existing Gnoland config or genesis not found at $GNOLAND_HOME and $GNOLAND_GENESIS. Use 1a for a clean deploy.${RESET}"
         menu
         return
     fi
@@ -250,10 +253,10 @@ After=network-online.target
 
 [Service]
 User=$USER
-WorkingDirectory=$GNOLAND_HOME
+WorkingDirectory=$GNO_SOURCE_DIR
 Environment=GNOROOT=$GNOROOT
 Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=$GNOLAND_BIN start -chainid test-13 -gnoroot-dir $GNOROOT -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
+ExecStart=$GNOLAND_BIN start -chainid test-13 -genesis genesis.json -skip-genesis-sig-verification
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure
@@ -386,7 +389,7 @@ function create_operator_key() {
 
 function show_validator_pubkey() {
     echo -e "${CYAN}Your validator consensus public key:${RESET}"
-    gnoland secrets get -data-dir "$GNOLAND_HOME/secrets" validator_key
+    (cd "$GNO_SOURCE_DIR" && gnoland secrets get validator_key)
     echo -e "\n${YELLOW}Use the gpub1... value for valoper registration. Press Enter to go back.${RESET}"
     read -r
     menu
@@ -517,6 +520,7 @@ function delete_gnoland_node() {
     sudo rm -f "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
     sudo systemctl daemon-reload
     rm -rf "$GNOLAND_HOME"
+    rm -f "$GNOLAND_GENESIS"
     rm -f "$GNOLAND_BIN" "$GNOKEY_BIN"
     sudo rm -f /usr/local/bin/gnoland /usr/local/bin/gnokey
     sed -i '/GNOLAND_/d;/GNOKEY_/d;/GNO_SOURCE_DIR/d;/GNOROOT/d;/go\/bin/d' "$HOME/.bash_profile"

@@ -62,42 +62,40 @@ export PATH="$HOME/go/bin:$PATH"
 ## Init config, secrets, and genesis
 
 ```bash
-GNOLAND_HOME="$HOME/gnoland-data"
-mkdir -p "$GNOLAND_HOME/config" "$GNOLAND_HOME/secrets"
+cd "$GNO_SOURCE_DIR"
+gnoland config init -force
+gnoland secrets init -force
 
-gnoland config init -config-path "$GNOLAND_HOME/config/config.toml" -force
-gnoland secrets init -data-dir "$GNOLAND_HOME/secrets" -force
-
-curl -fsSL https://github.com/gnolang/gno/releases/download/chain/test13/genesis.json -o "$GNOLAND_HOME/genesis.json"
-echo "56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2  $GNOLAND_HOME/genesis.json" | sha256sum -c -
+curl -fsSL https://github.com/gnolang/gno/releases/download/chain/test13/genesis.json -o genesis.json
+echo "56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2  genesis.json" | sha256sum -c -
 ```
 
 ## Configure node
 
 ```bash
-CFG="$GNOLAND_HOME/config/config.toml"
+cd "$GNO_SOURCE_DIR"
 MONIKER="your-moniker"
 P2P_PORT="26656"
 RPC_PORT="26657"
 PEERS="g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.gno.land:26656,g1lxkf9gn7kddrr26c640ww5wg3ezsm22we8cjpc@sentry-2.test13.testnets.gno.land:26656"
 
-gnoland config set -config-path "$CFG" moniker "$MONIKER"
-gnoland config set -config-path "$CFG" p2p.laddr "tcp://0.0.0.0:${P2P_PORT}"
-gnoland config set -config-path "$CFG" rpc.laddr "tcp://127.0.0.1:${RPC_PORT}"
-gnoland config set -config-path "$CFG" p2p.persistent_peers "$PEERS"
-gnoland config set -config-path "$CFG" application.prune_strategy "syncable"
-gnoland config set -config-path "$CFG" consensus.timeout_commit "3s"
-gnoland config set -config-path "$CFG" consensus.peer_gossip_sleep_duration "10ms"
-gnoland config set -config-path "$CFG" p2p.flush_throttle_timeout "10ms"
-gnoland config set -config-path "$CFG" p2p.pex "true"
-gnoland config set -config-path "$CFG" mempool.size "10000"
-gnoland config set -config-path "$CFG" p2p.max_num_outbound_peers "40"
+gnoland config set moniker "$MONIKER"
+gnoland config set p2p.laddr "tcp://0.0.0.0:${P2P_PORT}"
+gnoland config set rpc.laddr "tcp://127.0.0.1:${RPC_PORT}"
+gnoland config set p2p.persistent_peers "$PEERS"
+gnoland config set application.prune_strategy "syncable"
+gnoland config set consensus.timeout_commit "3s"
+gnoland config set consensus.peer_gossip_sleep_duration "10ms"
+gnoland config set p2p.flush_throttle_timeout "10ms"
+gnoland config set p2p.pex "true"
+gnoland config set mempool.size "10000"
+gnoland config set p2p.max_num_outbound_peers "40"
 ```
 
 Set `p2p.external_address` if peers need to dial your public host:
 
 ```bash
-gnoland config set -config-path "$CFG" p2p.external_address "YOUR_PUBLIC_HOST:${P2P_PORT}"
+gnoland config set p2p.external_address "YOUR_PUBLIC_HOST:${P2P_PORT}"
 ```
 
 ## Start manually
@@ -105,9 +103,7 @@ gnoland config set -config-path "$CFG" p2p.external_address "YOUR_PUBLIC_HOST:${
 ```bash
 gnoland start \
   -chainid test-13 \
-  -gnoroot-dir "$GNO_SOURCE_DIR" \
-  -data-dir "$GNOLAND_HOME" \
-  -genesis "$GNOLAND_HOME/genesis.json" \
+  -genesis genesis.json \
   -skip-genesis-sig-verification
 ```
 
@@ -129,10 +125,10 @@ After=network-online.target
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/gnoland-data
+WorkingDirectory=/home/ubuntu/gno
 Environment=GNOROOT=/home/ubuntu/gno
 Environment=PATH=/home/ubuntu/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/home/ubuntu/go/bin/gnoland start -chainid test-13 -gnoroot-dir /home/ubuntu/gno -data-dir /home/ubuntu/gnoland-data -genesis /home/ubuntu/gnoland-data/genesis.json -skip-genesis-sig-verification
+ExecStart=/home/ubuntu/go/bin/gnoland start -chainid test-13 -genesis genesis.json -skip-genesis-sig-verification
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65536
@@ -164,7 +160,8 @@ https://test13.testnets.gno.land/faucet
 Get the node consensus public key:
 
 ```bash
-gnoland secrets get -data-dir "$GNOLAND_HOME/secrets" validator_key
+cd "$GNO_SOURCE_DIR"
+gnoland secrets get validator_key
 ```
 
 Register candidate:

@@ -16,7 +16,8 @@ Interactive terminal tool by **Grand Valley** to deploy and manage a Gno.land Te
 - Native denom: `ugnot`
 - Binaries: `~/go/bin/gnoland`, `~/go/bin/gnokey`
 - Source tree / `GNOROOT`: `~/gno`
-- Node directory: `~/gnoland-data`
+- Node directory: `~/gno/gnoland-data`
+- Genesis file: `~/gno/genesis.json`
 - Service: `gnoland.service`
 - RPC: `https://rpc.test13.testnets.gno.land`
 - Genesis: https://github.com/gnolang/gno/releases/download/chain/test13/genesis.json

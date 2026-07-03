@@ -43,14 +43,15 @@ if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
     GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
 fi
 
-GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
-if [ -z "${GNOLAND_HOME:-}" ] || [ "$GNOLAND_HOME" = "$HOME/.gnoland" ]; then
-    GNOLAND_HOME="$HOME/gnoland-data"
-fi
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 if [ "$GNO_SOURCE_DIR" = "$HOME/gno-src-test13" ]; then
     GNO_SOURCE_DIR="$HOME/gno"
 fi
+GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
+if [ -z "${GNOLAND_HOME:-}" ] || [ "$GNOLAND_HOME" = "$HOME/.gnoland" ] || [ "$GNOLAND_HOME" = "$HOME/gnoland-data" ]; then
+    GNOLAND_HOME="$GNO_SOURCE_DIR/gnoland-data"
+fi
+GENESIS_FILE="$GNO_SOURCE_DIR/genesis.json"
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
 if [ "$GNOROOT" = "$HOME/gno-src-test13" ]; then
     GNOROOT="$GNO_SOURCE_DIR"
@@ -74,6 +75,7 @@ sudo systemctl disable "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
 sudo rm -f "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
 sudo rm -f /usr/local/bin/gnoland /usr/local/bin/gnokey
 rm -rf "$GNOLAND_HOME"
+rm -f "$GENESIS_FILE"
 sed -i '/GNOLAND_/d;/GNOKEY_/d;/GNO_SOURCE_DIR/d;/GNOROOT/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 
 sudo apt update -y
@@ -120,29 +122,29 @@ export PATH="$HOME/go/bin:$PATH"
 "$GNOLAND_BIN" version || true
 "$GNOKEY_BIN" version || true
 
-mkdir -p "$GNOLAND_HOME/config" "$GNOLAND_HOME/secrets" "$GNOKEY_HOME"
+mkdir -p "$GNOKEY_HOME"
 
-cd "$GNOLAND_HOME"
-"$GNOLAND_BIN" config init -config-path "$GNOLAND_HOME/config/config.toml" -force
-"$GNOLAND_BIN" secrets init -data-dir "$GNOLAND_HOME/secrets" -force
+cd "$GNO_SOURCE_DIR"
+"$GNOLAND_BIN" config init -force
+"$GNOLAND_BIN" secrets init -force
 
-curl -fsSL "$GENESIS_URL" -o "$GNOLAND_HOME/genesis.json"
-echo "${GENESIS_SHA256}  $GNOLAND_HOME/genesis.json" | sha256sum -c -
+curl -fsSL "$GENESIS_URL" -o "$GENESIS_FILE"
+echo "${GENESIS_SHA256}  $GENESIS_FILE" | sha256sum -c -
 
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" moniker "$GNOLAND_MONIKER"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.persistent_peers "$SENTRY_PEERS"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" application.prune_strategy "syncable"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" consensus.timeout_commit "3s"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" consensus.peer_gossip_sleep_duration "10ms"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.flush_throttle_timeout "10ms"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.pex "true"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" mempool.size "10000"
-"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.max_num_outbound_peers "40"
+"$GNOLAND_BIN" config set moniker "$GNOLAND_MONIKER"
+"$GNOLAND_BIN" config set p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
+"$GNOLAND_BIN" config set rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
+"$GNOLAND_BIN" config set p2p.persistent_peers "$SENTRY_PEERS"
+"$GNOLAND_BIN" config set application.prune_strategy "syncable"
+"$GNOLAND_BIN" config set consensus.timeout_commit "3s"
+"$GNOLAND_BIN" config set consensus.peer_gossip_sleep_duration "10ms"
+"$GNOLAND_BIN" config set p2p.flush_throttle_timeout "10ms"
+"$GNOLAND_BIN" config set p2p.pex "true"
+"$GNOLAND_BIN" config set mempool.size "10000"
+"$GNOLAND_BIN" config set p2p.max_num_outbound_peers "40"
 
 if [ -n "$GNOLAND_EXTERNAL_HOST" ]; then
-    "$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.external_address "${GNOLAND_EXTERNAL_HOST}:${GNOLAND_P2P_PORT}"
+    "$GNOLAND_BIN" config set p2p.external_address "${GNOLAND_EXTERNAL_HOST}:${GNOLAND_P2P_PORT}"
 fi
 
 if [[ "$SETUP_UFW" =~ ^[Yy]$ ]]; then
@@ -160,10 +162,10 @@ After=network-online.target
 
 [Service]
 User=$USER
-WorkingDirectory=$GNOLAND_HOME
+WorkingDirectory=$GNO_SOURCE_DIR
 Environment=GNOROOT=$GNOROOT
 Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=$GNOLAND_BIN start -chainid $CHAIN_ID -gnoroot-dir $GNOROOT -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
+ExecStart=$GNOLAND_BIN start -chainid $CHAIN_ID -genesis genesis.json -skip-genesis-sig-verification
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure
@@ -180,6 +182,7 @@ EOF
     echo "export GNOLAND_CHAIN_ID=\"$CHAIN_ID\""
     echo "export GNOLAND_PORT=\"$GNOLAND_PORT\""
     echo "export GNOLAND_HOME=\"$GNOLAND_HOME\""
+    echo "export GNOLAND_GENESIS=\"$GENESIS_FILE\""
     echo "export GNOKEY_HOME=\"$GNOKEY_HOME\""
     echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
     echo "export GNOROOT=\"$GNOROOT\""

@@ -26,9 +26,9 @@ Gno.land Test13 does not work like a simple open-staking Cosmos chain. The regis
 
 | Option | What it does | When to use |
 |---|---|---|
-| **1a. Deploy/Re-deploy Gnoland Node** | Runs the installer: asks moniker, port prefix, optional external P2P host, install method, firewall choice, and service name; installs dependencies, prepares the pinned `chain/test13` Gno source tree at `~/gno`, exports `GNOROOT`, downloads official Test13 binaries to `~/go/bin` or builds from source, verifies binary checksums, initialises config/secrets in `~/gnoland-data`, downloads and verifies genesis, applies official Test13 sentry peers/settings, creates and starts systemd service with `GNOROOT` and `-gnoroot-dir`. Re-running deletes existing node data. | First setup, or clean re-install. |
+| **1a. Deploy/Re-deploy Gnoland Node** | Runs the installer: asks moniker, port prefix, optional external P2P host, install method, firewall choice, and service name; installs dependencies, prepares the pinned `chain/test13` Gno source tree at `~/gno`, exports `GNOROOT`, downloads official Test13 binaries to `~/go/bin` or builds from source, verifies binary checksums, runs `gnoland config init` and `gnoland secrets init` from `~/gno`, downloads and verifies genesis at `~/gno/genesis.json`, applies official Test13 sentry peers/settings, and creates a systemd service with `WorkingDirectory=~/gno`. Re-running deletes existing node data under `~/gno/gnoland-data`. | First setup, or clean re-install. |
 | **1b. Update Gnoland/Gnokey Binaries** | Stops the service, refreshes the pinned Test13 source tree, downloads pinned official Test13 binaries, verifies checksums, replaces `~/go/bin/gnoland` and `~/go/bin/gnokey`, restarts the service. | When rebuilding the same pinned Test13 binary state. |
-| **1c. Add/Reset Peers** | Updates `p2p.persistent_peers` in `~/gnoland-data/config/config.toml` manually or resets to the official Test13 sentry peers. Restart afterwards. | Peer issues or manual peer tuning. |
+| **1c. Add/Reset Peers** | Updates `p2p.persistent_peers` in `~/gno/gnoland-data/config/config.toml` manually or resets to the official Test13 sentry peers. Restart afterwards. | Peer issues or manual peer tuning. |
 | **1d. Show Node Status** | Reads local RPC status, prints sync JSON, compares local height with public Test13 RPC height. | Check sync progress before candidate registration. |
 | **1e. Show Node Logs** | Live-tails `journalctl -u gnoland -fn 100`. Press Ctrl+C to return. | Debugging, watching sync. |
 
@@ -47,9 +47,9 @@ Gno.land Test13 does not work like a simple open-staking Cosmos chain. The regis
 |---|---|---|
 | **3a. Restart Gnoland Node** | `systemctl restart gnoland`. | After config changes. |
 | **3b. Stop Gnoland Node** | `systemctl stop gnoland`. | Maintenance. |
-| **3c. Delete Gnoland Node** | Stops and disables service, removes service file, deletes `~/gnoland-data`, removes binaries, and cleans Gno env vars. It does not delete `GNOKEY_HOME`. | Decommissioning or clean rebuild. |
-| **3d. Backup Node Secrets** | Archives `~/gnoland-data/secrets` into a timestamped `tar.gz` in `$HOME` with `600` permissions. | Immediately after deploy and before destructive actions. |
-| **3e. Repair Test13 Stdlib Root** | Refreshes the pinned `~/gno` source tree and rewrites `gnoland.service` to start with `GNOROOT` and `-gnoroot-dir ~/gno`, then restarts the service. | Fix `panic: gno was unable to determine GNOROOT` or `panic: failed loading stdlib "errors": does not exist` without deleting node data. |
+| **3c. Delete Gnoland Node** | Stops and disables service, removes service file, deletes `~/gno/gnoland-data`, removes binaries, and cleans Gno env vars. It does not delete `GNOKEY_HOME`. | Decommissioning or clean rebuild. |
+| **3d. Backup Node Secrets** | Archives `~/gno/gnoland-data/secrets` into a timestamped `tar.gz` in `$HOME` with `600` permissions. | Immediately after deploy and before destructive actions. |
+| **3e. Repair Test13 Stdlib Root** | Refreshes the pinned `~/gno` source tree and rewrites `gnoland.service` to start from `~/gno` with `GNOROOT` set, then restarts the service. | Fix `panic: gno was unable to determine GNOROOT` or `panic: failed loading stdlib "errors": does not exist` without deleting node data. |
 
 ### 4. Show Endpoints & Useful Links
 

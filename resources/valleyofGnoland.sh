@@ -10,9 +10,21 @@ RESET='\033[0m'
 
 source "$HOME/.bash_profile" 2>/dev/null
 
-GNOLAND_HOME=${GNOLAND_HOME:-$HOME/.gnoland}
+if [ -z "${GNOLAND_HOME:-}" ] || [ "$GNOLAND_HOME" = "$HOME/.gnoland" ]; then
+    GNOLAND_HOME="$HOME/gnoland-data"
+fi
 GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
-GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno-src-test13}
+if [ -z "${GNO_SOURCE_DIR:-}" ] || [ "$GNO_SOURCE_DIR" = "$HOME/gno-src-test13" ]; then
+    GNO_SOURCE_DIR="$HOME/gno"
+fi
+GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
+if [ "$GNOROOT" = "$HOME/gno-src-test13" ]; then
+    GNOROOT="$GNO_SOURCE_DIR"
+fi
+GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
+GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
+export GNOROOT
+export PATH="$HOME/go/bin:$PATH"
 GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-test-13}
 GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.test13.testnets.gno.land}
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-http://127.0.0.1:26657}
@@ -64,7 +76,9 @@ ${YELLOW}| Category  | Requirements |
 - current network: ${CYAN}Gno.land Test13${RESET}
 - current chain ID: ${CYAN}test-13${RESET}
 - native denom: ${CYAN}ugnot${RESET}
-- binaries: ${CYAN}gnoland, gnokey${RESET}
+- binaries: ${CYAN}$HOME/go/bin/gnoland, $HOME/go/bin/gnokey${RESET}
+- node directory: ${CYAN}${GNOLAND_HOME}${RESET}
+- GNOROOT: ${CYAN}${GNOROOT}${RESET}
 "
 
 PRIVACY_SAFETY_STATEMENT="
@@ -120,11 +134,16 @@ echo -e "$ENDPOINTS"
 echo -e "\n${YELLOW}Press Enter to continue${RESET}"
 read -r
 
-grep -q "GNOLAND_CHAIN_ID" "$HOME/.bash_profile" 2>/dev/null || echo "export GNOLAND_CHAIN_ID=\"test-13\"" >> "$HOME/.bash_profile"
-grep -q "GNOLAND_HOME" "$HOME/.bash_profile" 2>/dev/null || echo "export GNOLAND_HOME=\"$HOME/.gnoland\"" >> "$HOME/.bash_profile"
-grep -q "GNOKEY_HOME" "$HOME/.bash_profile" 2>/dev/null || echo "export GNOKEY_HOME=\"$HOME/.config/gno\"" >> "$HOME/.bash_profile"
-grep -q "GNO_SOURCE_DIR" "$HOME/.bash_profile" 2>/dev/null || echo "export GNO_SOURCE_DIR=\"$HOME/gno-src-test13\"" >> "$HOME/.bash_profile"
-grep -q "GNOLAND_PUBLIC_REMOTE" "$HOME/.bash_profile" 2>/dev/null || echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.test13.testnets.gno.land\"" >> "$HOME/.bash_profile"
+sed -i '/^export GNOLAND_CHAIN_ID=/d;/^export GNOLAND_HOME=/d;/^export GNOKEY_HOME=/d;/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/^export GNOLAND_PUBLIC_REMOTE=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
+{
+    echo "export GNOLAND_CHAIN_ID=\"test-13\""
+    echo "export GNOLAND_HOME=\"$GNOLAND_HOME\""
+    echo "export GNOKEY_HOME=\"$GNOKEY_HOME\""
+    echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
+    echo "export GNOROOT=\"$GNOROOT\""
+    echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.test13.testnets.gno.land\""
+    echo 'export PATH="$HOME/go/bin:$PATH"'
+} >> "$HOME/.bash_profile"
 source "$HOME/.bash_profile" 2>/dev/null
 
 function gnokey_cmd() {
@@ -192,7 +211,7 @@ function update_gnoland_binary() {
 
 function repair_test13_stdlib_root() {
     echo -e "${YELLOW}Repair Test13 stdlib root for ${GNOLAND_SERVICE_NAME}.service.${RESET}"
-    echo "This refreshes the pinned Gno source tree and rewrites the service ExecStart with -gnoroot-dir."
+    echo "This refreshes the pinned Gno source tree and rewrites the service ExecStart with GNOROOT and -gnoroot-dir."
     if ! prompt_back_or_continue; then
         return
     fi
@@ -232,7 +251,9 @@ After=network-online.target
 [Service]
 User=$USER
 WorkingDirectory=$GNOLAND_HOME
-ExecStart=/usr/local/bin/gnoland start -chainid test-13 -gnoroot-dir $GNO_SOURCE_DIR -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
+Environment=GNOROOT=$GNOROOT
+Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=$GNOLAND_BIN start -chainid test-13 -gnoroot-dir $GNOROOT -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure
@@ -496,8 +517,9 @@ function delete_gnoland_node() {
     sudo rm -f "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
     sudo systemctl daemon-reload
     rm -rf "$GNOLAND_HOME"
+    rm -f "$GNOLAND_BIN" "$GNOKEY_BIN"
     sudo rm -f /usr/local/bin/gnoland /usr/local/bin/gnokey
-    sed -i '/GNOLAND_/d;/GNOKEY_/d' "$HOME/.bash_profile"
+    sed -i '/GNOLAND_/d;/GNOKEY_/d;/GNO_SOURCE_DIR/d;/GNOROOT/d;/go\/bin/d' "$HOME/.bash_profile"
     echo -e "${RED}Gnoland node deleted. Local gnokey home was not deleted: $GNOKEY_HOME${RESET}"
     menu
 }

@@ -32,8 +32,9 @@ curl -fsSLO https://github.com/gnolang/gno/releases/download/chain/test13/gnokey
 echo "050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9  gnoland_linux_amd64" | sha256sum -c -
 echo "eece8675dfad4ce9801a57aa6b0284b278272f41e0aac4579c219bc30049a4de  gnokey_linux_amd64" | sha256sum -c -
 chmod +x gnoland_linux_amd64 gnokey_linux_amd64
-sudo install gnoland_linux_amd64 /usr/local/bin/gnoland
-sudo install gnokey_linux_amd64 /usr/local/bin/gnokey
+mkdir -p "$HOME/go/bin"
+install gnoland_linux_amd64 "$HOME/go/bin/gnoland"
+install gnokey_linux_amd64 "$HOME/go/bin/gnokey"
 ```
 
 Build from source:
@@ -43,25 +44,25 @@ git clone https://github.com/gnolang/gno.git
 cd gno
 git checkout chain/test13
 make -C gno.land install.gnoland install.gnokey
-sudo install "$HOME/go/bin/gnoland" /usr/local/bin/gnoland
-sudo install "$HOME/go/bin/gnokey" /usr/local/bin/gnokey
 ```
 
-## Prepare Test13 stdlibs
+## Prepare GNOROOT
 
-`gnoland` loads standard libraries from the Gno source tree at runtime. Keep the source tree pinned to the Test13 release branch and pass it with `-gnoroot-dir`.
+`gnoland` needs `GNOROOT` so it can find the Test13 source tree and standard libraries.
 
 ```bash
-GNO_SOURCE_DIR="$HOME/gno-src-test13"
+GNO_SOURCE_DIR="$HOME/gno"
 git clone --depth 1 --branch chain/test13 https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
 test "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" = "75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
 test -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors"
+export GNOROOT="$GNO_SOURCE_DIR"
+export PATH="$HOME/go/bin:$PATH"
 ```
 
 ## Init config, secrets, and genesis
 
 ```bash
-GNOLAND_HOME="$HOME/.gnoland"
+GNOLAND_HOME="$HOME/gnoland-data"
 mkdir -p "$GNOLAND_HOME/config" "$GNOLAND_HOME/secrets"
 
 gnoland config init -config-path "$GNOLAND_HOME/config/config.toml" -force
@@ -128,8 +129,10 @@ After=network-online.target
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/.gnoland
-ExecStart=/usr/local/bin/gnoland start -chainid test-13 -gnoroot-dir /home/ubuntu/gno-src-test13 -data-dir /home/ubuntu/.gnoland -genesis /home/ubuntu/.gnoland/genesis.json -skip-genesis-sig-verification
+WorkingDirectory=/home/ubuntu/gnoland-data
+Environment=GNOROOT=/home/ubuntu/gno
+Environment=PATH=/home/ubuntu/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/ubuntu/go/bin/gnoland start -chainid test-13 -gnoroot-dir /home/ubuntu/gno -data-dir /home/ubuntu/gnoland-data -genesis /home/ubuntu/gnoland-data/genesis.json -skip-genesis-sig-verification
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65536

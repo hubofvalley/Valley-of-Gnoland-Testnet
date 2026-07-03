@@ -5,7 +5,16 @@ set -euo pipefail
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
 RELEASE_TAG="chain/test13"
 RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
-GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno-src-test13}
+GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
+if [ "$GNO_SOURCE_DIR" = "$HOME/gno-src-test13" ]; then
+    GNO_SOURCE_DIR="$HOME/gno"
+fi
+GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
+if [ "$GNOROOT" = "$HOME/gno-src-test13" ]; then
+    GNOROOT="$GNO_SOURCE_DIR"
+fi
+GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
+GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 GNOLAND_SHA256="050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9"
 GNOKEY_SHA256="eece8675dfad4ce9801a57aa6b0284b278272f41e0aac4579c219bc30049a4de"
 
@@ -13,6 +22,7 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
 sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
+mkdir -p "$HOME/go/bin"
 
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
     rm -rf "$GNO_SOURCE_DIR"
@@ -36,8 +46,16 @@ echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
 echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
 chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
 
-sudo install "$tmpdir/gnoland" /usr/local/bin/gnoland
-sudo install "$tmpdir/gnokey" /usr/local/bin/gnokey
+install "$tmpdir/gnoland" "$GNOLAND_BIN"
+install "$tmpdir/gnokey" "$GNOKEY_BIN"
+sudo rm -f /usr/local/bin/gnoland /usr/local/bin/gnokey
+
+sed -i '/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
+{
+    echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
+    echo "export GNOROOT=\"$GNOROOT\""
+    echo 'export PATH="$HOME/go/bin:$PATH"'
+} >> "$HOME/.bash_profile"
 
 sudo systemctl daemon-reload
 sudo systemctl restart "$GNOLAND_SERVICE_NAME"

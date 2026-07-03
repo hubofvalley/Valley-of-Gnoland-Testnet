@@ -43,9 +43,20 @@ if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
     GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
 fi
 
-GNOLAND_HOME=${GNOLAND_HOME:-$HOME/.gnoland}
 GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
-GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno-src-test13}
+if [ -z "${GNOLAND_HOME:-}" ] || [ "$GNOLAND_HOME" = "$HOME/.gnoland" ]; then
+    GNOLAND_HOME="$HOME/gnoland-data"
+fi
+GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
+if [ "$GNO_SOURCE_DIR" = "$HOME/gno-src-test13" ]; then
+    GNO_SOURCE_DIR="$HOME/gno"
+fi
+GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
+if [ "$GNOROOT" = "$HOME/gno-src-test13" ]; then
+    GNOROOT="$GNO_SOURCE_DIR"
+fi
+GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
+GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 GNOLAND_RPC_PORT="${GNOLAND_PORT}657"
 GNOLAND_P2P_PORT="${GNOLAND_PORT}656"
 
@@ -63,10 +74,11 @@ sudo systemctl disable "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
 sudo rm -f "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
 sudo rm -f /usr/local/bin/gnoland /usr/local/bin/gnokey
 rm -rf "$GNOLAND_HOME"
-sed -i '/GNOLAND_/d;/GNOKEY_/d' "$HOME/.bash_profile" 2>/dev/null || true
+sed -i '/GNOLAND_/d;/GNOKEY_/d;/GNO_SOURCE_DIR/d;/GNOROOT/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 
 sudo apt update -y
 sudo apt install -y curl git jq build-essential make gcc wget ca-certificates
+mkdir -p "$HOME/go/bin"
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
@@ -92,8 +104,6 @@ if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
     echo -e "${CYAN}Building gnoland and gnokey from source branch ${RELEASE_TAG}.${RESET}"
     cd "$GNO_SOURCE_DIR"
     make -C gno.land install.gnoland install.gnokey
-    sudo install "$HOME/go/bin/gnoland" /usr/local/bin/gnoland
-    sudo install "$HOME/go/bin/gnokey" /usr/local/bin/gnokey
 else
     echo -e "${CYAN}Downloading official Test13 release binaries.${RESET}"
     curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/test13/gnoland_linux_amd64" -o "$tmpdir/gnoland"
@@ -101,35 +111,38 @@ else
     echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
     echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
     chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
-    sudo install "$tmpdir/gnoland" /usr/local/bin/gnoland
-    sudo install "$tmpdir/gnokey" /usr/local/bin/gnokey
+    install "$tmpdir/gnoland" "$GNOLAND_BIN"
+    install "$tmpdir/gnokey" "$GNOKEY_BIN"
 fi
 
-gnoland version || true
-gnokey version || true
+export GNOROOT
+export PATH="$HOME/go/bin:$PATH"
+"$GNOLAND_BIN" version || true
+"$GNOKEY_BIN" version || true
 
 mkdir -p "$GNOLAND_HOME/config" "$GNOLAND_HOME/secrets" "$GNOKEY_HOME"
 
-gnoland config init -config-path "$GNOLAND_HOME/config/config.toml" -force
-gnoland secrets init -data-dir "$GNOLAND_HOME/secrets" -force
+cd "$GNOLAND_HOME"
+"$GNOLAND_BIN" config init -config-path "$GNOLAND_HOME/config/config.toml" -force
+"$GNOLAND_BIN" secrets init -data-dir "$GNOLAND_HOME/secrets" -force
 
 curl -fsSL "$GENESIS_URL" -o "$GNOLAND_HOME/genesis.json"
 echo "${GENESIS_SHA256}  $GNOLAND_HOME/genesis.json" | sha256sum -c -
 
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" moniker "$GNOLAND_MONIKER"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.persistent_peers "$SENTRY_PEERS"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" application.prune_strategy "syncable"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" consensus.timeout_commit "3s"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" consensus.peer_gossip_sleep_duration "10ms"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.flush_throttle_timeout "10ms"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.pex "true"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" mempool.size "10000"
-gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.max_num_outbound_peers "40"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" moniker "$GNOLAND_MONIKER"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.persistent_peers "$SENTRY_PEERS"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" application.prune_strategy "syncable"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" consensus.timeout_commit "3s"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" consensus.peer_gossip_sleep_duration "10ms"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.flush_throttle_timeout "10ms"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.pex "true"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" mempool.size "10000"
+"$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.max_num_outbound_peers "40"
 
 if [ -n "$GNOLAND_EXTERNAL_HOST" ]; then
-    gnoland config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.external_address "${GNOLAND_EXTERNAL_HOST}:${GNOLAND_P2P_PORT}"
+    "$GNOLAND_BIN" config set -config-path "$GNOLAND_HOME/config/config.toml" p2p.external_address "${GNOLAND_EXTERNAL_HOST}:${GNOLAND_P2P_PORT}"
 fi
 
 if [[ "$SETUP_UFW" =~ ^[Yy]$ ]]; then
@@ -148,7 +161,9 @@ After=network-online.target
 [Service]
 User=$USER
 WorkingDirectory=$GNOLAND_HOME
-ExecStart=/usr/local/bin/gnoland start -chainid $CHAIN_ID -gnoroot-dir $GNO_SOURCE_DIR -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
+Environment=GNOROOT=$GNOROOT
+Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=$GNOLAND_BIN start -chainid $CHAIN_ID -gnoroot-dir $GNOROOT -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure
@@ -167,6 +182,8 @@ EOF
     echo "export GNOLAND_HOME=\"$GNOLAND_HOME\""
     echo "export GNOKEY_HOME=\"$GNOKEY_HOME\""
     echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
+    echo "export GNOROOT=\"$GNOROOT\""
+    echo 'export PATH="$HOME/go/bin:$PATH"'
     echo "export GNOLAND_SERVICE_NAME=\"$GNOLAND_SERVICE_NAME\""
     echo "export GNOLAND_REMOTE=\"http://127.0.0.1:${GNOLAND_RPC_PORT}\""
     echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.test13.testnets.gno.land\""
@@ -179,6 +196,8 @@ sudo systemctl restart "$GNOLAND_SERVICE_NAME"
 if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then
     echo -e "${GREEN}Gnoland service started successfully.${RESET}"
     echo "Local status: curl -s http://127.0.0.1:${GNOLAND_RPC_PORT}/status | jq '.result.sync_info'"
+    echo "Reload shell env before using gnoland manually in this terminal:"
+    echo "source ~/.bash_profile && hash -r"
 else
     echo -e "${RED}Gnoland service did not start. Check logs:${RESET}"
     echo "sudo journalctl -u ${GNOLAND_SERVICE_NAME} -n 100 --no-pager"

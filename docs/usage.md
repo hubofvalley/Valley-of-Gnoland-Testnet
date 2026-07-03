@@ -26,8 +26,8 @@ Gno.land Test13 does not work like a simple open-staking Cosmos chain. The regis
 
 | Option | What it does | When to use |
 |---|---|---|
-| **1a. Deploy/Re-deploy Gnoland Node** | Runs the installer: asks moniker, port prefix, optional external P2P host, install method, firewall choice, and service name; installs dependencies, downloads official Test13 binaries or builds from source, verifies binary checksums, initialises config/secrets, downloads and verifies genesis, applies official Test13 sentry peers/settings, creates and starts systemd service. Re-running deletes existing node data. | First setup, or clean re-install. |
-| **1b. Update Gnoland/Gnokey Binaries** | Stops the service, downloads pinned official Test13 binaries, verifies checksums, replaces `/usr/local/bin/gnoland` and `/usr/local/bin/gnokey`, restarts the service. | When rebuilding the same pinned Test13 binary state. |
+| **1a. Deploy/Re-deploy Gnoland Node** | Runs the installer: asks moniker, port prefix, optional external P2P host, install method, firewall choice, and service name; installs dependencies, prepares the pinned `chain/test13` Gno source tree at `~/gno-src-test13`, downloads official Test13 binaries or builds from source, verifies binary checksums, initialises config/secrets, downloads and verifies genesis, applies official Test13 sentry peers/settings, creates and starts systemd service with `-gnoroot-dir`. Re-running deletes existing node data. | First setup, or clean re-install. |
+| **1b. Update Gnoland/Gnokey Binaries** | Stops the service, refreshes the pinned Test13 source tree, downloads pinned official Test13 binaries, verifies checksums, replaces `/usr/local/bin/gnoland` and `/usr/local/bin/gnokey`, restarts the service. | When rebuilding the same pinned Test13 binary state. |
 | **1c. Add/Reset Peers** | Updates `p2p.persistent_peers` in `~/.gnoland/config/config.toml` manually or resets to the official Test13 sentry peers. Restart afterwards. | Peer issues or manual peer tuning. |
 | **1d. Show Node Status** | Reads local RPC status, prints sync JSON, compares local height with public Test13 RPC height. | Check sync progress before candidate registration. |
 | **1e. Show Node Logs** | Live-tails `journalctl -u gnoland -fn 100`. Press Ctrl+C to return. | Debugging, watching sync. |
@@ -49,6 +49,7 @@ Gno.land Test13 does not work like a simple open-staking Cosmos chain. The regis
 | **3b. Stop Gnoland Node** | `systemctl stop gnoland`. | Maintenance. |
 | **3c. Delete Gnoland Node** | Stops and disables service, removes service file, deletes `~/.gnoland`, removes binaries, and cleans Gno env vars. It does not delete `GNOKEY_HOME`. | Decommissioning or clean rebuild. |
 | **3d. Backup Node Secrets** | Archives `~/.gnoland/secrets` into a timestamped `tar.gz` in `$HOME` with `600` permissions. | Immediately after deploy and before destructive actions. |
+| **3e. Repair Test13 Stdlib Root** | Refreshes the pinned `~/gno-src-test13` source tree and rewrites `gnoland.service` to start with `-gnoroot-dir ~/gno-src-test13`, then restarts the service. | Fix `panic: failed loading stdlib "errors": does not exist` without deleting node data. |
 
 ### 4. Show Endpoints & Useful Links
 
@@ -78,3 +79,4 @@ Leaves the script. Run `source ~/.bash_profile` in the current shell if you need
 - Never share mnemonics or node secrets.
 - Public P2P must be reachable if the node is expected to participate seriously.
 - Test13 genesis startup requires `-skip-genesis-sig-verification`; upstream documents this as required for historical replay.
+- Test13 `gnoland` also needs the matching Gno source tree at runtime because stdlibs load from `gnovm/stdlibs`; missing `-gnoroot-dir` can cause `panic: failed loading stdlib "errors": does not exist`.

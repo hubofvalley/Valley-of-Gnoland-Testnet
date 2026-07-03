@@ -3,6 +3,7 @@
   "network": "Gno.land Test13",
   "chain_id": "test-13",
   "release_tag": "chain/test13",
+  "release_commit": "75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28",
   "release_url": "https://github.com/gnolang/gno/releases/tag/chain/test13",
   "genesis_sha256": "56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2",
   "binaries": {

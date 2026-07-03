@@ -15,6 +15,7 @@ Interactive terminal tool by **Grand Valley** to deploy and manage a Gno.land Te
 - Chain ID: `test-13`
 - Native denom: `ugnot`
 - Binaries: `gnoland`, `gnokey`
+- Source tree: `~/gno-src-test13` for Test13 stdlibs required by `gnoland`
 - Service: `gnoland.service`
 - RPC: `https://rpc.test13.testnets.gno.land`
 - Genesis: https://github.com/gnolang/gno/releases/download/chain/test13/genesis.json
@@ -36,6 +37,7 @@ bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-T
 ## Features
 
 - Deploy/re-deploy a Gno.land Test13 node from official release binaries or source
+- Pin and configure the matching Test13 Gno source tree for runtime stdlib loading
 - Verify the official Test13 genesis SHA256 before starting
 - Configure official sentry peers and Test13-required node settings
 - Custom RPC/P2P port prefix, optional UFW, systemd service
@@ -44,6 +46,7 @@ bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-T
 - Show consensus public key
 - Register a validator-candidate profile on `gno.land/r/gnops/valopers`
 - Backup node secrets, restart/stop/delete node
+- Repair the Test13 stdlib root on an existing failed service
 
 ## Recommended validator-candidate flow
 

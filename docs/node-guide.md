@@ -47,6 +47,17 @@ sudo install "$HOME/go/bin/gnoland" /usr/local/bin/gnoland
 sudo install "$HOME/go/bin/gnokey" /usr/local/bin/gnokey
 ```
 
+## Prepare Test13 stdlibs
+
+`gnoland` loads standard libraries from the Gno source tree at runtime. Keep the source tree pinned to the Test13 release branch and pass it with `-gnoroot-dir`.
+
+```bash
+GNO_SOURCE_DIR="$HOME/gno-src-test13"
+git clone --depth 1 --branch chain/test13 https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
+test "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" = "75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
+test -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors"
+```
+
 ## Init config, secrets, and genesis
 
 ```bash
@@ -93,6 +104,7 @@ gnoland config set -config-path "$CFG" p2p.external_address "YOUR_PUBLIC_HOST:${
 ```bash
 gnoland start \
   -chainid test-13 \
+  -gnoroot-dir "$GNO_SOURCE_DIR" \
   -data-dir "$GNOLAND_HOME" \
   -genesis "$GNOLAND_HOME/genesis.json" \
   -skip-genesis-sig-verification
@@ -117,7 +129,7 @@ After=network-online.target
 [Service]
 User=ubuntu
 WorkingDirectory=/home/ubuntu/.gnoland
-ExecStart=/usr/local/bin/gnoland start -chainid test-13 -data-dir /home/ubuntu/.gnoland -genesis /home/ubuntu/.gnoland/genesis.json -skip-genesis-sig-verification
+ExecStart=/usr/local/bin/gnoland start -chainid test-13 -gnoroot-dir /home/ubuntu/gno-src-test13 -data-dir /home/ubuntu/.gnoland -genesis /home/ubuntu/.gnoland/genesis.json -skip-genesis-sig-verification
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65536

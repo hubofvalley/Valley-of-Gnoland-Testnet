@@ -10,6 +10,7 @@ RESET='\033[0m'
 
 CHAIN_ID="test-13"
 RELEASE_TAG="chain/test13"
+RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
 GENESIS_URL="https://github.com/gnolang/gno/releases/download/chain/test13/genesis.json"
 GENESIS_SHA256="56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2"
 GNOLAND_SHA256="050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9"
@@ -44,6 +45,7 @@ fi
 
 GNOLAND_HOME=${GNOLAND_HOME:-$HOME/.gnoland}
 GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
+GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno-src-test13}
 GNOLAND_RPC_PORT="${GNOLAND_PORT}657"
 GNOLAND_P2P_PORT="${GNOLAND_PORT}656"
 
@@ -69,15 +71,26 @@ sudo apt install -y curl git jq build-essential make gcc wget ca-certificates
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
+echo -e "${CYAN}Preparing Gno source tree for Test13 stdlibs.${RESET}"
+if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
+    rm -rf "$GNO_SOURCE_DIR"
+    git clone --depth 1 --branch "$RELEASE_TAG" https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
+else
+    git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_TAG"
+    git -C "$GNO_SOURCE_DIR" checkout -f FETCH_HEAD
+fi
+if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
+    echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}"
+    exit 1
+fi
+if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
+    echo -e "${RED}Missing Test13 stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}"
+    exit 1
+fi
+
 if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
     echo -e "${CYAN}Building gnoland and gnokey from source branch ${RELEASE_TAG}.${RESET}"
-    cd "$HOME"
-    if [ ! -d gno-src ]; then
-        git clone https://github.com/gnolang/gno.git gno-src
-    fi
-    cd gno-src
-    git fetch origin "$RELEASE_TAG"
-    git checkout "$RELEASE_TAG"
+    cd "$GNO_SOURCE_DIR"
     make -C gno.land install.gnoland install.gnokey
     sudo install "$HOME/go/bin/gnoland" /usr/local/bin/gnoland
     sudo install "$HOME/go/bin/gnokey" /usr/local/bin/gnokey
@@ -135,7 +148,7 @@ After=network-online.target
 [Service]
 User=$USER
 WorkingDirectory=$GNOLAND_HOME
-ExecStart=/usr/local/bin/gnoland start -chainid $CHAIN_ID -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
+ExecStart=/usr/local/bin/gnoland start -chainid $CHAIN_ID -gnoroot-dir $GNO_SOURCE_DIR -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure
@@ -153,6 +166,7 @@ EOF
     echo "export GNOLAND_PORT=\"$GNOLAND_PORT\""
     echo "export GNOLAND_HOME=\"$GNOLAND_HOME\""
     echo "export GNOKEY_HOME=\"$GNOKEY_HOME\""
+    echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
     echo "export GNOLAND_SERVICE_NAME=\"$GNOLAND_SERVICE_NAME\""
     echo "export GNOLAND_REMOTE=\"http://127.0.0.1:${GNOLAND_RPC_PORT}\""
     echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.test13.testnets.gno.land\""

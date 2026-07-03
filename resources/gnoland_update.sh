@@ -3,6 +3,9 @@
 set -euo pipefail
 
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
+RELEASE_TAG="chain/test13"
+RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
+GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno-src-test13}
 GNOLAND_SHA256="050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9"
 GNOKEY_SHA256="eece8675dfad4ce9801a57aa6b0284b278272f41e0aac4579c219bc30049a4de"
 
@@ -10,6 +13,22 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
 sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
+
+if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
+    rm -rf "$GNO_SOURCE_DIR"
+    git clone --depth 1 --branch "$RELEASE_TAG" https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
+else
+    git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_TAG"
+    git -C "$GNO_SOURCE_DIR" checkout -f FETCH_HEAD
+fi
+if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
+    echo "Unexpected Gno source commit at $GNO_SOURCE_DIR."
+    exit 1
+fi
+if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
+    echo "Missing Test13 stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs."
+    exit 1
+fi
 
 curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/test13/gnoland_linux_amd64" -o "$tmpdir/gnoland"
 curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/test13/gnokey_linux_amd64" -o "$tmpdir/gnokey"

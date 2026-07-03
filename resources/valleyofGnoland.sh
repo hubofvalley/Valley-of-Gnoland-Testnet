@@ -12,9 +12,12 @@ source "$HOME/.bash_profile" 2>/dev/null
 
 GNOLAND_HOME=${GNOLAND_HOME:-$HOME/.gnoland}
 GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
+GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno-src-test13}
 GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-test-13}
 GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.test13.testnets.gno.land}
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-http://127.0.0.1:26657}
+GNO_RELEASE_TAG="chain/test13"
+GNO_RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
 SENTRY_PEERS="g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.gno.land:26656,g1lxkf9gn7kddrr26c640ww5wg3ezsm22we8cjpc@sentry-2.test13.testnets.gno.land:26656"
 
 if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
@@ -105,6 +108,7 @@ read -r
 grep -q "GNOLAND_CHAIN_ID" "$HOME/.bash_profile" 2>/dev/null || echo "export GNOLAND_CHAIN_ID=\"test-13\"" >> "$HOME/.bash_profile"
 grep -q "GNOLAND_HOME" "$HOME/.bash_profile" 2>/dev/null || echo "export GNOLAND_HOME=\"$HOME/.gnoland\"" >> "$HOME/.bash_profile"
 grep -q "GNOKEY_HOME" "$HOME/.bash_profile" 2>/dev/null || echo "export GNOKEY_HOME=\"$HOME/.config/gno\"" >> "$HOME/.bash_profile"
+grep -q "GNO_SOURCE_DIR" "$HOME/.bash_profile" 2>/dev/null || echo "export GNO_SOURCE_DIR=\"$HOME/gno-src-test13\"" >> "$HOME/.bash_profile"
 grep -q "GNOLAND_PUBLIC_REMOTE" "$HOME/.bash_profile" 2>/dev/null || echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.test13.testnets.gno.land\"" >> "$HOME/.bash_profile"
 source "$HOME/.bash_profile" 2>/dev/null
 
@@ -168,6 +172,66 @@ function update_gnoland_binary() {
         return
     fi
     bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/gnoland_update.sh)
+    menu
+}
+
+function repair_test13_stdlib_root() {
+    echo -e "${YELLOW}Repair Test13 stdlib root for ${GNOLAND_SERVICE_NAME}.service.${RESET}"
+    echo "This refreshes the pinned Gno source tree and rewrites the service ExecStart with -gnoroot-dir."
+    if ! prompt_back_or_continue; then
+        return
+    fi
+
+    sudo apt update -y
+    sudo apt install -y git
+
+    if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
+        rm -rf "$GNO_SOURCE_DIR"
+        git clone --depth 1 --branch "$GNO_RELEASE_TAG" https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
+    else
+        git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$GNO_RELEASE_TAG"
+        git -C "$GNO_SOURCE_DIR" checkout -f FETCH_HEAD
+    fi
+
+    if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$GNO_RELEASE_COMMIT" ]; then
+        echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}"
+        menu
+        return
+    fi
+    if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
+        echo -e "${RED}Missing Test13 stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}"
+        menu
+        return
+    fi
+    if [ ! -f "$GNOLAND_HOME/genesis.json" ] || [ ! -f "$GNOLAND_HOME/config/config.toml" ]; then
+        echo -e "${RED}Existing Gnoland config or genesis not found under $GNOLAND_HOME. Use 1a for a clean deploy.${RESET}"
+        menu
+        return
+    fi
+
+    sudo tee "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service" >/dev/null <<EOF
+[Unit]
+Description=Gno.land Test13 Node (${GNOLAND_SERVICE_NAME})
+After=network-online.target
+
+[Service]
+User=$USER
+WorkingDirectory=$GNOLAND_HOME
+ExecStart=/usr/local/bin/gnoland start -chainid test-13 -gnoroot-dir $GNO_SOURCE_DIR -data-dir $GNOLAND_HOME -genesis $GNOLAND_HOME/genesis.json -skip-genesis-sig-verification
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+LimitNPROC=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    sudo systemctl daemon-reload
+    sudo systemctl restart "$GNOLAND_SERVICE_NAME"
+    sudo systemctl status "$GNOLAND_SERVICE_NAME" --no-pager -l || true
     menu
 }
 
@@ -481,6 +545,7 @@ function menu() {
     echo "   3b. Stop Gnoland Node"
     echo "   3c. Delete Gnoland Node"
     echo "   3d. Backup Node Secrets"
+    echo "   3e. Repair Test13 Stdlib Root"
     echo
     echo "4. Show Endpoints & Useful Links"
     echo "5. Show Guidelines"
@@ -501,6 +566,7 @@ function menu() {
         3b|3-b) stop_gnoland ;;
         3c|3-c) delete_gnoland_node ;;
         3d|3-d) backup_node_secrets ;;
+        3e|3-e) repair_test13_stdlib_root ;;
         4) show_endpoints ;;
         5) show_guidelines ;;
         6) echo "Let's Buidl Gnoland Together"; exit 0 ;;

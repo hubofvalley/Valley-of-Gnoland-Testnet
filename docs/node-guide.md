@@ -176,7 +176,7 @@ gnokey -home "$GNOKEY_HOME" -remote https://rpc.test13.testnets.gno.land maketx 
   -args "<your operator g1... address>" \
   -args "<your gpub1... consensus pubkey>" \
   -gas-fee 1000000ugnot \
-  -gas-wanted 50000000 \
+  -gas-wanted 80000000 \
   -chainid test-13 \
   -broadcast \
   operator

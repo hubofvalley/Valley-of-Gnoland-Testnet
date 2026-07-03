@@ -48,7 +48,6 @@ bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-T
 - Show consensus public key
 - Register a validator-candidate profile on `gno.land/r/gnops/valopers`
 - Backup node secrets, restart/stop/delete node
-- Repair the Test13 stdlib root on an existing failed service
 
 ## Recommended validator-candidate flow
 

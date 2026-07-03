@@ -10,6 +10,6 @@
     "gnoland_linux_amd64": "050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9",
     "gnokey_linux_amd64": "eece8675dfad4ce9801a57aa6b0284b278272f41e0aac4579c219bc30049a4de"
   },
-  "status": "draft_needs_live_verification",
-  "last_reviewed": "2026-07-03"
+  "status": "live_verified",
+  "last_reviewed": "2026-07-04"
 }

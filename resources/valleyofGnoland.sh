@@ -212,68 +212,6 @@ function update_gnoland_binary() {
     menu
 }
 
-function repair_test13_stdlib_root() {
-    echo -e "${YELLOW}Repair Test13 stdlib root for ${GNOLAND_SERVICE_NAME}.service.${RESET}"
-    echo "This refreshes the pinned Gno source tree and rewrites the service to start from the official ~/gno working directory."
-    if ! prompt_back_or_continue; then
-        return
-    fi
-
-    sudo apt update -y
-    sudo apt install -y git
-
-    if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
-        rm -rf "$GNO_SOURCE_DIR"
-        git clone --depth 1 --branch "$GNO_RELEASE_TAG" https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
-    else
-        git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$GNO_RELEASE_TAG"
-        git -C "$GNO_SOURCE_DIR" checkout -f FETCH_HEAD
-    fi
-
-    if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$GNO_RELEASE_COMMIT" ]; then
-        echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}"
-        menu
-        return
-    fi
-    if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
-        echo -e "${RED}Missing Test13 stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}"
-        menu
-        return
-    fi
-    if [ ! -f "$GNOLAND_GENESIS" ] || [ ! -f "$GNOLAND_HOME/config/config.toml" ]; then
-        echo -e "${RED}Existing Gnoland config or genesis not found at $GNOLAND_HOME and $GNOLAND_GENESIS. Use 1a for a clean deploy.${RESET}"
-        menu
-        return
-    fi
-
-    sudo tee "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service" >/dev/null <<EOF
-[Unit]
-Description=Gno.land Test13 Node (${GNOLAND_SERVICE_NAME})
-After=network-online.target
-
-[Service]
-User=$USER
-WorkingDirectory=$GNO_SOURCE_DIR
-Environment=GNOROOT=$GNOROOT
-Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=$GNOLAND_BIN start -chainid test-13 -genesis genesis.json -skip-genesis-sig-verification
-StandardOutput=journal
-StandardError=journal
-Restart=on-failure
-RestartSec=5
-LimitNOFILE=65536
-LimitNPROC=65536
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    sudo systemctl daemon-reload
-    sudo systemctl restart "$GNOLAND_SERVICE_NAME"
-    sudo systemctl status "$GNOLAND_SERVICE_NAME" --no-pager -l || true
-    menu
-}
-
 function add_peers() {
     echo "Select an option:"
     echo "1. Add peers manually"
@@ -586,13 +524,16 @@ function menu() {
     echo "   3b. Stop Gnoland Node"
     echo "   3c. Delete Gnoland Node"
     echo "   3d. Backup Node Secrets"
-    echo "   3e. Repair Test13 Stdlib Root"
     echo
     echo "4. Show Endpoints & Useful Links"
     echo "5. Show Guidelines"
     echo "6. Exit"
     echo
-    read -r -p "Choose an option: " choice
+    if ! read -r -p "Choose an option: " choice; then
+        echo
+        echo "Let's Buidl Gnoland Together"
+        exit 0
+    fi
     case "${choice,,}" in
         1a|1-a) deploy_gnoland_node ;;
         1b|1-b) update_gnoland_binary ;;
@@ -607,7 +548,6 @@ function menu() {
         3b|3-b) stop_gnoland ;;
         3c|3-c) delete_gnoland_node ;;
         3d|3-d) backup_node_secrets ;;
-        3e|3-e) repair_test13_stdlib_root ;;
         4) show_endpoints ;;
         5) show_guidelines ;;
         6) echo "Let's Buidl Gnoland Together"; exit 0 ;;

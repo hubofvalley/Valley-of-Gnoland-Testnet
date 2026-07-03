@@ -49,7 +49,6 @@ Gno.land Test13 does not work like a simple open-staking Cosmos chain. The regis
 | **3b. Stop Gnoland Node** | `systemctl stop gnoland`. | Maintenance. |
 | **3c. Delete Gnoland Node** | Stops and disables service, removes service file, deletes `~/gno/gnoland-data`, removes binaries, and cleans Gno env vars. It does not delete `GNOKEY_HOME`. | Decommissioning or clean rebuild. |
 | **3d. Backup Node Secrets** | Archives `~/gno/gnoland-data/secrets` into a timestamped `tar.gz` in `$HOME` with `600` permissions. | Immediately after deploy and before destructive actions. |
-| **3e. Repair Test13 Stdlib Root** | Refreshes the pinned `~/gno` source tree and rewrites `gnoland.service` to start from `~/gno` with `GNOROOT` set, then restarts the service. | Fix `panic: gno was unable to determine GNOROOT` or `panic: failed loading stdlib "errors": does not exist` without deleting node data. |
 
 ### 4. Show Endpoints & Useful Links
 

@@ -32,6 +32,7 @@ GNOLAND_REMOTE=${GNOLAND_REMOTE:-http://127.0.0.1:26657}
 GNO_RELEASE_TAG="chain/test13"
 GNO_RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
 SENTRY_PEERS="g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.gno.land:26656,g1lxkf9gn7kddrr26c640ww5wg3ezsm22we8cjpc@sentry-2.test13.testnets.gno.land:26656"
+GV_VALIDATOR_PROFILE_URL="https://test13.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym"
 
 if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
     echo -e "${YELLOW}Service name configuration not found.${RESET}"
@@ -529,9 +530,11 @@ function menu() {
     echo "5. Show Guidelines"
     echo "6. Exit"
     echo
+    echo -e "Grand Valley's Validator Profile: ${BLUE}${GV_VALIDATOR_PROFILE_URL}${RESET}"
+    echo -e "${GREEN}Let's Buidl Gnoland Together - Grand Valley${RESET}"
     if ! read -r -p "Choose an option: " choice; then
         echo
-        echo "Let's Buidl Gnoland Together"
+        echo "Let's Buidl Gnoland Together - Grand Valley"
         exit 0
     fi
     case "${choice,,}" in
@@ -550,7 +553,7 @@ function menu() {
         3d|3-d) backup_node_secrets ;;
         4) show_endpoints ;;
         5) show_guidelines ;;
-        6) echo "Let's Buidl Gnoland Together"; exit 0 ;;
+        6) echo "Let's Buidl Gnoland Together - Grand Valley"; exit 0 ;;
         *)
             echo "Invalid choice."
             sleep 1

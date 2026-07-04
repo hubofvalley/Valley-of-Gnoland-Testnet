@@ -6,6 +6,11 @@
   "release_commit": "75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28",
   "release_url": "https://github.com/gnolang/gno/releases/tag/chain/test13",
   "genesis_sha256": "56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2",
+  "endpoints": {
+    "public_provider": "Grand Valley",
+    "rpc_node": "https://lightnode-rpc-gnoland.grandvalleys.com",
+    "public_peer_endpoint": "peer-gnoland.grandvalleys.com:18656"
+  },
   "binaries": {
     "gnoland_linux_amd64": "050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9",
     "gnokey_linux_amd64": "eece8675dfad4ce9801a57aa6b0284b278272f41e0aac4579c219bc30049a4de"

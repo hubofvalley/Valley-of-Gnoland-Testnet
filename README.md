@@ -59,6 +59,13 @@ bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-T
 6. `3d` Backup node secrets
 7. Prepare GovDAO-facing validator narrative; candidate registration is not active-set admission
 
+## Grand Valley Public Endpoints
+
+| Type | URL |
+|---|---|
+| RPC Node | `https://lightnode-rpc-gnoland.grandvalleys.com` |
+| Public Peer Endpoint | `peer-gnoland.grandvalleys.com:18656` |
+
 ## Connect with Grand Valley
 
 - X: https://x.com/bacvalley

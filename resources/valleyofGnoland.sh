@@ -33,6 +33,8 @@ GNO_RELEASE_TAG="chain/test13"
 GNO_RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
 SENTRY_PEERS="g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.gno.land:26656,g1lxkf9gn7kddrr26c640ww5wg3ezsm22we8cjpc@sentry-2.test13.testnets.gno.land:26656"
 GV_VALIDATOR_PROFILE_URL="https://test13.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym"
+GV_GNOLAND_RPC_URL="https://lightnode-rpc-gnoland.grandvalleys.com"
+GV_GNOLAND_PEER_ENDPOINT="peer-gnoland.grandvalleys.com:18656"
 
 if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
     echo -e "${YELLOW}Service name configuration not found.${RESET}"
@@ -120,6 +122,10 @@ ${GREEN}Network facts:${RESET}
 - RPC: ${CYAN}https://rpc.test13.testnets.gno.land${RESET}
 - Official sentry peers: ${CYAN}${SENTRY_PEERS}${RESET}
 - Genesis SHA256: ${CYAN}56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2${RESET}
+
+${GREEN}Grand Valley public endpoints:${RESET}
+- RPC Node: ${BLUE}${GV_GNOLAND_RPC_URL}${RESET}
+- Public Peer Endpoint: ${CYAN}${GV_GNOLAND_PEER_ENDPOINT}${RESET}
 
 ${GREEN}Connect with Grand Valley:${RESET}
 - X: ${BLUE}https://x.com/bacvalley${RESET}
@@ -531,6 +537,8 @@ function menu() {
     echo "6. Exit"
     echo
     echo -e "Grand Valley's Validator Profile: ${BLUE}${GV_VALIDATOR_PROFILE_URL}${RESET}"
+    echo -e "Grand Valley RPC Node: ${BLUE}${GV_GNOLAND_RPC_URL}${RESET}"
+    echo -e "Grand Valley Public Peer Endpoint: ${CYAN}${GV_GNOLAND_PEER_ENDPOINT}${RESET}"
     echo -e "${GREEN}Let's Buidl Gnoland Together - Grand Valley${RESET}"
     if ! read -r -p "Choose an option: " choice; then
         echo

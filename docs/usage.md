@@ -52,7 +52,7 @@ Gno.land Test13 does not work like a simple open-staking Cosmos chain. The regis
 
 ### 4. Show Endpoints & Useful Links
 
-Official docs, release, validator guide, faucet, status page, valoper candidate page, active-validator realm, and Grand Valley contacts.
+Official docs, release, validator guide, faucet, status page, valoper candidate page, active-validator realm, Grand Valley public RPC node, Grand Valley public peer endpoint, and Grand Valley contacts.
 
 ### 5. Show Guidelines
 

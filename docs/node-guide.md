@@ -13,6 +13,8 @@ Manual command summary behind the `valleyofGnoland.sh` menu. Sources:
 | Network | Gno.land Test13 |
 | Chain ID | `test-13` |
 | RPC | `https://rpc.test13.testnets.gno.land` |
+| Grand Valley RPC Node | `https://lightnode-rpc-gnoland.grandvalleys.com` |
+| Grand Valley Public Peer Endpoint | `peer-gnoland.grandvalleys.com:18656` |
 | Faucet | `https://test13.testnets.gno.land/faucet` |
 | Genesis SHA256 | `56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2` |
 

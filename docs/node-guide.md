@@ -104,7 +104,8 @@ gnoland config set p2p.external_address "YOUR_PUBLIC_HOST:${P2P_PORT}"
 gnoland start \
   -chainid test-13 \
   -genesis genesis.json \
-  -skip-genesis-sig-verification
+  -skip-genesis-sig-verification \
+  -log-level info
 ```
 
 `-skip-genesis-sig-verification` is required by upstream Test13 docs because the genesis replays historical transactions whose signatures a fresh node cannot all re-verify.
@@ -128,7 +129,7 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/gno
 Environment=GNOROOT=/home/ubuntu/gno
 Environment=PATH=/home/ubuntu/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/home/ubuntu/go/bin/gnoland start -chainid test-13 -genesis genesis.json -skip-genesis-sig-verification
+ExecStart=/home/ubuntu/go/bin/gnoland start -chainid test-13 -genesis genesis.json -skip-genesis-sig-verification -log-level info
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65536

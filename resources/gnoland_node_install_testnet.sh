@@ -165,7 +165,7 @@ User=$USER
 WorkingDirectory=$GNO_SOURCE_DIR
 Environment=GNOROOT=$GNOROOT
 Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=$GNOLAND_BIN start -chainid $CHAIN_ID -genesis genesis.json -skip-genesis-sig-verification
+ExecStart=$GNOLAND_BIN start -chainid $CHAIN_ID -genesis genesis.json -skip-genesis-sig-verification -log-level info
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure

@@ -35,6 +35,8 @@ SENTRY_PEERS="g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.
 GV_VALIDATOR_PROFILE_URL="https://test13.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym"
 GV_GNOLAND_RPC_URL="https://lightnode-rpc-gnoland.grandvalleys.com"
 GV_GNOLAND_PEER_ENDPOINT="peer-gnoland.grandvalleys.com:18656"
+GV_GNOLAND_PEER_ID="g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh"
+GV_GNOLAND_PEER="${GV_GNOLAND_PEER_ID}@${GV_GNOLAND_PEER_ENDPOINT}"
 
 if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
     echo -e "${YELLOW}Service name configuration not found.${RESET}"
@@ -126,6 +128,7 @@ ${GREEN}Network facts:${RESET}
 ${GREEN}Grand Valley public endpoints:${RESET}
 - RPC Node: ${BLUE}${GV_GNOLAND_RPC_URL}${RESET}
 - Public Peer Endpoint: ${CYAN}${GV_GNOLAND_PEER_ENDPOINT}${RESET}
+- Persistent Peer: ${CYAN}${GV_GNOLAND_PEER}${RESET}
 
 ${GREEN}Connect with Grand Valley:${RESET}
 - X: ${BLUE}https://x.com/bacvalley${RESET}
@@ -223,8 +226,14 @@ function add_peers() {
     echo "Select an option:"
     echo "1. Add peers manually"
     echo "2. Reset to official Test13 sentry peers"
-    echo "3. Back"
-    read -r -p "Enter your choice (1, 2, or 3): " choice
+    echo "3. Use Grand Valley's peer node"
+    echo "4. Back"
+    read -r -p "Enter your choice (1, 2, 3, or 4): " choice
+
+    if [ "$choice" = "4" ]; then
+        menu
+        return
+    fi
 
     CFG="$GNOLAND_HOME/config/config.toml"
     if [ ! -f "$CFG" ]; then
@@ -248,8 +257,13 @@ function add_peers() {
             echo "Official sentry peers restored."
             ;;
         3)
-            menu
-            return
+            echo "Grand Valley's peer node:"
+            echo "$GV_GNOLAND_PEER"
+            read -r -p "Use Grand Valley's peer node? (yes/no): " confirm
+            if [[ "${confirm,,}" == "yes" ]]; then
+                gnoland config set -config-path "$CFG" p2p.persistent_peers "$GV_GNOLAND_PEER"
+                echo "Grand Valley's peer node added."
+            fi
             ;;
         *)
             echo "Invalid choice."
@@ -537,8 +551,6 @@ function menu() {
     echo "6. Exit"
     echo
     echo -e "Grand Valley's Validator Profile: ${BLUE}${GV_VALIDATOR_PROFILE_URL}${RESET}"
-    echo -e "Grand Valley RPC Node: ${BLUE}${GV_GNOLAND_RPC_URL}${RESET}"
-    echo -e "Grand Valley Public Peer Endpoint: ${CYAN}${GV_GNOLAND_PEER_ENDPOINT}${RESET}"
     echo -e "${GREEN}Let's Buidl Gnoland Together - Grand Valley${RESET}"
     if ! read -r -p "Choose an option: " choice; then
         echo

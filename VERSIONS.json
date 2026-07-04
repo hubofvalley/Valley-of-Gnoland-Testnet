@@ -9,7 +9,8 @@
   "endpoints": {
     "public_provider": "Grand Valley",
     "rpc_node": "https://lightnode-rpc-gnoland.grandvalleys.com",
-    "public_peer_endpoint": "peer-gnoland.grandvalleys.com:18656"
+    "public_peer_endpoint": "peer-gnoland.grandvalleys.com:18656",
+    "persistent_peer": "g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@peer-gnoland.grandvalleys.com:18656"
   },
   "binaries": {
     "gnoland_linux_amd64": "050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9",

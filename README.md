@@ -64,7 +64,7 @@ bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-T
 | Type | URL |
 |---|---|
 | RPC Node | `https://lightnode-rpc-gnoland.grandvalleys.com` |
-| Public Peer Endpoint | `peer-gnoland.grandvalleys.com:18656` |
+| Net Address | `g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@0.0.0.0:18656` |
 | Persistent Peer | `g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@peer-gnoland.grandvalleys.com:18656` |
 
 ## Connect with Grand Valley

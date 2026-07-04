@@ -14,7 +14,7 @@ Manual command summary behind the `valleyofGnoland.sh` menu. Sources:
 | Chain ID | `test-13` |
 | RPC | `https://rpc.test13.testnets.gno.land` |
 | Grand Valley RPC Node | `https://lightnode-rpc-gnoland.grandvalleys.com` |
-| Grand Valley Public Peer Endpoint | `peer-gnoland.grandvalleys.com:18656` |
+| Grand Valley Net Address | `g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@0.0.0.0:18656` |
 | Grand Valley Persistent Peer | `g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@peer-gnoland.grandvalleys.com:18656` |
 | Faucet | `https://test13.testnets.gno.land/faucet` |
 | Genesis SHA256 | `56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2` |

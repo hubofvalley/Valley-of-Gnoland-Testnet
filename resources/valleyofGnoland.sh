@@ -34,9 +34,11 @@ GNO_RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
 SENTRY_PEERS="g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.gno.land:26656,g1lxkf9gn7kddrr26c640ww5wg3ezsm22we8cjpc@sentry-2.test13.testnets.gno.land:26656"
 GV_VALIDATOR_PROFILE_URL="https://test13.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym"
 GV_GNOLAND_RPC_URL="https://lightnode-rpc-gnoland.grandvalleys.com"
-GV_GNOLAND_PEER_ENDPOINT="peer-gnoland.grandvalleys.com:18656"
+GV_GNOLAND_NET_ADDRESS="g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@0.0.0.0:18656"
+GV_GNOLAND_PEER_HOST="peer-gnoland.grandvalleys.com"
+GV_GNOLAND_PEER_PORT="18656"
 GV_GNOLAND_PEER_ID="g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh"
-GV_GNOLAND_PEER="${GV_GNOLAND_PEER_ID}@${GV_GNOLAND_PEER_ENDPOINT}"
+GV_GNOLAND_PEER="${GV_GNOLAND_PEER_ID}@${GV_GNOLAND_PEER_HOST}:${GV_GNOLAND_PEER_PORT}"
 
 if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
     echo -e "${YELLOW}Service name configuration not found.${RESET}"
@@ -127,7 +129,7 @@ ${GREEN}Network facts:${RESET}
 
 ${GREEN}Grand Valley public endpoints:${RESET}
 - RPC Node: ${BLUE}${GV_GNOLAND_RPC_URL}${RESET}
-- Public Peer Endpoint: ${CYAN}${GV_GNOLAND_PEER_ENDPOINT}${RESET}
+- Net Address: ${CYAN}${GV_GNOLAND_NET_ADDRESS}${RESET}
 - Persistent Peer: ${CYAN}${GV_GNOLAND_PEER}${RESET}
 
 ${GREEN}Connect with Grand Valley:${RESET}

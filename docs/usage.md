@@ -28,9 +28,10 @@ Gno.land Test13 does not work like a simple open-staking Cosmos chain. The regis
 |---|---|---|
 | **1a. Deploy/Re-deploy Gnoland Node** | Runs the installer: asks moniker, port prefix, optional external P2P host, install method, firewall choice, and service name; installs dependencies, prepares the pinned `chain/test13` Gno source tree at `~/gno`, exports `GNOROOT`, downloads official Test13 binaries to `~/go/bin` or builds from source, verifies binary checksums, runs `gnoland config init` and `gnoland secrets init` from `~/gno`, downloads and verifies genesis at `~/gno/genesis.json`, applies official Test13 sentry peers/settings, and creates a systemd service with `WorkingDirectory=~/gno`. Re-running deletes existing node data under `~/gno/gnoland-data`. | First setup, or clean re-install. |
 | **1b. Update Gnoland/Gnokey Binaries** | Stops the service, refreshes the pinned Test13 source tree, downloads pinned official Test13 binaries, verifies checksums, replaces `~/go/bin/gnoland` and `~/go/bin/gnokey`, restarts the service. | When rebuilding the same pinned Test13 binary state. |
-| **1c. Add/Reset Peers** | Updates `p2p.persistent_peers` in `~/gno/gnoland-data/config/config.toml` manually, resets to the official Test13 sentry peers, or uses Grand Valley's peer node preset. Restart afterwards. | Peer issues or manual peer tuning. |
-| **1d. Show Node Status** | Reads local RPC status, prints sync JSON, compares local height with public Test13 RPC height. | Check sync progress before candidate registration. |
-| **1e. Show Node Logs** | Live-tails `journalctl -u gnoland -fn 100`. Press Ctrl+C to return. | Debugging, watching sync. |
+| **1c. Apply Snapshot** | Opens the snapshot provider menu and applies the UTSA Gno.land Test13 snapshot. The script thanks UTSA, stops the Gnoland service or running `gnoland start` process, removes only `~/gno/gnoland-data/db` and `~/gno/gnoland-data/wal`, streams the snapshot from `https://share118.utsa.tech/gno_test13/gno-test13-snapshot.tar.lz4`, restarts the service, and shows live logs. | Speed up sync or recover from a bad local chain database while keeping config and node secrets. |
+| **1d. Add/Reset Peers** | Updates `p2p.persistent_peers` in `~/gno/gnoland-data/config/config.toml` manually, resets to the official Test13 sentry peers, or uses Grand Valley's peer node preset. Restart afterwards. | Peer issues or manual peer tuning. |
+| **1e. Show Node Status** | Reads local RPC status, prints sync JSON, compares local height with public Test13 RPC height. | Check sync progress before candidate registration. |
+| **1f. Show Node Logs** | Live-tails `journalctl -u gnoland -fn 100`. Press Ctrl+C to return. | Debugging, watching sync. |
 
 ### 2. Validator/Key Interactions
 
@@ -65,6 +66,7 @@ Leaves the script. Run `source ~/.bash_profile && hash -r` in the current shell 
 ## Recommended first-time flow
 
 1. `1a` deploy node and let it sync
+   - Optional: use `1c` Apply Snapshot to speed up sync with the UTSA snapshot
 2. `2a` create or recover operator key
 3. Fund the `g1...` operator address from https://test13.testnets.gno.land/faucet
 4. `2b` copy the `gpub1...` consensus pubkey

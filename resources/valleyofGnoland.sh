@@ -222,6 +222,11 @@ function update_gnoland_binary() {
     menu
 }
 
+function apply_snapshot() {
+    bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/apply_snapshot.sh)
+    menu
+}
+
 function add_peers() {
     echo "Select an option:"
     echo "1. Add peers manually"
@@ -497,12 +502,20 @@ function show_endpoints() {
 function show_guidelines() {
     echo -e "${CYAN}Guidelines on How to Use the Valley of Gnoland${RESET}"
     echo -e "${GREEN}Recommended flow:${RESET}"
-    echo " - 1a Deploy node -> wait until 1d shows synced"
+    echo " - 1a Deploy node -> wait until 1e shows synced"
     echo " - 2a Create/recover operator key -> fund via faucet"
     echo " - 2b Show consensus pubkey"
     echo " - 2c Register valoper candidate"
     echo " - 3d Backup node secrets"
     echo -e "${YELLOW}Candidate registration is not active validator admission. GovDAO approval is required.${RESET}"
+    echo
+    echo -e "${GREEN}Node Interactions:${RESET}"
+    echo "   a. Deploy/Re-deploy Gnoland Node: Installs or rebuilds the Test13 node."
+    echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Test13 binaries."
+    echo "   c. Apply Snapshot: Applies the UTSA Test13 snapshot to speed up sync."
+    echo "   d. Add/Reset Peers: Manages persistent peers."
+    echo "   e. Show Node Status: Displays local sync status and height difference."
+    echo "   f. Show Node Logs: Live-tails the Gnoland service logs."
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -530,9 +543,10 @@ function menu() {
     echo "1. Node Interactions"
     echo "   1a. Deploy/Re-deploy Gnoland Node"
     echo "   1b. Update Gnoland/Gnokey Binaries"
-    echo "   1c. Add/Reset Peers"
-    echo "   1d. Show Node Status"
-    echo "   1e. Show Node Logs"
+    echo "   1c. Apply Snapshot"
+    echo "   1d. Add/Reset Peers"
+    echo "   1e. Show Node Status"
+    echo "   1f. Show Node Logs"
     echo
     echo "2. Validator/Key Interactions"
     echo "   2a. Create/Recover/List Operator Key"
@@ -560,9 +574,10 @@ function menu() {
     case "${choice,,}" in
         1a|1-a) deploy_gnoland_node ;;
         1b|1-b) update_gnoland_binary ;;
-        1c|1-c) add_peers ;;
-        1d|1-d) show_node_status ;;
-        1e|1-e) show_logs ;;
+        1c|1-c) apply_snapshot ;;
+        1d|1-d) add_peers ;;
+        1e|1-e) show_node_status ;;
+        1f|1-f) show_logs ;;
         2a|2-a) create_operator_key ;;
         2b|2-b) show_validator_pubkey ;;
         2c|2-c) register_valoper_candidate ;;

@@ -35,6 +35,7 @@ bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-T
 
 - **[Usage guide - every menu option explained](docs/usage.md)**
 - [Manual node guide (commands behind the menu)](docs/node-guide.md)
+- [Snapshot guide](docs/snapshots.md)
 
 ## Features
 
@@ -43,6 +44,7 @@ bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-T
 - Verify the official Test13 genesis SHA256 before starting
 - Configure official sentry peers and Test13-required node settings
 - Custom RPC/P2P port prefix, optional UFW, systemd service
+- Apply the UTSA Gno.land Test13 snapshot to speed up sync
 - Node status, live logs, peer config reset
 - Create/recover `gnokey` operator key
 - Show consensus public key
@@ -51,7 +53,8 @@ bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-T
 
 ## Recommended validator-candidate flow
 
-1. `1a` Deploy node, wait until `1d` shows the node is synced
+1. `1a` Deploy node, wait until `1e` shows the node is synced
+   - To speed up sync after deploy, use `1c` Apply Snapshot
 2. `2a` Create or recover operator key
 3. Fund the `g1...` operator address via https://test13.testnets.gno.land/faucet
 4. `2b` Show consensus pubkey

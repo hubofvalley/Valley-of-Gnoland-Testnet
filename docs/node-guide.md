@@ -125,6 +125,21 @@ curl -s http://127.0.0.1:26657/status | jq '.result.sync_info'
 curl -s https://rpc.test13.testnets.gno.land/status | jq '.result.sync_info.latest_block_height'
 ```
 
+## Apply UTSA snapshot
+
+Grand Valley extends its gratitude to **UTSA** for providing snapshot support.
+
+Use Valley of Gnoland option `1c. Apply Snapshot`, or run the equivalent manual commands:
+
+```bash
+systemctl stop gnoland 2>/dev/null || pkill -f "gnoland start" 2>/dev/null || true
+rm -rf ~/gno/gnoland-data/db ~/gno/gnoland-data/wal
+curl -o - -L https://share118.utsa.tech/gno_test13/gno-test13-snapshot.tar.lz4 | lz4 -c -d - | tar -x -C $HOME/gno/gnoland-data/
+systemctl restart gnoland && journalctl -u gnoland -f -o cat
+```
+
+The snapshot flow keeps config and node secrets, and replaces only the old chain database folders.
+
 ## Systemd service
 
 ```ini

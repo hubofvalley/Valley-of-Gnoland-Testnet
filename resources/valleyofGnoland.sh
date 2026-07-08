@@ -184,6 +184,28 @@ function get_network_height() {
     curl -m 5 -s "$GNOLAND_PUBLIC_REMOTE/status" | jq -r '.result.sync_info.latest_block_height // empty' 2>/dev/null
 }
 
+function get_local_net_info_json() {
+    local port
+    port=$(get_local_rpc_port)
+    if [ -z "$port" ]; then
+        port=26657
+    fi
+    curl -m 5 -s "http://127.0.0.1:${port}/net_info"
+}
+
+function show_copy_ready_checks() {
+    local port="$1"
+    cat <<EOF
+
+Copy-ready checks:
+  systemctl status ${GNOLAND_SERVICE_NAME} --no-pager -l
+  journalctl -u ${GNOLAND_SERVICE_NAME} -n 100 --no-pager
+  curl -s http://127.0.0.1:${port}/status | jq '.result.sync_info'
+  curl -s http://127.0.0.1:${port}/net_info | jq '.result.n_peers'
+  df -h ${GNOLAND_HOME}
+EOF
+}
+
 function prompt_back_or_continue() {
     read -r -p "Press Enter to continue or type 'back' to go back to the menu: " user_choice
     if [[ ${user_choice,,} == "back" ]]; then
@@ -279,29 +301,52 @@ function add_peers() {
 }
 
 function show_node_status() {
-    local port status_json node_height catching_up network_height
+    local port status_json net_info_json node_height catching_up network_height latest_block_time validator_address peer_count service_state disk_line
     port=$(get_local_rpc_port)
     [ -z "$port" ] && port=26657
     status_json=$(get_local_status_json)
+    net_info_json=$(get_local_net_info_json)
+    service_state=$(systemctl is-active "$GNOLAND_SERVICE_NAME" 2>/dev/null || true)
+    [ -z "$service_state" ] && service_state="unknown"
+    disk_line=$(df -h "$GNOLAND_HOME" 2>/dev/null | awk 'NR==2 {print $4 " free of " $2 " (" $5 " used)"}')
+    [ -z "$disk_line" ] && disk_line="unavailable for $GNOLAND_HOME"
+
+    echo -e "${CYAN}Operational health summary${RESET}"
+    echo "Service: ${GNOLAND_SERVICE_NAME}.service ($service_state)"
+    echo "Local RPC: http://127.0.0.1:${port}"
+    echo "Node directory: $GNOLAND_HOME"
+    echo "Disk: $disk_line"
+    echo
+
     node_height=$(echo "$status_json" | jq -r '.result.sync_info.latest_block_height // empty' 2>/dev/null)
     if [ -z "$node_height" ]; then
         echo -e "${RED}Cannot reach local RPC at http://127.0.0.1:${port}/status. Is ${GNOLAND_SERVICE_NAME}.service running?${RESET}"
     else
-        echo -e "${CYAN}Local RPC status: curl http://127.0.0.1:${port}/status | jq${RESET}"
-        echo "$status_json" | jq .
-        echo
         catching_up=$(echo "$status_json" | jq -r '.result.sync_info.catching_up // empty' 2>/dev/null)
         [ -z "$catching_up" ] && catching_up="unknown"
-        echo "Local Gnoland node block height: $node_height"
+        latest_block_time=$(echo "$status_json" | jq -r '.result.sync_info.latest_block_time // empty' 2>/dev/null)
+        [ -z "$latest_block_time" ] && latest_block_time="unknown"
+        validator_address=$(echo "$status_json" | jq -r '.result.validator_info.address // empty' 2>/dev/null)
+        [ -z "$validator_address" ] && validator_address="unknown"
+        peer_count=$(echo "$net_info_json" | jq -r '.result.n_peers // empty' 2>/dev/null)
+        [ -z "$peer_count" ] && peer_count="unknown"
+
+        echo "Local height: $node_height"
         network_height=$(get_network_height)
         if [ -n "$network_height" ]; then
-            echo "Network latest block height: $network_height"
-            echo "Block Difference: $((network_height - node_height))"
+            echo "Network height: $network_height"
+            if [[ "$network_height" =~ ^[0-9]+$ ]] && [[ "$node_height" =~ ^[0-9]+$ ]]; then
+                echo "Block difference: $((network_height - node_height))"
+            fi
         else
             echo -e "${YELLOW}Network latest block height unavailable from $GNOLAND_PUBLIC_REMOTE${RESET}"
         fi
-        echo -e "Catching up: ${YELLOW}$catching_up${RESET}"
+        echo "Catching up: $catching_up"
+        echo "Connected peers: $peer_count"
+        echo "Latest block time: $latest_block_time"
+        echo "Validator address: $validator_address"
     fi
+    show_copy_ready_checks "$port"
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -514,7 +559,7 @@ function show_guidelines() {
     echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Test13 binaries."
     echo "   c. Apply Snapshot: Applies the UTSA Test13 snapshot to speed up sync."
     echo "   d. Add/Reset Peers: Manages persistent peers."
-    echo "   e. Show Node Status: Displays local sync status and height difference."
+    echo "   e. Show Node Status: Shows an operational health summary and copy-ready debug checks."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r

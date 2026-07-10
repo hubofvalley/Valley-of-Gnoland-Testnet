@@ -173,7 +173,18 @@ function get_rpc_port_from_remote() {
 function get_local_rpc_port() {
     local cfg="$GNOLAND_HOME/config/config.toml" port
     if [ -f "$cfg" ]; then
-        port=$(awk -F: '/^[[:space:]]*laddr = "tcp:\/\// {gsub(/".*/, "", $NF); print $NF; exit}' "$cfg")
+        port=$(awk -F: '
+            /^[[:space:]]*\[rpc\][[:space:]]*$/ {in_rpc=1; next}
+            /^[[:space:]]*\[/ {in_rpc=0}
+            in_rpc && /^[[:space:]]*laddr = "tcp:\/\// {
+                gsub(/".*/, "", $NF)
+                print $NF
+                exit
+            }
+        ' "$cfg")
+        if [ -z "$port" ]; then
+            port=$(awk -F: '/laddr = "tcp:\/\/127\.0\.0\.1:/ {gsub(/".*/, "", $3); print $3; exit}' "$cfg")
+        fi
         if [ -n "$port" ]; then
             echo "$port"
             return

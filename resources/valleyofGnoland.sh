@@ -28,7 +28,7 @@ export GNOROOT
 export PATH="$HOME/go/bin:$PATH"
 GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-test-13}
 GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.test13.testnets.gno.land}
-GNOLAND_REMOTE=${GNOLAND_REMOTE:-http://127.0.0.1:26657}
+GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
 GNO_RELEASE_TAG="chain/test13"
 GNO_RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
 SENTRY_PEERS="g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.gno.land:26656,g1lxkf9gn7kddrr26c640ww5wg3ezsm22we8cjpc@sentry-2.test13.testnets.gno.land:26656"
@@ -163,21 +163,39 @@ function gnokey_cmd() {
     gnokey -home "$GNOKEY_HOME" -remote "$GNOLAND_PUBLIC_REMOTE" "$@"
 }
 
-function get_local_rpc_port() {
-    local cfg="$GNOLAND_HOME/config/config.toml"
-    if [ ! -f "$cfg" ]; then
-        return
+function get_rpc_port_from_remote() {
+    local remote="${GNOLAND_REMOTE:-}"
+    if [[ "$remote" =~ :([0-9]+)/?$ ]]; then
+        echo "${BASH_REMATCH[1]}"
     fi
-    awk -F: '/laddr = "tcp:\/\/127\.0\.0\.1:/ {gsub(/".*/, "", $3); print $3; exit}' "$cfg"
+}
+
+function get_local_rpc_port() {
+    local cfg="$GNOLAND_HOME/config/config.toml" port
+    if [ -f "$cfg" ]; then
+        port=$(awk -F: '/^[[:space:]]*laddr = "tcp:\/\// {gsub(/".*/, "", $NF); print $NF; exit}' "$cfg")
+        if [ -n "$port" ]; then
+            echo "$port"
+            return
+        fi
+    fi
+    get_rpc_port_from_remote
+}
+
+function get_local_rpc_url() {
+    local port
+    port=$(get_local_rpc_port)
+    if [ -n "$port" ]; then
+        echo "http://127.0.0.1:${port}"
+    else
+        echo "${GNOLAND_REMOTE:-http://127.0.0.1:26657}"
+    fi
 }
 
 function get_local_status_json() {
-    local port
-    port=$(get_local_rpc_port)
-    if [ -z "$port" ]; then
-        port=26657
-    fi
-    curl -m 5 -s "http://127.0.0.1:${port}/status"
+    local rpc_url
+    rpc_url=$(get_local_rpc_url)
+    curl -m 5 -s "${rpc_url%/}/status"
 }
 
 function get_network_height() {
@@ -185,12 +203,9 @@ function get_network_height() {
 }
 
 function get_local_net_info_json() {
-    local port
-    port=$(get_local_rpc_port)
-    if [ -z "$port" ]; then
-        port=26657
-    fi
-    curl -m 5 -s "http://127.0.0.1:${port}/net_info"
+    local rpc_url
+    rpc_url=$(get_local_rpc_url)
+    curl -m 5 -s "${rpc_url%/}/net_info"
 }
 
 function prompt_back_or_continue() {
@@ -288,9 +303,8 @@ function add_peers() {
 }
 
 function show_node_status() {
-    local port status_json net_info_json node_height catching_up network_height latest_block_time validator_address peer_count service_state disk_line block_diff sync_status
-    port=$(get_local_rpc_port)
-    [ -z "$port" ] && port=26657
+    local rpc_url status_json net_info_json node_height catching_up network_height latest_block_time validator_address peer_count service_state disk_line block_diff sync_status
+    rpc_url=$(get_local_rpc_url)
     status_json=$(get_local_status_json)
     net_info_json=$(get_local_net_info_json)
     service_state=$(systemctl is-active "$GNOLAND_SERVICE_NAME" 2>/dev/null || true)
@@ -300,14 +314,14 @@ function show_node_status() {
 
     echo -e "${CYAN}Operational health summary${RESET}"
     echo "Service: ${GNOLAND_SERVICE_NAME}.service ($service_state)"
-    echo "Local RPC: http://127.0.0.1:${port}"
+    echo "Local RPC: $rpc_url"
     echo "Node directory: $GNOLAND_HOME"
     echo "Disk: $disk_line"
     echo
 
     node_height=$(echo "$status_json" | jq -r '.result.sync_info.latest_block_height // empty' 2>/dev/null)
     if [ -z "$node_height" ]; then
-        echo -e "${RED}Cannot reach local RPC at http://127.0.0.1:${port}/status. Is ${GNOLAND_SERVICE_NAME}.service running?${RESET}"
+        echo -e "${RED}Cannot reach local RPC at ${rpc_url%/}/status. Is ${GNOLAND_SERVICE_NAME}.service running?${RESET}"
     else
         catching_up=$(echo "$status_json" | jq -r '.result.sync_info.catching_up // empty' 2>/dev/null)
         [ -z "$catching_up" ] && catching_up="unknown"

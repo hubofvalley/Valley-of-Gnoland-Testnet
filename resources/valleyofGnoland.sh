@@ -193,19 +193,6 @@ function get_local_net_info_json() {
     curl -m 5 -s "http://127.0.0.1:${port}/net_info"
 }
 
-function show_copy_ready_checks() {
-    local port="$1"
-    cat <<EOF
-
-Copy-ready checks:
-  systemctl status ${GNOLAND_SERVICE_NAME} --no-pager -l
-  journalctl -u ${GNOLAND_SERVICE_NAME} -n 100 --no-pager
-  curl -s http://127.0.0.1:${port}/status | jq '.result.sync_info'
-  curl -s http://127.0.0.1:${port}/net_info | jq '.result.n_peers'
-  df -h ${GNOLAND_HOME}
-EOF
-}
-
 function prompt_back_or_continue() {
     read -r -p "Press Enter to continue or type 'back' to go back to the menu: " user_choice
     if [[ ${user_choice,,} == "back" ]]; then
@@ -301,7 +288,7 @@ function add_peers() {
 }
 
 function show_node_status() {
-    local port status_json net_info_json node_height catching_up network_height latest_block_time validator_address peer_count service_state disk_line
+    local port status_json net_info_json node_height catching_up network_height latest_block_time validator_address peer_count service_state disk_line block_diff sync_status
     port=$(get_local_rpc_port)
     [ -z "$port" ] && port=26657
     status_json=$(get_local_status_json)
@@ -336,17 +323,28 @@ function show_node_status() {
         if [ -n "$network_height" ]; then
             echo "Network height: $network_height"
             if [[ "$network_height" =~ ^[0-9]+$ ]] && [[ "$node_height" =~ ^[0-9]+$ ]]; then
-                echo "Block difference: $((network_height - node_height))"
+                block_diff=$((network_height - node_height))
+                echo "Block difference: $block_diff"
+                if [ "$block_diff" -le 0 ]; then
+                    sync_status="synced"
+                else
+                    sync_status="behind by ${block_diff} blocks"
+                    if [ "$catching_up" = "true" ]; then
+                        sync_status="${sync_status} (catching up)"
+                    fi
+                fi
             fi
         else
             echo -e "${YELLOW}Network latest block height unavailable from $GNOLAND_PUBLIC_REMOTE${RESET}"
         fi
-        echo "Catching up: $catching_up"
+        if [ -z "$sync_status" ]; then
+            sync_status="catching_up=${catching_up}"
+        fi
+        echo "Sync status: $sync_status"
         echo "Connected peers: $peer_count"
         echo "Latest block time: $latest_block_time"
         echo "Validator address: $validator_address"
     fi
-    show_copy_ready_checks "$port"
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -559,7 +557,7 @@ function show_guidelines() {
     echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Test13 binaries."
     echo "   c. Apply Snapshot: Applies the UTSA Test13 snapshot to speed up sync."
     echo "   d. Add/Reset Peers: Manages persistent peers."
-    echo "   e. Show Node Status: Shows an operational health summary and copy-ready debug checks."
+    echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
@@ -569,7 +567,7 @@ function show_guidelines() {
 function menu() {
     clear
     echo -e "$LOGO"
-    local node_height network_height catching_up diff
+    local node_height network_height catching_up diff sync_status
     node_height=$(get_local_status_json | jq -r '.result.sync_info.latest_block_height // empty' 2>/dev/null)
     catching_up=$(get_local_status_json | jq -r '.result.sync_info.catching_up // empty' 2>/dev/null)
     network_height=$(get_network_height)
@@ -578,12 +576,21 @@ function menu() {
     [ -z "$catching_up" ] && catching_up="N/A"
     if [[ "$node_height" =~ ^[0-9]+$ ]] && [[ "$network_height" =~ ^[0-9]+$ ]]; then
         diff=$((network_height - node_height))
+        if [ "$diff" -le 0 ]; then
+            sync_status="synced"
+        else
+            sync_status="behind by ${diff} blocks"
+            if [ "$catching_up" = "true" ]; then
+                sync_status="${sync_status} (catching up)"
+            fi
+        fi
     else
         diff="N/A"
+        sync_status="catching_up=${catching_up}"
     fi
 
     echo -e "${GREEN}Valley of Gnoland by Grand Valley${RESET}"
-    echo -e "Network Height: ${CYAN}${network_height}${RESET} | Local Height: ${CYAN}${node_height}${RESET} | Block Difference: ${YELLOW}${diff}${RESET} | Catching up: ${YELLOW}${catching_up}${RESET}"
+    echo -e "Network Height: ${CYAN}${network_height}${RESET} | Local Height: ${CYAN}${node_height}${RESET} | Block Difference: ${YELLOW}${diff}${RESET} | Sync Status: ${YELLOW}${sync_status}${RESET}"
     echo
     echo "1. Node Interactions"
     echo "   1a. Deploy/Re-deploy Gnoland Node"

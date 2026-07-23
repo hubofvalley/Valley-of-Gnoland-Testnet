@@ -3,20 +3,14 @@
 set -euo pipefail
 
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
-RELEASE_TAG="chain/test13"
-RELEASE_COMMIT="75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
+RELEASE_TAG="chain/topaz"
+RELEASE_COMMIT="fc40526511474e40b8a66419f5ba28255085bc08"
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
-if [ "$GNO_SOURCE_DIR" = "$HOME/gno-src-test13" ]; then
-    GNO_SOURCE_DIR="$HOME/gno"
-fi
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
-if [ "$GNOROOT" = "$HOME/gno-src-test13" ]; then
-    GNOROOT="$GNO_SOURCE_DIR"
-fi
 GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
-GNOLAND_SHA256="050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9"
-GNOKEY_SHA256="eece8675dfad4ce9801a57aa6b0284b278272f41e0aac4579c219bc30049a4de"
+GNOLAND_SHA256="e74ab25e366668c8c6774e3e8b23dd48288cf23a499a085c101cbbfca2a5f9c3"
+GNOKEY_SHA256="660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438"
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
@@ -36,12 +30,12 @@ if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
     exit 1
 fi
 if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
-    echo "Missing Test13 stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs."
+    echo "Missing Topaz stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs."
     exit 1
 fi
 
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/test13/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/test13/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/topaz/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/topaz/gnokey_linux_amd64" -o "$tmpdir/gnokey"
 echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
 echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
 chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
@@ -54,6 +48,7 @@ sed -i '/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/go\/bin/d' "$HOME/.bash_
 {
     echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
     echo "export GNOROOT=\"$GNOROOT\""
+    # shellcheck disable=SC2016
     echo 'export PATH="$HOME/go/bin:$PATH"'
 } >> "$HOME/.bash_profile"
 

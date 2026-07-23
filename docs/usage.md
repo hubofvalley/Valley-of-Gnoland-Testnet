@@ -1,83 +1,69 @@
 # Valley of Gnoland - Usage Guide
 
-How to run the tool, how to navigate it, and what every menu option does.
-
-## Running the tool
+## Run
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh)
 ```
 
-Or from a local clone:
+## Test13 to Topaz migration
 
-```bash
-bash resources/valleyofGnoland.sh
-```
+Topaz uses the same Valley of Gnoland paths as before:
 
-On first run the script asks for a **service name** (default `gnoland`) and saves it to `~/.bash_profile`.
+- `~/gno`
+- `~/gno/gnoland-data`
+- `~/gno/genesis.json`
+- `~/.config/gno`
+- `gnoland.service`
 
-## Important validator note
+Because these names remain unchanged, migration is an in-place clean deployment. Test13 and Topaz cannot run side by side through this installer.
 
-Gno.land Test13 does not work like a simple open-staking Cosmos chain. The registration flow creates a validator-candidate profile. A GovDAO member must still create and pass a proposal before the candidate joins the active validator set.
+During option `1a`, choose one operator-key path:
 
-## Menu options explained
+1. **Reuse local Test13 key** — recommended for an existing validator. The installer lists local keys and requires a key name.
+2. **Recover Test13 key** — enter the existing mnemonic into `gnokey`; an existing key name will not be overwritten.
+3. **Create new key** — intended for a new operator; an existing key name will not be overwritten.
 
-### 1. Node Interactions
+Before deleting Test13 node data, the installer:
 
-| Option | What it does | When to use |
-|---|---|---|
-| **1a. Deploy/Re-deploy Gnoland Node** | Runs the installer: asks moniker, port prefix, optional external P2P host, install method, firewall choice, and service name; installs dependencies, prepares the pinned `chain/test13` Gno source tree at `~/gno`, exports `GNOROOT`, downloads official Test13 binaries to `~/go/bin` or builds from source, verifies binary checksums, runs `gnoland config init` and `gnoland secrets init` from `~/gno`, downloads and verifies genesis at `~/gno/genesis.json`, applies official Test13 sentry peers/settings, and creates a systemd service with `WorkingDirectory=~/gno`. Re-running deletes existing node data under `~/gno/gnoland-data`. | First setup, or clean re-install. |
-| **1b. Update Gnoland/Gnokey Binaries** | Stops the service, refreshes the pinned Test13 source tree, downloads pinned official Test13 binaries, verifies checksums, replaces `~/go/bin/gnoland` and `~/go/bin/gnokey`, restarts the service. | When rebuilding the same pinned Test13 binary state. |
-| **1c. Apply Snapshot** | Opens the snapshot provider menu and applies the UTSA Gno.land Test13 snapshot. The script thanks UTSA, asks whether to backup the current `db` and `wal` first, stops the Gnoland service or running `gnoland start` process, removes only `~/gno/gnoland-data/db` and `~/gno/gnoland-data/wal`, streams the snapshot from `https://share118.utsa.tech/gno_test13/gno-test13-snapshot.tar.lz4`, restarts the service, and shows live logs. | Speed up sync or recover from a bad local chain database while keeping config and node secrets. |
-| **1d. Add/Reset Peers** | Updates `p2p.persistent_peers` in `~/gno/gnoland-data/config/config.toml` manually, resets to the official Test13 sentry peers, or uses Grand Valley's peer node preset. Restart afterwards. | Peer issues or manual peer tuning. |
-| **1e. Show Node Status** | Prints the node health summary directly: systemd state, local RPC endpoint, node directory disk usage, local height, public network height, block difference, sync status, connected peer count, latest block time, and validator address. | Check sync progress before candidate registration or quick node triage. |
-| **1f. Show Node Logs** | Live-tails `journalctl -u gnoland -fn 100`. Press Ctrl+C to return. | Debugging, watching sync. |
+- archives `~/gno/gnoland-data/secrets` when present;
+- archives `~/.config/gno` when non-empty;
+- saves both under `~/gnoland-migration-backups/<timestamp>/` with mode `600`;
+- never deletes the operator keyring.
 
-### 2. Validator/Key Interactions
+A fresh Topaz consensus/node key is generated. Existing validators must use the same Test13 operator `g1...` address when registering their Topaz valoper profile.
 
-| Option | What it does | When to use |
-|---|---|---|
-| **2a. Create/Recover/List Operator Key** | Uses `gnokey` with `GNOKEY_HOME` to create, recover, or list operator keys. New mnemonics must be stored offline. | Before registering a valoper candidate. |
-| **2b. Show Validator Consensus Pubkey** | Prints the node validator key from `gnoland secrets get validator_key`; use the `gpub1...` value. | Needed for valoper candidate registration. |
-| **2c. Register Valoper Candidate** | Guided `gnokey maketx call` for `gno.land/r/gnops/valopers Register`. Shows the full transaction preview and asks before broadcasting. | After node sync and faucet funding. |
-| **2d. Query / Show Valoper Pages** | Runs manual ABCI query paths or prints the candidate/active-validator realm URLs. | Lightweight checks after registration. |
+## Menu options
 
-### 3. Node Management
+| Option | Behaviour |
+|---|---|
+| `1a` | Clean-deploys Topaz in the existing directories, with backup and operator-key selection. |
+| `1b` | Updates the source and binaries to the pinned Topaz release after checksum verification. |
+| `1c` | Reports that no verified Topaz snapshot is available; makes no changes. |
+| `1d` | Adds persistent peers manually or restores official Topaz seeds. |
+| `1e` | Shows local/network heights, sync state, peers, disk, and validator address. |
+| `1f` | Follows `gnoland.service` logs. |
+| `2a` | Lists/reuses, recovers, or creates an operator key without overwriting an existing name. |
+| `2b` | Shows the fresh Topaz consensus `gpub1...` key. |
+| `2c` | Previews and optionally broadcasts Topaz valoper registration. |
+| `2d` | Queries a path or shows Topaz candidate and active-validator realms. |
+| `3a`–`3d` | Restart, stop, delete node data, or back up node secrets. |
 
-| Option | What it does | When to use |
-|---|---|---|
-| **3a. Restart Gnoland Node** | `systemctl restart gnoland`. | After config changes. |
-| **3b. Stop Gnoland Node** | `systemctl stop gnoland`. | Maintenance. |
-| **3c. Delete Gnoland Node** | Stops and disables service, removes service file, deletes `~/gno/gnoland-data`, removes binaries, and cleans Gno env vars. It does not delete `GNOKEY_HOME`. | Decommissioning or clean rebuild. |
-| **3d. Backup Node Secrets** | Archives `~/gno/gnoland-data/secrets` into a timestamped `tar.gz` in `$HOME` with `600` permissions. | Immediately after deploy and before destructive actions. |
+## Recommended flow
 
-### 4. Show Endpoints & Useful Links
+1. Record the Test13 operator `g1...` address and ensure its mnemonic is backed up offline.
+2. Run `1a`, select reuse/recovery, and verify the listed address matches Test13.
+3. Let `1e` show the Topaz node is synced.
+4. Fund the same operator address from https://topaz.testnets.gno.land/faucet.
+5. Use `2b` to obtain the new Topaz consensus public key.
+6. Use `2c` to register with the same Test13 operator address.
+7. Wait for GovDAO admission through `r/sys/validators/v3`.
 
-Official docs, release, validator guide, faucet, status page, valoper candidate page, active-validator realm, Grand Valley public RPC node, Grand Valley public peer endpoint, and Grand Valley contacts.
+## Safety
 
-### 5. Show Guidelines
-
-Short in-tool checklist for first-time flow and candidate/active-set warning.
-
-### 6. Exit
-
-Leaves the script. Run `source ~/.bash_profile && hash -r` in the current shell if you need newly exported variables immediately.
-
-## Recommended first-time flow
-
-1. `1a` deploy node and let it sync
-   - Optional: use `1c` Apply Snapshot to speed up sync with the UTSA snapshot
-2. `2a` create or recover operator key
-3. Fund the `g1...` operator address from https://test13.testnets.gno.land/faucet
-4. `2b` copy the `gpub1...` consensus pubkey
-5. `2c` register valoper candidate
-6. `3d` backup node secrets
-7. Prepare GovDAO-facing validator narrative; candidate registration alone is not active-set admission
-
-## Safety notes
-
-- Use burner/testnet-only keys.
+- Never apply a Test13 snapshot to Topaz.
 - Never share mnemonics or node secrets.
-- Public P2P must be reachable if the node is expected to participate seriously.
-- Test13 genesis startup requires `-skip-genesis-sig-verification`; upstream documents this as required for historical replay.
-- Test13 `gnoland` needs `GNOROOT` and the matching Gno source tree at runtime because stdlibs load from `gnovm/stdlibs`; missing `GNOROOT` can make even plain `gnoland` panic before help output.
+- Inspect backup archives and copy them offline before relying on them.
+- Registration creates a candidate profile only; it does not guarantee active-set admission.
+
+last updated by: John

@@ -1,209 +1,138 @@
-# Gno.land Test13 Node - Manual Guide
+# Gno.land Topaz Node - Manual Guide
 
-Manual command summary behind the `valleyofGnoland.sh` menu. Sources:
+Official validator source:
 
-- https://docs.gno.land/resources/gnoland-networks/
-- https://github.com/gnolang/gno/releases/tag/chain/test13
-- https://raw.githubusercontent.com/gnolang/gno/chain/test13/misc/deployments/test13.gno.land/VALIDATOR.md
+- https://github.com/gnolang/gno/blob/chain/topaz/misc/deployments/topaz.gno.land/VALIDATOR.md
+- https://github.com/gnolang/gno/releases/tag/chain/topaz
 
 ## Network facts
 
 | Field | Value |
 |---|---|
-| Network | Gno.land Test13 |
-| Chain ID | `test-13` |
-| RPC | `https://rpc.test13.testnets.gno.land` |
-| Grand Valley RPC Node | `https://lightnode-rpc-gnoland.grandvalleys.com` |
-| Grand Valley Persistent Peer | `g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@peer-gnoland.grandvalleys.com:18656` |
-| Faucet | `https://test13.testnets.gno.land/faucet` |
-| Genesis SHA256 | `56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2` |
+| Chain ID | `topaz-1` |
+| RPC | `https://rpc.topaz.testnets.gno.land` |
+| Faucet | `https://topaz.testnets.gno.land/faucet` |
+| Release commit | `fc40526511474e40b8a66419f5ba28255085bc08` |
+| Genesis SHA256 | `2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff` |
 
-Official sentry peers:
+Official seeds:
 
 ```text
-g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.gno.land:26656,g1lxkf9gn7kddrr26c640ww5wg3ezsm22we8cjpc@sentry-2.test13.testnets.gno.land:26656
+g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656
 ```
 
-Grand Valley persistent peer:
-
-```text
-g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@peer-gnoland.grandvalleys.com:18656
-```
-
-## Install binaries
-
-Prebuilt:
+## Existing directory layout
 
 ```bash
-curl -fsSLO https://github.com/gnolang/gno/releases/download/chain/test13/gnoland_linux_amd64
-curl -fsSLO https://github.com/gnolang/gno/releases/download/chain/test13/gnokey_linux_amd64
-echo "050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9  gnoland_linux_amd64" | sha256sum -c -
-echo "eece8675dfad4ce9801a57aa6b0284b278272f41e0aac4579c219bc30049a4de  gnokey_linux_amd64" | sha256sum -c -
-chmod +x gnoland_linux_amd64 gnokey_linux_amd64
-mkdir -p "$HOME/go/bin"
+GNO_SOURCE_DIR="$HOME/gno"
+GNOLAND_HOME="$HOME/gno/gnoland-data"
+GNOKEY_HOME="$HOME/.config/gno"
+```
+
+Topaz replaces Test13 chain data in `GNOLAND_HOME`. Back up node secrets and the operator keyring first. Preserve `GNOKEY_HOME` if reusing the Test13 operator address.
+
+```bash
+BACKUP_DIR="$HOME/gnoland-migration-backups/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+tar -czf "$BACKUP_DIR/test13-node-secrets.tar.gz" -C "$HOME/gno/gnoland-data" secrets
+tar -czf "$BACKUP_DIR/operator-keyring.tar.gz" -C "$HOME/.config" gno
+chmod 600 "$BACKUP_DIR"/*.tar.gz
+```
+
+## Install pinned binaries and source
+
+```bash
+git -C "$HOME/gno" fetch --depth 1 origin chain/topaz
+git -C "$HOME/gno" checkout -f FETCH_HEAD
+test "$(git -C "$HOME/gno" rev-parse HEAD)" = "fc40526511474e40b8a66419f5ba28255085bc08"
+
+curl -fsSLO https://github.com/gnolang/gno/releases/download/chain/topaz/gnoland_linux_amd64
+curl -fsSLO https://github.com/gnolang/gno/releases/download/chain/topaz/gnokey_linux_amd64
+echo "e74ab25e366668c8c6774e3e8b23dd48288cf23a499a085c101cbbfca2a5f9c3  gnoland_linux_amd64" | sha256sum -c -
+echo "660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438  gnokey_linux_amd64" | sha256sum -c -
 install gnoland_linux_amd64 "$HOME/go/bin/gnoland"
 install gnokey_linux_amd64 "$HOME/go/bin/gnokey"
 ```
 
-Build from source:
+## Operator key
+
+Existing validators should list and reuse the Test13 key:
 
 ```bash
-git clone https://github.com/gnolang/gno.git
-cd gno
-git checkout chain/test13
-make -C gno.land install.gnoland install.gnokey
+gnokey -home "$HOME/.config/gno" list
 ```
 
-## Prepare GNOROOT
-
-`gnoland` needs `GNOROOT` so it can find the Test13 source tree and standard libraries.
+If the keyring is unavailable, recover the same Test13 mnemonic:
 
 ```bash
-GNO_SOURCE_DIR="$HOME/gno"
-git clone --depth 1 --branch chain/test13 https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
-test "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" = "75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28"
-test -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors"
-export GNOROOT="$GNO_SOURCE_DIR"
-export PATH="$HOME/go/bin:$PATH"
+gnokey -home "$HOME/.config/gno" add -recover operator
 ```
 
-## Init config, secrets, and genesis
+Do not create a new operator key if the goal is migration of an existing Test13 validator.
+
+## Initialise Topaz
 
 ```bash
-cd "$GNO_SOURCE_DIR"
+export GNOROOT="$HOME/gno"
+cd "$HOME/gno"
+rm -rf "$HOME/gno/gnoland-data"
 gnoland config init -force
 gnoland secrets init -force
-
-curl -fsSL https://github.com/gnolang/gno/releases/download/chain/test13/genesis.json -o genesis.json
-echo "56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2  genesis.json" | sha256sum -c -
+curl -fsSL https://github.com/gnolang/gno/releases/download/chain/topaz/genesis.json -o genesis.json
+echo "2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff  genesis.json" | sha256sum -c -
 ```
 
-## Configure node
+`gnoland secrets init` creates a fresh Topaz consensus key. It does not alter the operator keyring.
+
+## Configure and start
 
 ```bash
-cd "$GNO_SOURCE_DIR"
-MONIKER="your-moniker"
-P2P_PORT="26656"
-RPC_PORT="26657"
-PEERS="g142k7zc2qym3c0u6jmkf6rv26llgr2f4nakmlmt@sentry-1.test13.testnets.gno.land:26656,g1lxkf9gn7kddrr26c640ww5wg3ezsm22we8cjpc@sentry-2.test13.testnets.gno.land:26656"
+SEEDS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
 
-gnoland config set moniker "$MONIKER"
-gnoland config set p2p.laddr "tcp://0.0.0.0:${P2P_PORT}"
-gnoland config set rpc.laddr "tcp://127.0.0.1:${RPC_PORT}"
-gnoland config set p2p.persistent_peers "$PEERS"
-gnoland config set application.prune_strategy "syncable"
-gnoland config set consensus.timeout_commit "3s"
-gnoland config set consensus.peer_gossip_sleep_duration "10ms"
-gnoland config set p2p.flush_throttle_timeout "10ms"
-gnoland config set p2p.pex "true"
-gnoland config set mempool.size "10000"
-gnoland config set p2p.max_num_outbound_peers "40"
-```
+gnoland config set moniker "your-moniker"
+gnoland config set p2p.seeds "$SEEDS"
+gnoland config set application.prune_strategy syncable
+gnoland config set consensus.timeout_commit 3s
+gnoland config set consensus.peer_gossip_sleep_duration 10ms
+gnoland config set p2p.flush_throttle_timeout 10ms
+gnoland config set p2p.pex true
+gnoland config set mempool.size 10000
+gnoland config set p2p.max_num_outbound_peers 40
 
-Set `p2p.external_address` if peers need to dial your public host:
-
-```bash
-gnoland config set p2p.external_address "YOUR_PUBLIC_HOST:${P2P_PORT}"
-```
-
-## Start manually
-
-```bash
 gnoland start \
-  -chainid test-13 \
+  -chainid topaz-1 \
   -genesis genesis.json \
   -skip-genesis-sig-verification \
   -log-level info
 ```
 
-`-skip-genesis-sig-verification` is required by upstream Test13 docs because the genesis replays historical transactions whose signatures a fresh node cannot all re-verify.
+## Register the valoper candidate
 
-Check status:
-
-```bash
-curl -s http://127.0.0.1:26657/status | jq '.result.sync_info'
-curl -s https://rpc.test13.testnets.gno.land/status | jq '.result.sync_info.latest_block_height'
-```
-
-## Apply UTSA snapshot
-
-Grand Valley extends its gratitude to **UTSA** for providing snapshot support.
-
-Use Valley of Gnoland option `1c. Apply Snapshot`, or run the equivalent manual commands:
+After sync, get the new consensus key:
 
 ```bash
-systemctl stop gnoland 2>/dev/null || pkill -f "gnoland start" 2>/dev/null || true
-rm -rf ~/gno/gnoland-data/db ~/gno/gnoland-data/wal
-curl -o - -L https://share118.utsa.tech/gno_test13/gno-test13-snapshot.tar.lz4 | lz4 -c -d - | tar -x -C $HOME/gno/gnoland-data/
-systemctl restart gnoland && journalctl -u gnoland -f -o cat
-```
-
-The snapshot flow keeps config and node secrets, and replaces only the old chain database folders.
-
-## Systemd service
-
-```ini
-[Unit]
-Description=Gno.land Test13 Node
-After=network-online.target
-
-[Service]
-User=ubuntu
-WorkingDirectory=/home/ubuntu/gno
-Environment=GNOROOT=/home/ubuntu/gno
-Environment=PATH=/home/ubuntu/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/home/ubuntu/go/bin/gnoland start -chainid test-13 -genesis genesis.json -skip-genesis-sig-verification -log-level info
-Restart=on-failure
-RestartSec=5
-LimitNOFILE=65536
-LimitNPROC=65536
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Adjust `User` and paths for your server user.
-
-## Operator key and valoper candidate registration
-
-Create or recover a burner/testnet-only operator key:
-
-```bash
-GNOKEY_HOME="$HOME/.config/gno"
-gnokey -home "$GNOKEY_HOME" add operator
-# or:
-gnokey -home "$GNOKEY_HOME" add -recover operator
-```
-
-Fund the `g1...` operator address from:
-
-```text
-https://test13.testnets.gno.land/faucet
-```
-
-Get the node consensus public key:
-
-```bash
-cd "$GNO_SOURCE_DIR"
+cd "$HOME/gno"
 gnoland secrets get validator_key
 ```
 
-Register candidate:
+Register using the same operator key/address used on Test13:
 
 ```bash
-gnokey -home "$GNOKEY_HOME" -remote https://rpc.test13.testnets.gno.land maketx call \
+gnokey -home "$HOME/.config/gno" -remote https://rpc.topaz.testnets.gno.land maketx call \
   -pkgpath gno.land/r/gnops/valopers \
   -func Register \
   -args "<moniker>" \
   -args "<description>" \
   -args "<cloud|on-prem|data-center>" \
-  -args "<your operator g1... address>" \
-  -args "<your gpub1... consensus pubkey>" \
+  -args "<same Test13 operator g1... address>" \
+  -args "<new Topaz gpub1... consensus pubkey>" \
   -gas-fee 1000000ugnot \
   -gas-wanted 80000000 \
-  -chainid test-13 \
+  -chainid topaz-1 \
   -broadcast \
   operator
 ```
 
-Registration only lists the operator as a candidate. A GovDAO member must create and pass a proposal via `r/sys/validators/v3` before active validator admission.
+Registration creates a candidate profile. GovDAO must pass the active-validator proposal.
+
+last updated by: John

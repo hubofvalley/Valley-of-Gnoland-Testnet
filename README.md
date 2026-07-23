@@ -50,13 +50,13 @@ Within one OS user, migration remains in-place: the installer stops only that us
 - Node status, logs, seed/peer configuration, and transaction preview
 - Verified startup gate: success requires a live local RPC reporting `topaz-1`
 - Valoper candidate registration on `gno.land/r/gnops/valopers`
-- Snapshot safety gate: Test13 snapshots are blocked
+- UTSA Topaz snapshot flow with provider selection, availability check, and explicit confirmation
 
 ## Documentation
 
 - [Usage guide](docs/usage.md)
 - [Manual node guide](docs/node-guide.md)
-- [Snapshot status](docs/snapshots.md)
+- [Snapshot guide](docs/snapshots.md)
 
 Candidate registration does not add a node directly to the active validator set. A GovDAO member must create and pass the validator proposal.
 

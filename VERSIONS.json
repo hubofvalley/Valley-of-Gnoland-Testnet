@@ -13,8 +13,8 @@
     "seeds": "g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
   },
   "snapshot": {
-    "status": "unavailable",
-    "reason": "No verified Topaz snapshot is configured; Test13 snapshots are blocked.",
+    "provider": "UTSA",
+    "url": "https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4",
     "script": "resources/apply_snapshot.sh"
   },
   "binaries": {
@@ -22,5 +22,5 @@
     "gnokey_linux_amd64": "660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438"
   },
   "status": "live_verified",
-  "last_reviewed": "2026-07-23"
+  "last_reviewed": "2026-07-24"
 }

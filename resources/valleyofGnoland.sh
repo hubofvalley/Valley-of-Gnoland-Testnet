@@ -315,8 +315,12 @@ function update_gnoland_binary() {
 }
 
 function apply_snapshot() {
-    echo -e "${RED}Topaz snapshot unavailable. The old Test13 snapshot is blocked for safety.${RESET}"
-    read -r -p "Press Enter to return to the menu."
+    if ! service_belongs_to_current_instance; then
+        echo -e "${RED}Snapshot application blocked to protect the other instance.${RESET}"
+        menu
+        return
+    fi
+    run_repository_script "resources/apply_snapshot.sh" || true
     menu
 }
 
@@ -679,7 +683,7 @@ function show_guidelines() {
     echo -e "${GREEN}Node Interactions:${RESET}"
     echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Topaz node."
     echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Topaz binaries."
-    echo "   c. Apply Snapshot: Disabled until a verified Topaz snapshot exists."
+    echo "   c. Apply Snapshot: Applies the UTSA Topaz snapshot to speed up sync."
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."
@@ -719,7 +723,7 @@ function menu() {
     echo "1. Node Interactions"
     echo "   1a. Deploy/Re-deploy Gnoland Node"
     echo "   1b. Update Gnoland/Gnokey Binaries"
-    echo "   1c. Snapshot Status (currently unavailable)"
+    echo "   1c. Apply Snapshot"
     echo "   1d. Add/Reset Peers"
     echo "   1e. Show Node Status"
     echo "   1f. Show Node Logs"

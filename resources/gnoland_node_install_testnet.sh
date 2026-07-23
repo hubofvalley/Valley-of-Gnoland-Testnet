@@ -79,6 +79,7 @@ fi
 
 GNOLAND_RPC_PORT="${GNOLAND_PORT}657"
 GNOLAND_P2P_PORT="${GNOLAND_PORT}656"
+GNOLAND_ABCI_PORT="${GNOLAND_PORT}658"
 BACKUP_ROOT="$HOME/gnoland-migration-backups"
 BACKUP_STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DIR="$BACKUP_ROOT/$BACKUP_STAMP"
@@ -252,6 +253,7 @@ echo "${GENESIS_SHA256}  $GENESIS_FILE" | sha256sum -c -
 
 CURRENT_STAGE="apply official Topaz configuration"
 "$GNOLAND_BIN" config set moniker "$GNOLAND_MONIKER"
+"$GNOLAND_BIN" config set proxy_app "tcp://127.0.0.1:${GNOLAND_ABCI_PORT}"
 "$GNOLAND_BIN" config set p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
 "$GNOLAND_BIN" config set rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
 "$GNOLAND_BIN" config set p2p.seeds "$SEEDS"
@@ -334,9 +336,35 @@ for _ in $(seq 1 90); do
 done
 
 RPC_NETWORK=$(printf '%s' "$RPC_STATUS" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
-if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME" && [ "$RPC_NETWORK" = "$CHAIN_ID" ]; then
+CONFIG_FILE="$GNOLAND_HOME/config/config.toml"
+CONFIG_ABCI_PORT=$(sed -n 's/^proxy_app = "tcp:\/\/127\.0\.0\.1:\([0-9][0-9]*\)"$/\1/p' "$CONFIG_FILE")
+CONFIG_P2P_PORT=$(awk -F: '
+    /^[[:space:]]*\[p2p\][[:space:]]*$/ {in_p2p=1; next}
+    /^[[:space:]]*\[/ {in_p2p=0}
+    in_p2p && /^[[:space:]]*laddr = "tcp:\/\// {
+        gsub(/".*/, "", $NF)
+        print $NF
+        exit
+    }
+' "$CONFIG_FILE")
+CONFIG_RPC_PORT=$(awk -F: '
+    /^[[:space:]]*\[rpc\][[:space:]]*$/ {in_rpc=1; next}
+    /^[[:space:]]*\[/ {in_rpc=0}
+    in_rpc && /^[[:space:]]*laddr = "tcp:\/\// {
+        gsub(/".*/, "", $NF)
+        print $NF
+        exit
+    }
+' "$CONFIG_FILE")
+
+if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME" &&
+   [ "$RPC_NETWORK" = "$CHAIN_ID" ] &&
+   [ "$CONFIG_ABCI_PORT" = "$GNOLAND_ABCI_PORT" ] &&
+   [ "$CONFIG_P2P_PORT" = "$GNOLAND_P2P_PORT" ] &&
+   [ "$CONFIG_RPC_PORT" = "$GNOLAND_RPC_PORT" ]; then
     echo -e "${GREEN}Topaz Gnoland service started successfully.${RESET}"
     echo "Verified RPC network: $RPC_NETWORK"
+    echo "Verified local ports: ABCI $CONFIG_ABCI_PORT, P2P $CONFIG_P2P_PORT, RPC $CONFIG_RPC_PORT"
     echo "Local status: curl -s http://127.0.0.1:${GNOLAND_RPC_PORT}/status | jq '.result.sync_info'"
     echo "After sync, register the Topaz valoper profile with '$OPERATOR_KEY_NAME'."
     echo "Existing validators must use the same operator g1 address used on Test13."
@@ -346,6 +374,8 @@ else
     echo -e "${RED}Gnoland failed the Topaz RPC startup check.${RESET}"
     echo "Expected RPC network: $CHAIN_ID"
     echo "Observed RPC network: ${RPC_NETWORK:-unavailable}"
+    echo "Expected local ports: ABCI $GNOLAND_ABCI_PORT, P2P $GNOLAND_P2P_PORT, RPC $GNOLAND_RPC_PORT"
+    echo "Observed local ports: ABCI ${CONFIG_ABCI_PORT:-unavailable}, P2P ${CONFIG_P2P_PORT:-unavailable}, RPC ${CONFIG_RPC_PORT:-unavailable}"
     sudo systemctl status "$GNOLAND_SERVICE_NAME" --no-pager -l || true
     sudo journalctl -u "$GNOLAND_SERVICE_NAME" -n 100 --no-pager || true
     false

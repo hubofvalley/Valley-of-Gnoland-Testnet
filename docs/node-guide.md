@@ -89,8 +89,12 @@ echo "2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff  genesis.
 
 ```bash
 SEEDS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
+PORT_PREFIX="26"
 
 gnoland config set moniker "your-moniker"
+gnoland config set proxy_app "tcp://127.0.0.1:${PORT_PREFIX}658"
+gnoland config set p2p.laddr "tcp://0.0.0.0:${PORT_PREFIX}656"
+gnoland config set rpc.laddr "tcp://127.0.0.1:${PORT_PREFIX}657"
 gnoland config set p2p.seeds "$SEEDS"
 gnoland config set application.prune_strategy syncable
 gnoland config set consensus.timeout_commit 3s
@@ -106,6 +110,8 @@ gnoland start \
   -skip-genesis-sig-verification \
   -log-level info
 ```
+
+The selected two-digit prefix applies to every local Gnoland listener: ABCI `${PORT_PREFIX}658`, P2P `${PORT_PREFIX}656`, and RPC `${PORT_PREFIX}657`. Official seed addresses remain on their published remote port `26656`.
 
 ## Register the valoper candidate
 

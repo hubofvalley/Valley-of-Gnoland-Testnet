@@ -192,7 +192,7 @@ function get_local_rpc_url() {
     if [ -n "$port" ]; then
         echo "http://127.0.0.1:${port}"
     else
-        echo "${GNOLAND_REMOTE:-http://127.0.0.1:26657}"
+        echo "${GNOLAND_REMOTE:-http://127.0.0.1:${GNOLAND_PORT:-26}657}"
     fi
 }
 
@@ -247,7 +247,7 @@ function deploy_gnoland_node() {
     echo -e "${RED}IMPORTANT DISCLAIMER AND TERMS${RESET}"
     echo -e "${YELLOW}New service:${RESET} ${CYAN}${GNOLAND_SERVICE_NAME}.service${RESET}"
     echo -e "${YELLOW}Directory:${RESET} ${CYAN}$GNOLAND_HOME${RESET}"
-    echo -e "${YELLOW}Default ports:${RESET} RPC ${CYAN}26657${RESET}, P2P ${CYAN}26656${RESET}; installer can remap with a two-digit prefix."
+    echo -e "${YELLOW}Default ports:${RESET} ABCI ${CYAN}26658${RESET}, P2P ${CYAN}26656${RESET}, RPC ${CYAN}26657${RESET}; installer remaps all three local listeners with the chosen two-digit prefix."
     echo -e "${RED}Migration replaces existing Test13 chain data in the same directory.${RESET}"
     echo -e "${YELLOW}The installer backs up node secrets and the operator keyring before cleanup.${RESET}"
     echo

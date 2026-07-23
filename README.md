@@ -43,7 +43,7 @@ The migration is in-place because the directory and service names remain unchang
 - Pinned Topaz source and official release checksums
 - Official Topaz genesis verification
 - Official Topaz seeds and required node settings
-- Custom RPC/P2P port prefix, optional UFW, and systemd service
+- Custom ABCI/P2P/RPC port prefix, optional UFW, and systemd service
 - Safe operator-key reuse/recovery/new-key flow
 - Node status, logs, seed/peer configuration, and transaction preview
 - Verified startup gate: success requires a live local RPC reporting `topaz-1`

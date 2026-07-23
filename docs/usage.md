@@ -40,7 +40,7 @@ Invalid moniker, port, key-menu, or existing-key input is prompted again. A real
 
 | Option | Behaviour |
 |---|---|
-| `1a` | Clean-deploys Topaz in the existing directories, with backup and operator-key selection. It reports success only after the local RPC answers with network `topaz-1`; failures print service status and recent logs. |
+| `1a` | Clean-deploys Topaz in the existing directories, with backup and operator-key selection. The chosen two-digit prefix applies to local ABCI (`prefix658`), P2P (`prefix656`), and RPC (`prefix657`) listeners. Success requires those config ports plus RPC network `topaz-1`; failures print diagnostics. |
 | `1b` | Updates the source and binaries to the pinned Topaz release after checksum verification. |
 | `1c` | Reports that no verified Topaz snapshot is available; makes no changes. |
 | `1d` | Adds persistent peers manually or restores official Topaz seeds. |

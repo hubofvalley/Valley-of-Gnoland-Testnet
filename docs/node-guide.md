@@ -42,8 +42,9 @@ chmod 600 "$BACKUP_DIR"/*.tar.gz
 ## Install pinned binaries and source
 
 ```bash
-git -C "$HOME/gno" fetch --depth 1 origin chain/topaz
-git -C "$HOME/gno" checkout -f FETCH_HEAD
+git -C "$HOME/gno" remote set-url origin https://github.com/gnolang/gno.git
+git -C "$HOME/gno" fetch --depth 1 origin fc40526511474e40b8a66419f5ba28255085bc08
+git -C "$HOME/gno" checkout --detach --force FETCH_HEAD
 test "$(git -C "$HOME/gno" rev-parse HEAD)" = "fc40526511474e40b8a66419f5ba28255085bc08"
 
 curl -fsSLO https://github.com/gnolang/gno/releases/download/chain/topaz/gnoland_linux_amd64
@@ -127,7 +128,7 @@ gnokey -home "$HOME/.config/gno" -remote https://rpc.topaz.testnets.gno.land mak
   -args "<same Test13 operator g1... address>" \
   -args "<new Topaz gpub1... consensus pubkey>" \
   -gas-fee 1000000ugnot \
-  -gas-wanted 80000000 \
+  -gas-wanted 50000000 \
   -chainid topaz-1 \
   -broadcast \
   operator

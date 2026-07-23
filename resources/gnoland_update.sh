@@ -3,7 +3,6 @@
 set -euo pipefail
 
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
-RELEASE_TAG="chain/topaz"
 RELEASE_COMMIT="fc40526511474e40b8a66419f5ba28255085bc08"
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
@@ -20,11 +19,16 @@ mkdir -p "$HOME/go/bin"
 
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
     rm -rf "$GNO_SOURCE_DIR"
-    git clone --depth 1 --branch "$RELEASE_TAG" https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
-else
-    git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_TAG"
-    git -C "$GNO_SOURCE_DIR" checkout -f FETCH_HEAD
+    mkdir -p "$GNO_SOURCE_DIR"
+    git -C "$GNO_SOURCE_DIR" init
 fi
+if git -C "$GNO_SOURCE_DIR" remote get-url origin >/dev/null 2>&1; then
+    git -C "$GNO_SOURCE_DIR" remote set-url origin https://github.com/gnolang/gno.git
+else
+    git -C "$GNO_SOURCE_DIR" remote add origin https://github.com/gnolang/gno.git
+fi
+git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"
+git -C "$GNO_SOURCE_DIR" checkout --detach --force FETCH_HEAD
 if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
     echo "Unexpected Gno source commit at $GNO_SOURCE_DIR."
     exit 1

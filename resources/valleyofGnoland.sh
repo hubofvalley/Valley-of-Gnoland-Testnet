@@ -447,7 +447,7 @@ gnokey maketx call \\
   --args "$INFRA_TYPE" \\
   --args "$OPERATOR_ADDR" \\
   --args "$CONSENSUS_PUBKEY" \\
-  --gas-fee 1000000ugnot --gas-wanted 80000000 \\
+  --gas-fee 1000000ugnot --gas-wanted 50000000 \\
   --chainid topaz-1 \\
   --remote $GNOLAND_PUBLIC_REMOTE \\
   --broadcast \\
@@ -469,7 +469,7 @@ EOF
         -args "$OPERATOR_ADDR" \
         -args "$CONSENSUS_PUBKEY" \
         -gas-fee 1000000ugnot \
-        -gas-wanted 80000000 \
+        -gas-wanted 50000000 \
         -chainid "$GNOLAND_CHAIN_ID" \
         -broadcast \
         "$KEY_NAME"

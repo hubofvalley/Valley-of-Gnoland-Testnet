@@ -117,11 +117,16 @@ trap 'rm -rf "$tmpdir"' EXIT
 echo -e "${CYAN}Preparing the pinned Gno Topaz source tree and stdlibs.${RESET}"
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
     rm -rf "$GNO_SOURCE_DIR"
-    git clone --depth 1 --branch "$RELEASE_TAG" https://github.com/gnolang/gno.git "$GNO_SOURCE_DIR"
-else
-    git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_TAG"
-    git -C "$GNO_SOURCE_DIR" checkout -f FETCH_HEAD
+    mkdir -p "$GNO_SOURCE_DIR"
+    git -C "$GNO_SOURCE_DIR" init
 fi
+if git -C "$GNO_SOURCE_DIR" remote get-url origin >/dev/null 2>&1; then
+    git -C "$GNO_SOURCE_DIR" remote set-url origin https://github.com/gnolang/gno.git
+else
+    git -C "$GNO_SOURCE_DIR" remote add origin https://github.com/gnolang/gno.git
+fi
+git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"
+git -C "$GNO_SOURCE_DIR" checkout --detach --force FETCH_HEAD
 if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
     echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}"
     exit 1

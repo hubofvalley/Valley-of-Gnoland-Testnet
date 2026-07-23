@@ -15,6 +15,7 @@ Interactive terminal tool by **Grand Valley** to deploy and manage a Gno.land To
 - Per-user binaries: `~/go/bin/gnoland`, `~/go/bin/gnokey`
 - RPC: `https://rpc.topaz.testnets.gno.land`
 - Faucet: https://topaz.testnets.gno.land/faucet
+- Grand Valley validator profile: https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym
 
 Topaz is a new chain. Test13 chain data cannot be reused, but an existing Test13 validator must register on Topaz with the **same operator `g1...` address**. The Topaz node receives a fresh consensus key.
 

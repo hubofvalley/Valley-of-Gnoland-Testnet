@@ -145,6 +145,7 @@ Gno.land useful links:${RESET}
 - Topaz Validator Docs: ${BLUE}https://github.com/gnolang/gno/blob/chain/topaz/misc/deployments/topaz.gno.land/VALIDATOR.md${RESET}
 - Faucet: ${BLUE}https://topaz.testnets.gno.land/faucet${RESET}
 - Valoper Candidates: ${BLUE}https://topaz.testnets.gno.land/r/gnops/valopers${RESET}
+- Grand Valley Validator Profile: ${BLUE}https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym${RESET}
 - Active Validators Realm: ${BLUE}https://topaz.testnets.gno.land/r/sys/validators/v3${RESET}
 
 ${GREEN}Network facts:${RESET}
@@ -579,6 +580,7 @@ function query_balance_or_realm() {
             ;;
         2)
             echo "Valoper candidates: https://topaz.testnets.gno.land/r/gnops/valopers"
+            echo "Grand Valley validator profile: https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym"
             echo "Active validators: https://topaz.testnets.gno.land/r/sys/validators/v3"
             ;;
         3)
@@ -745,6 +747,7 @@ function menu() {
     echo "6. Exit"
     echo
     echo -e "Topaz Valoper Candidates: ${BLUE}https://topaz.testnets.gno.land/r/gnops/valopers${RESET}"
+    echo -e "Grand Valley Validator Profile: ${BLUE}https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym${RESET}"
     echo -e "${GREEN}Let's Buidl Gnoland Together - Grand Valley${RESET}"
     if ! read -r -p "Choose an option: " choice; then
         echo

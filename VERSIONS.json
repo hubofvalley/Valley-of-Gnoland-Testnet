@@ -10,6 +10,7 @@
     "public_provider": "Gno.land",
     "rpc_node": "https://rpc.topaz.testnets.gno.land",
     "faucet": "https://topaz.testnets.gno.land/faucet",
+    "grand_valley_valoper_profile": "https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym",
     "seeds": "g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
   },
   "snapshot": {

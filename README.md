@@ -12,6 +12,7 @@ Interactive terminal tool by **Grand Valley** to deploy and manage a Gno.land To
 - Operator keyring: `~/.config/gno`
 - Genesis file: `~/gno/genesis.json`
 - Service: `gnoland.service`
+- Command links: `/usr/local/bin/gnoland`, `/usr/local/bin/gnokey`
 - RPC: `https://rpc.topaz.testnets.gno.land`
 - Faucet: https://topaz.testnets.gno.land/faucet
 

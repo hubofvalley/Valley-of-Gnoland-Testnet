@@ -153,6 +153,13 @@ else
     install "$tmpdir/gnokey" "$GNOKEY_BIN"
 fi
 
+sudo ln -sfn "$GNOLAND_BIN" /usr/local/bin/gnoland
+sudo ln -sfn "$GNOKEY_BIN" /usr/local/bin/gnokey
+if [ ! -x /usr/local/bin/gnoland ] || [ ! -x /usr/local/bin/gnokey ]; then
+    echo -e "${RED}Gnoland command links were not installed into /usr/local/bin.${RESET}"
+    exit 1
+fi
+
 export GNOROOT
 export PATH="$HOME/go/bin:$PATH"
 mkdir -p "$GNOKEY_HOME"
@@ -304,7 +311,7 @@ if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME" && [ "$RPC_NETWORK" = "$C
     echo "After sync, register the Topaz valoper profile with '$OPERATOR_KEY_NAME'."
     echo "Existing validators must use the same operator g1 address used on Test13."
     echo "Backups created under: $BACKUP_DIR"
-    echo "Reload shell env: source ~/.bash_profile && hash -r"
+    echo "Commands are available as: gnoland and gnokey"
 else
     echo -e "${RED}Gnoland failed the Topaz RPC startup check.${RESET}"
     echo "Expected RPC network: $CHAIN_ID"

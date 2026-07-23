@@ -46,7 +46,13 @@ chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
 
 install "$tmpdir/gnoland" "$GNOLAND_BIN"
 install "$tmpdir/gnokey" "$GNOKEY_BIN"
-sudo rm -f /usr/local/bin/gnoland /usr/local/bin/gnokey
+sudo ln -sfn "$GNOLAND_BIN" /usr/local/bin/gnoland
+sudo ln -sfn "$GNOKEY_BIN" /usr/local/bin/gnokey
+
+if [ ! -x /usr/local/bin/gnoland ] || [ ! -x /usr/local/bin/gnokey ]; then
+    echo "Gnoland command links were not installed into /usr/local/bin."
+    exit 1
+fi
 
 sed -i '/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 {

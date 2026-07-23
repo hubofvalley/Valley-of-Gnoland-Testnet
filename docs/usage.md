@@ -15,6 +15,7 @@ Topaz uses the same Valley of Gnoland paths as before:
 - `~/gno/genesis.json`
 - `~/.config/gno`
 - `gnoland.service`
+- `gnoland` and `gnokey` commands via `/usr/local/bin`
 
 Because these names remain unchanged, migration is an in-place clean deployment. Test13 and Topaz cannot run side by side through this installer.
 

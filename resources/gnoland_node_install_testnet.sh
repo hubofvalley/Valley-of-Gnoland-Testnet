@@ -283,16 +283,34 @@ sudo systemctl daemon-reload
 sudo systemctl enable "$GNOLAND_SERVICE_NAME"
 sudo systemctl restart "$GNOLAND_SERVICE_NAME"
 
-if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then
+echo -e "${CYAN}Waiting for the Topaz RPC startup check (up to 90 seconds).${RESET}"
+RPC_STATUS=""
+for _ in $(seq 1 90); do
+    if ! systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then
+        break
+    fi
+    RPC_STATUS=$(curl -fsS "http://127.0.0.1:${GNOLAND_RPC_PORT}/status" 2>/dev/null || true)
+    if [ -n "$RPC_STATUS" ]; then
+        break
+    fi
+    sleep 1
+done
+
+RPC_NETWORK=$(printf '%s' "$RPC_STATUS" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME" && [ "$RPC_NETWORK" = "$CHAIN_ID" ]; then
     echo -e "${GREEN}Topaz Gnoland service started successfully.${RESET}"
+    echo "Verified RPC network: $RPC_NETWORK"
     echo "Local status: curl -s http://127.0.0.1:${GNOLAND_RPC_PORT}/status | jq '.result.sync_info'"
     echo "After sync, register the Topaz valoper profile with '$OPERATOR_KEY_NAME'."
     echo "Existing validators must use the same operator g1 address used on Test13."
     echo "Backups created under: $BACKUP_DIR"
     echo "Reload shell env: source ~/.bash_profile && hash -r"
 else
-    echo -e "${RED}Gnoland service did not start. Check logs:${RESET}"
-    echo "sudo journalctl -u ${GNOLAND_SERVICE_NAME} -n 100 --no-pager"
+    echo -e "${RED}Gnoland failed the Topaz RPC startup check.${RESET}"
+    echo "Expected RPC network: $CHAIN_ID"
+    echo "Observed RPC network: ${RPC_NETWORK:-unavailable}"
+    sudo systemctl status "$GNOLAND_SERVICE_NAME" --no-pager -l || true
+    sudo journalctl -u "$GNOLAND_SERVICE_NAME" -n 100 --no-pager || true
     exit 1
 fi
 

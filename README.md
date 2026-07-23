@@ -43,6 +43,7 @@ The migration is in-place because the directory and service names remain unchang
 - Custom RPC/P2P port prefix, optional UFW, and systemd service
 - Safe operator-key reuse/recovery/new-key flow
 - Node status, logs, seed/peer configuration, and transaction preview
+- Verified startup gate: success requires a live local RPC reporting `topaz-1`
 - Valoper candidate registration on `gno.land/r/gnops/valopers`
 - Snapshot safety gate: Test13 snapshots are blocked
 

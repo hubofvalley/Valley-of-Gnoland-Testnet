@@ -37,7 +37,7 @@ A fresh Topaz consensus/node key is generated. Existing validators must use the 
 
 | Option | Behaviour |
 |---|---|
-| `1a` | Clean-deploys Topaz in the existing directories, with backup and operator-key selection. |
+| `1a` | Clean-deploys Topaz in the existing directories, with backup and operator-key selection. It reports success only after the local RPC answers with network `topaz-1`; failures print service status and recent logs. |
 | `1b` | Updates the source and binaries to the pinned Topaz release after checksum verification. |
 | `1c` | Reports that no verified Topaz snapshot is available; makes no changes. |
 | `1d` | Adds persistent peers manually or restores official Topaz seeds. |

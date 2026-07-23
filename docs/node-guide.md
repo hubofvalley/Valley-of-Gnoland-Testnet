@@ -143,7 +143,7 @@ gnokey -home "$HOME/.config/gno" -remote https://rpc.topaz.testnets.gno.land mak
   -args "<same Test13 operator g1... address>" \
   -args "<new Topaz gpub1... consensus pubkey>" \
   -gas-fee 1000000ugnot \
-  -gas-wanted 50000000 \
+  -gas-wanted 100000000 \
   -chainid topaz-1 \
   -broadcast \
   operator

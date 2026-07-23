@@ -36,6 +36,7 @@ GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-topaz-1}
 GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.topaz.testnets.gno.land}
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
 TOPAZ_SEEDS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
+VALOPER_GAS_WANTED=100000000
 
 while :; do
     if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
@@ -520,7 +521,7 @@ gnokey maketx call \\
   --args "$INFRA_TYPE" \\
   --args "$OPERATOR_ADDR" \\
   --args "$CONSENSUS_PUBKEY" \\
-  --gas-fee 1000000ugnot --gas-wanted 50000000 \\
+  --gas-fee 1000000ugnot --gas-wanted $VALOPER_GAS_WANTED \\
   --chainid topaz-1 \\
   --remote $GNOLAND_PUBLIC_REMOTE \\
   --broadcast \\
@@ -533,7 +534,7 @@ EOF
         return
     fi
 
-    gnokey_cmd maketx call \
+    if ! gnokey_cmd maketx call \
         -pkgpath gno.land/r/gnops/valopers \
         -func Register \
         -args "$MONIKER" \
@@ -542,12 +543,19 @@ EOF
         -args "$OPERATOR_ADDR" \
         -args "$CONSENSUS_PUBKEY" \
         -gas-fee 1000000ugnot \
-        -gas-wanted 50000000 \
+        -gas-wanted "$VALOPER_GAS_WANTED" \
         -chainid "$GNOLAND_CHAIN_ID" \
         -broadcast \
-        "$KEY_NAME"
+        "$KEY_NAME"; then
+        echo -e "\n${RED}Candidate registration failed. No success status was reported.${RESET}"
+        echo -e "${YELLOW}Review the transaction error above, then retry from option 2c.${RESET}"
+        echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
+        read -r
+        menu
+        return
+    fi
 
-    echo -e "\n${GREEN}Candidate registration submitted if broadcast succeeded.${RESET}"
+    echo -e "\n${GREEN}Candidate registration transaction broadcast succeeded.${RESET}"
     echo -e "${YELLOW}Next gate: GovDAO proposal approval via r/sys/validators/v3.${RESET}"
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r

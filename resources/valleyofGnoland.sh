@@ -221,6 +221,27 @@ function prompt_back_or_continue() {
     return 0
 }
 
+function run_repository_script() {
+    local relative_path=$1
+    local script_file exit_code
+    script_file=$(mktemp)
+    if ! curl -fsSL "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/${relative_path}" -o "$script_file"; then
+        rm -f "$script_file"
+        echo -e "${RED}Failed to download ${relative_path} from main. Nothing was executed.${RESET}"
+        return 1
+    fi
+    chmod +x "$script_file"
+    bash "$script_file"
+    exit_code=$?
+    rm -f "$script_file"
+    if [ "$exit_code" -ne 0 ]; then
+        echo -e "${RED}${relative_path} stopped with exit code ${exit_code}.${RESET}"
+        echo -e "${YELLOW}Read the Stage, Line, and Command shown above. Returning to the menu.${RESET}"
+        return "$exit_code"
+    fi
+    return 0
+}
+
 function deploy_gnoland_node() {
     clear
     echo -e "${RED}IMPORTANT DISCLAIMER AND TERMS${RESET}"
@@ -238,7 +259,7 @@ function deploy_gnoland_node() {
         menu
         return
     fi
-    bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/gnoland_node_install_testnet.sh)
+    run_repository_script "resources/gnoland_node_install_testnet.sh" || true
     menu
 }
 
@@ -247,7 +268,7 @@ function update_gnoland_binary() {
     if ! prompt_back_or_continue; then
         return
     fi
-    bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/gnoland_update.sh)
+    run_repository_script "resources/gnoland_update.sh" || true
     menu
 }
 

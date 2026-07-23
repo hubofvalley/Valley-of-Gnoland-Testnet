@@ -1,12 +1,29 @@
 #!/bin/bash
 
-set -euo pipefail
+set -Eeuo pipefail
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[0;33m'
 RESET='\033[0m'
+CURRENT_STAGE="startup"
+
+on_error() {
+    local exit_code=$?
+    local line_number=${1:-unknown}
+    local failed_command=${2:-unknown}
+    trap - ERR
+    echo -e "${RED}Topaz installation failed.${RESET}" >&2
+    echo "Stage: $CURRENT_STAGE" >&2
+    echo "Line: $line_number" >&2
+    echo "Command: $failed_command" >&2
+    echo "Exit code: $exit_code" >&2
+    echo "No success status was reported. Review the error above before retrying." >&2
+    exit "$exit_code"
+}
+
+trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
 CHAIN_ID="topaz-1"
 RELEASE_TAG="chain/topaz"
@@ -36,18 +53,18 @@ echo
 echo -e "${RED}Topaz is a new chain. Existing Test13 chain data cannot be reused.${RESET}"
 echo -e "${GREEN}The installer preserves the operator keyring and backs it up before cleanup.${RESET}"
 
-read -r -p "Enter your GNOLAND_MONIKER: " GNOLAND_MONIKER
-if [ -z "$GNOLAND_MONIKER" ]; then
-    echo -e "${RED}Moniker is required.${RESET}"
-    exit 1
-fi
+while :; do
+    read -r -p "Enter your GNOLAND_MONIKER: " GNOLAND_MONIKER
+    [ -n "$GNOLAND_MONIKER" ] && break
+    echo -e "${RED}Moniker is required. Please try again.${RESET}"
+done
 
-read -r -p "Enter preferred port prefix (leave empty for default 26): " GNOLAND_PORT
-GNOLAND_PORT=${GNOLAND_PORT:-26}
-if ! [[ "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]]; then
-    echo -e "${RED}Port prefix must be two digits, for example 26 or 36.${RESET}"
-    exit 1
-fi
+while :; do
+    read -r -p "Enter preferred port prefix (leave empty for default 26): " GNOLAND_PORT
+    GNOLAND_PORT=${GNOLAND_PORT:-26}
+    [[ "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]] && break
+    echo -e "${RED}Port prefix must be two digits, for example 26 or 36. Please try again.${RESET}"
+done
 
 read -r -p "Enter public external address host/IP for P2P (optional, example 1.2.3.4): " GNOLAND_EXTERNAL_HOST
 read -r -p "Install method - prebuilt binary or build from source? (p/s, default p): " INSTALL_METHOD
@@ -71,11 +88,11 @@ echo -e "${YELLOW}Operator key choice:${RESET}"
 echo "1. Reuse an existing local Test13 operator key (recommended for existing validators)"
 echo "2. Recover an existing Test13 operator key from its mnemonic"
 echo "3. Create a new operator key"
-read -r -p "Choose 1, 2, or 3: " OPERATOR_KEY_ACTION
-if [[ ! "$OPERATOR_KEY_ACTION" =~ ^[123]$ ]]; then
-    echo -e "${RED}Invalid operator key choice.${RESET}"
-    exit 1
-fi
+while :; do
+    read -r -p "Choose 1, 2, or 3: " OPERATOR_KEY_ACTION
+    [[ "$OPERATOR_KEY_ACTION" =~ ^[123]$ ]] && break
+    echo -e "${RED}Invalid operator key choice. Please try again.${RESET}"
+done
 
 echo
 echo -e "${YELLOW}This will replace the chain data under $GNOLAND_HOME with a clean Topaz state.${RESET}"
@@ -88,6 +105,7 @@ if [ "$CONFIRM" != "MIGRATE-TO-TOPAZ" ]; then
 fi
 
 mkdir -p "$BACKUP_DIR"
+CURRENT_STAGE="backup existing keys and node secrets"
 if [ -d "$GNOLAND_HOME/secrets" ]; then
     tar -czf "$BACKUP_DIR/test13-node-secrets.tar.gz" -C "$GNOLAND_HOME" secrets
     chmod 600 "$BACKUP_DIR/test13-node-secrets.tar.gz"
@@ -115,6 +133,7 @@ tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
 echo -e "${CYAN}Preparing the pinned Gno Topaz source tree and stdlibs.${RESET}"
+CURRENT_STAGE="prepare pinned Topaz source"
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
     rm -rf "$GNO_SOURCE_DIR"
     mkdir -p "$GNO_SOURCE_DIR"
@@ -128,14 +147,15 @@ fi
 git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"
 git -C "$GNO_SOURCE_DIR" checkout --detach --force FETCH_HEAD
 if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
-    echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}"
-    exit 1
+    echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}" >&2
+    false
 fi
 if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
-    echo -e "${RED}Missing Topaz stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}"
-    exit 1
+    echo -e "${RED}Missing Topaz stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2
+    false
 fi
 
+CURRENT_STAGE="install verified Topaz binaries"
 if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
     echo -e "${CYAN}Building gnoland and gnokey from ${RELEASE_TAG}.${RESET}"
     (
@@ -156,8 +176,8 @@ fi
 sudo ln -sfn "$GNOLAND_BIN" /usr/local/bin/gnoland
 sudo ln -sfn "$GNOKEY_BIN" /usr/local/bin/gnokey
 if [ ! -x /usr/local/bin/gnoland ] || [ ! -x /usr/local/bin/gnokey ]; then
-    echo -e "${RED}Gnoland command links were not installed into /usr/local/bin.${RESET}"
-    exit 1
+    echo -e "${RED}Gnoland command links were not installed into /usr/local/bin.${RESET}" >&2
+    false
 fi
 
 export GNOROOT
@@ -170,44 +190,51 @@ operator_key_exists() {
 }
 
 echo
+CURRENT_STAGE="select or recover operator key"
 case "$OPERATOR_KEY_ACTION" in
     1)
         echo -e "${CYAN}Existing local operator keys:${RESET}"
-        LOCAL_KEYS=$("$GNOKEY_BIN" -home "$GNOKEY_HOME" list)
+        LOCAL_KEYS=$("$GNOKEY_BIN" -home "$GNOKEY_HOME" list || true)
         if [ -z "$LOCAL_KEYS" ]; then
-            echo -e "${RED}No readable local key found. Re-run and choose mnemonic recovery or a new key.${RESET}"
-            exit 1
+            echo -e "${RED}No readable local key found. Choose recovery or new-key installation.${RESET}"
+            while :; do
+                read -r -p "Choose 2 to recover or 3 for a new key: " OPERATOR_KEY_ACTION
+                [[ "$OPERATOR_KEY_ACTION" =~ ^[23]$ ]] && break
+                echo -e "${RED}Invalid choice. Please enter 2 or 3.${RESET}"
+            done
+        else
+            echo "$LOCAL_KEYS"
+            echo -e "${YELLOW}Confirm that the selected g1... address is the same operator address used on Test13.${RESET}"
+            while :; do
+                read -r -p "Type the existing key name to reuse: " OPERATOR_KEY_NAME
+                if [ -n "$OPERATOR_KEY_NAME" ] && operator_key_exists "$OPERATOR_KEY_NAME"; then
+                    break
+                fi
+                echo -e "${RED}That key was not found. Please enter an existing key name.${RESET}"
+            done
         fi
-        echo "$LOCAL_KEYS"
-        echo -e "${YELLOW}Confirm that the selected g1... address is the same operator address used on Test13.${RESET}"
-        read -r -p "Type the existing key name to reuse: " OPERATOR_KEY_NAME
-        if [ -z "$OPERATOR_KEY_NAME" ]; then
-            echo -e "${RED}Key name is required.${RESET}"
-            exit 1
-        fi
-        operator_key_exists "$OPERATOR_KEY_NAME" || {
-            echo -e "${RED}Key '$OPERATOR_KEY_NAME' was not found in $GNOKEY_HOME.${RESET}"
-            exit 1
-        }
         ;;
+esac
+
+case "$OPERATOR_KEY_ACTION" in
     2)
         read -r -p "Enter key name for the recovered Test13 operator (default 'operator'): " OPERATOR_KEY_NAME
         OPERATOR_KEY_NAME=${OPERATOR_KEY_NAME:-operator}
         if operator_key_exists "$OPERATOR_KEY_NAME"; then
-            echo -e "${RED}Key '$OPERATOR_KEY_NAME' already exists. Refusing to overwrite it.${RESET}"
-            exit 1
+            echo -e "${YELLOW}Key '$OPERATOR_KEY_NAME' already exists; reusing it without overwrite.${RESET}"
+        else
+            "$GNOKEY_BIN" -home "$GNOKEY_HOME" add -recover "$OPERATOR_KEY_NAME"
         fi
-        "$GNOKEY_BIN" -home "$GNOKEY_HOME" add -recover "$OPERATOR_KEY_NAME"
         ;;
     3)
         read -r -p "Enter new key name (default 'operator'): " OPERATOR_KEY_NAME
         OPERATOR_KEY_NAME=${OPERATOR_KEY_NAME:-operator}
         if operator_key_exists "$OPERATOR_KEY_NAME"; then
-            echo -e "${RED}Key '$OPERATOR_KEY_NAME' already exists. Refusing to overwrite it.${RESET}"
-            exit 1
+            echo -e "${YELLOW}Key '$OPERATOR_KEY_NAME' already exists; reusing it without overwrite.${RESET}"
+        else
+            "$GNOKEY_BIN" -home "$GNOKEY_HOME" add "$OPERATOR_KEY_NAME"
+            echo -e "${RED}Store the new mnemonic offline. It will not be shown again.${RESET}"
         fi
-        "$GNOKEY_BIN" -home "$GNOKEY_HOME" add "$OPERATOR_KEY_NAME"
-        echo -e "${RED}Store the new mnemonic offline. It will not be shown again.${RESET}"
         ;;
 esac
 
@@ -215,6 +242,7 @@ echo -e "${GREEN}Operator key selected: $OPERATOR_KEY_NAME${RESET}"
 "$GNOKEY_BIN" -home "$GNOKEY_HOME" list
 
 cd "$GNO_SOURCE_DIR"
+CURRENT_STAGE="initialise Topaz config and node secrets"
 "$GNOLAND_BIN" config init -force
 "$GNOLAND_BIN" secrets init -force
 echo -e "${YELLOW}A fresh Topaz consensus/node identity was generated. This does not change the reused operator g1 address.${RESET}"
@@ -222,6 +250,7 @@ echo -e "${YELLOW}A fresh Topaz consensus/node identity was generated. This does
 curl -fsSL "$GENESIS_URL" -o "$GENESIS_FILE"
 echo "${GENESIS_SHA256}  $GENESIS_FILE" | sha256sum -c -
 
+CURRENT_STAGE="apply official Topaz configuration"
 "$GNOLAND_BIN" config set moniker "$GNOLAND_MONIKER"
 "$GNOLAND_BIN" config set p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
 "$GNOLAND_BIN" config set rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
@@ -287,6 +316,7 @@ EOF
 } >> "$HOME/.bash_profile"
 
 sudo systemctl daemon-reload
+CURRENT_STAGE="start gnoland service"
 sudo systemctl enable "$GNOLAND_SERVICE_NAME"
 sudo systemctl restart "$GNOLAND_SERVICE_NAME"
 
@@ -318,7 +348,8 @@ else
     echo "Observed RPC network: ${RPC_NETWORK:-unavailable}"
     sudo systemctl status "$GNOLAND_SERVICE_NAME" --no-pager -l || true
     sudo journalctl -u "$GNOLAND_SERVICE_NAME" -n 100 --no-pager || true
-    exit 1
+    false
 fi
 
+CURRENT_STAGE="complete"
 echo "Let's Buidl Gnoland Together"

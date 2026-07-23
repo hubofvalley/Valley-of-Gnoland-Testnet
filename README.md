@@ -33,6 +33,8 @@ The installer keeps the established Valley of Gnoland layout. It does not rename
 3. It never deletes `~/.config/gno`.
 4. It creates fresh Topaz node and consensus secrets.
 5. It shows local operator addresses so existing validators can verify they are reusing the Test13 operator address.
+6. Invalid interactive input is prompted again instead of terminating the installer.
+7. Runtime failures report the exact installation stage, line, command, and exit code before returning to the main menu.
 
 The migration is in-place because the directory and service names remain unchanged. The installer stops `gnoland.service` and replaces `~/gno/gnoland-data`; it does not run Test13 and Topaz in parallel.
 

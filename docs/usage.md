@@ -34,6 +34,8 @@ Before deleting Test13 node data, the installer:
 
 A fresh Topaz consensus/node key is generated. Existing validators must use the same Test13 operator `g1...` address when registering their Topaz valoper profile.
 
+Invalid moniker, port, key-menu, or existing-key input is prompted again. A real installation failure stops safely and prints its stage, line, failed command, and exit code; Valley of Gnoland then returns to the main menu instead of disappearing silently.
+
 ## Menu options
 
 | Option | Behaviour |

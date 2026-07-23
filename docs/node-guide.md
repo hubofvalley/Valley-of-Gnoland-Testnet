@@ -96,6 +96,7 @@ gnoland config set proxy_app "tcp://127.0.0.1:${PORT_PREFIX}658"
 gnoland config set p2p.laddr "tcp://0.0.0.0:${PORT_PREFIX}656"
 gnoland config set rpc.laddr "tcp://127.0.0.1:${PORT_PREFIX}657"
 gnoland config set p2p.seeds "$SEEDS"
+gnoland config set p2p.persistent_peers "$SEEDS"
 gnoland config set application.prune_strategy syncable
 gnoland config set consensus.timeout_commit 3s
 gnoland config set consensus.peer_gossip_sleep_duration 10ms
@@ -105,10 +106,10 @@ gnoland config set mempool.size 10000
 gnoland config set p2p.max_num_outbound_peers 40
 
 gnoland start \
-  -chainid topaz-1 \
-  -genesis genesis.json \
-  -skip-genesis-sig-verification \
-  -log-level info
+  --chainid topaz-1 \
+  --genesis genesis.json \
+  --skip-genesis-sig-verification \
+  --log-level info
 ```
 
 The selected two-digit prefix applies to every local Gnoland listener: ABCI `${PORT_PREFIX}658`, P2P `${PORT_PREFIX}656`, and RPC `${PORT_PREFIX}657`. Official seed addresses remain on their published remote port `26656`.

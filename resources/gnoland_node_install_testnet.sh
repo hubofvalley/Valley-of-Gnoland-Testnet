@@ -257,7 +257,7 @@ CURRENT_STAGE="apply official Topaz configuration"
 "$GNOLAND_BIN" config set p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
 "$GNOLAND_BIN" config set rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
 "$GNOLAND_BIN" config set p2p.seeds "$SEEDS"
-"$GNOLAND_BIN" config set p2p.persistent_peers ""
+"$GNOLAND_BIN" config set p2p.persistent_peers "$SEEDS"
 "$GNOLAND_BIN" config set application.prune_strategy "syncable"
 "$GNOLAND_BIN" config set consensus.timeout_commit "3s"
 "$GNOLAND_BIN" config set consensus.peer_gossip_sleep_duration "10ms"
@@ -288,7 +288,7 @@ User=$USER
 WorkingDirectory=$GNO_SOURCE_DIR
 Environment=GNOROOT=$GNOROOT
 Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=$GNOLAND_BIN start -chainid $CHAIN_ID -genesis genesis.json -skip-genesis-sig-verification -log-level info
+ExecStart=$GNOLAND_BIN start --chainid $CHAIN_ID --genesis genesis.json --skip-genesis-sig-verification --log-level info
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure

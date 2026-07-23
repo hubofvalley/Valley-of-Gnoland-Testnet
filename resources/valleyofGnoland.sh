@@ -309,7 +309,8 @@ function add_peers() {
             ;;
         2)
             gnoland config set -config-path "$CFG" p2p.seeds "$TOPAZ_SEEDS"
-            echo "Official Topaz seeds restored."
+            gnoland config set -config-path "$CFG" p2p.persistent_peers "$TOPAZ_SEEDS"
+            echo "Official Topaz seeds and persistent peers restored."
             ;;
         *)
             echo "Invalid choice."

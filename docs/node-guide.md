@@ -21,6 +21,12 @@ Official seeds:
 g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656
 ```
 
+Grand Valley persistent peer:
+
+```text
+g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656
+```
+
 ## Existing directory layout
 
 ```bash
@@ -97,6 +103,7 @@ echo "2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff  genesis.
 
 ```bash
 SEEDS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
+GRAND_VALLEY_PEER="g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656"
 PORT_PREFIX="26"
 
 gnoland config set moniker "your-moniker"
@@ -104,7 +111,7 @@ gnoland config set proxy_app "tcp://127.0.0.1:${PORT_PREFIX}658"
 gnoland config set p2p.laddr "tcp://0.0.0.0:${PORT_PREFIX}656"
 gnoland config set rpc.laddr "tcp://127.0.0.1:${PORT_PREFIX}657"
 gnoland config set p2p.seeds "$SEEDS"
-gnoland config set p2p.persistent_peers "$SEEDS"
+gnoland config set p2p.persistent_peers "$GRAND_VALLEY_PEER"
 gnoland config set application.prune_strategy syncable
 gnoland config set consensus.timeout_commit 3s
 gnoland config set consensus.peer_gossip_sleep_duration 10ms

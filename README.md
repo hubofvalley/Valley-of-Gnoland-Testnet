@@ -16,6 +16,7 @@ Interactive terminal tool by **Grand Valley** to deploy and manage a Gno.land To
 - RPC: `https://rpc.topaz.testnets.gno.land`
 - Faucet: https://topaz.testnets.gno.land/faucet
 - Grand Valley validator profile: https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym
+- Grand Valley persistent peer: `g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656`
 
 Topaz is a new chain. Test13 chain data cannot be reused, but an existing Test13 validator must register on Topaz with the **same operator `g1...` address**. The Topaz node receives a fresh consensus key.
 
@@ -43,7 +44,7 @@ Within one OS user, migration remains in-place: the installer stops only that us
 
 - Pinned Topaz source and official release checksums
 - Official Topaz genesis verification
-- Official Topaz seeds and required node settings
+- Official Topaz seeds, Grand Valley persistent peer, and required node settings
 - Custom ABCI/P2P/RPC port prefix, optional UFW, and systemd service
 - Per-user binaries and custom service names for isolated multi-instance deployments
 - Service ownership and port-collision guards before destructive work

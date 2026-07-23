@@ -204,6 +204,7 @@ grep -q "^WorkingDirectory=$HOME_B/gno$" "$SYSTEMD_DIR/gnoland-topaz.service"
 grep -q 'proxy_app = "tcp://127.0.0.1:36658"' "$HOME_B/gno/gnoland-data/config/config.toml"
 grep -q 'laddr = "tcp://0.0.0.0:36656"' "$HOME_B/gno/gnoland-data/config/config.toml"
 grep -q 'laddr = "tcp://127.0.0.1:36657"' "$HOME_B/gno/gnoland-data/config/config.toml"
+grep -q 'persistent_peers = "g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656"' "$HOME_B/gno/gnoland-data/config/config.toml"
 grep -q "Topaz Gnoland service started successfully" "$TEST_ROOT/a.log"
 grep -q "Topaz Gnoland service started successfully" "$TEST_ROOT/b.log"
 

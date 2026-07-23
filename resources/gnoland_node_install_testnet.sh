@@ -33,6 +33,7 @@ GENESIS_SHA256="2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff
 GNOLAND_SHA256="e74ab25e366668c8c6774e3e8b23dd48288cf23a499a085c101cbbfca2a5f9c3"
 GNOKEY_SHA256="660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438"
 SEEDS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
+GRAND_VALLEY_PEER="g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656"
 PUBLIC_RPC="https://rpc.topaz.testnets.gno.land"
 
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
@@ -361,7 +362,7 @@ CURRENT_STAGE="apply official Topaz configuration"
 "$GNOLAND_BIN" config set p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
 "$GNOLAND_BIN" config set rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
 "$GNOLAND_BIN" config set p2p.seeds "$SEEDS"
-"$GNOLAND_BIN" config set p2p.persistent_peers "$SEEDS"
+"$GNOLAND_BIN" config set p2p.persistent_peers "$GRAND_VALLEY_PEER"
 "$GNOLAND_BIN" config set application.prune_strategy "syncable"
 "$GNOLAND_BIN" config set consensus.timeout_commit "3s"
 "$GNOLAND_BIN" config set consensus.peer_gossip_sleep_duration "10ms"

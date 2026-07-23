@@ -11,6 +11,14 @@ RESET='\033[0m'
 # shellcheck source=/dev/null
 source "$HOME/.bash_profile" 2>/dev/null
 
+OS_USER=$(id -un)
+
+if [ -n "${SUDO_USER:-}" ]; then
+    echo -e "${RED}Run Valley of Gnoland as the node OS user, not with sudo.${RESET}" >&2
+    echo "The tool requests sudo only when system access is required." >&2
+    exit 1
+fi
+
 if [ -z "${GNO_SOURCE_DIR:-}" ]; then
     GNO_SOURCE_DIR="$HOME/gno"
 fi
@@ -29,13 +37,41 @@ GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.topaz.testnets.gno.la
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
 TOPAZ_SEEDS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
 
-if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
-    echo -e "${YELLOW}Service name configuration not found.${RESET}"
-    read -r -p "Enter Service Name (default 'gnoland'): " INPUT_SVC
-    GNOLAND_SERVICE_NAME=${INPUT_SVC:-gnoland}
-    echo "export GNOLAND_SERVICE_NAME=\"$GNOLAND_SERVICE_NAME\"" >> "$HOME/.bash_profile"
-    export GNOLAND_SERVICE_NAME
-fi
+while :; do
+    if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
+        echo -e "${YELLOW}Service name configuration not found.${RESET}"
+        read -r -p "Enter Service Name (default 'gnoland'): " INPUT_SVC
+        GNOLAND_SERVICE_NAME=${INPUT_SVC:-gnoland}
+    fi
+    GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME%.service}
+    if [[ "$GNOLAND_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then
+        break
+    fi
+    echo -e "${RED}Service name must start with a letter or number and may contain _, ., @, and -.${RESET}"
+    GNOLAND_SERVICE_NAME=""
+done
+
+sed -i '/^export GNOLAND_SERVICE_NAME=/d' "$HOME/.bash_profile" 2>/dev/null || true
+echo "export GNOLAND_SERVICE_NAME=\"$GNOLAND_SERVICE_NAME\"" >> "$HOME/.bash_profile"
+export GNOLAND_SERVICE_NAME
+
+service_belongs_to_current_instance() {
+    local service_file unit_user unit_workdir
+    service_file=$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
+    [ -n "$service_file" ] || return 0
+    if [ ! -f "$service_file" ]; then
+        echo -e "${RED}Cannot inspect existing service: $service_file${RESET}" >&2
+        return 1
+    fi
+    unit_user=$(sed -n 's/^User=//p' "$service_file" | tail -n 1)
+    unit_workdir=$(sed -n 's/^WorkingDirectory=//p' "$service_file" | tail -n 1)
+    if [ "$unit_user" != "$OS_USER" ] || [ "$unit_workdir" != "$GNO_SOURCE_DIR" ]; then
+        echo -e "${RED}${GNOLAND_SERVICE_NAME}.service belongs to another instance.${RESET}" >&2
+        echo "Existing User=${unit_user:-unknown}, WorkingDirectory=${unit_workdir:-unknown}" >&2
+        echo "Current User=$OS_USER, WorkingDirectory=$GNO_SOURCE_DIR" >&2
+        return 1
+    fi
+}
 
 LOGO="
  __      __     _ _
@@ -248,7 +284,7 @@ function deploy_gnoland_node() {
     echo -e "${YELLOW}New service:${RESET} ${CYAN}${GNOLAND_SERVICE_NAME}.service${RESET}"
     echo -e "${YELLOW}Directory:${RESET} ${CYAN}$GNOLAND_HOME${RESET}"
     echo -e "${YELLOW}Default ports:${RESET} ABCI ${CYAN}26658${RESET}, P2P ${CYAN}26656${RESET}, RPC ${CYAN}26657${RESET}; installer remaps all three local listeners with the chosen two-digit prefix."
-    echo -e "${RED}Migration replaces existing Test13 chain data in the same directory.${RESET}"
+    echo -e "${RED}Migration replaces chain data only inside the current OS user's node directory.${RESET}"
     echo -e "${YELLOW}The installer backs up node secrets and the operator keyring before cleanup.${RESET}"
     echo
     echo "This installs a Topaz full node and does not guarantee active validator status."
@@ -266,6 +302,11 @@ function deploy_gnoland_node() {
 function update_gnoland_binary() {
     echo -e "${YELLOW}Update gnoland and gnokey to the pinned Topaz release binaries.${RESET}"
     if ! prompt_back_or_continue; then
+        return
+    fi
+    if ! service_belongs_to_current_instance; then
+        echo -e "${RED}Update blocked to protect the other instance.${RESET}"
+        menu
         return
     fi
     run_repository_script "resources/gnoland_update.sh" || true
@@ -322,6 +363,11 @@ function add_peers() {
 
 function show_node_status() {
     local rpc_url status_json net_info_json node_height catching_up network_height latest_block_time validator_address peer_count service_state disk_line block_diff sync_status
+    if ! service_belongs_to_current_instance; then
+        echo -e "${RED}Status blocked: selected service belongs to another instance.${RESET}"
+        menu
+        return
+    fi
     rpc_url=$(get_local_rpc_url)
     status_json=$(get_local_status_json)
     net_info_json=$(get_local_net_info_json)
@@ -383,6 +429,11 @@ function show_node_status() {
 }
 
 function show_logs() {
+    if ! service_belongs_to_current_instance; then
+        echo -e "${RED}Logs blocked: selected service belongs to another instance.${RESET}"
+        menu
+        return
+    fi
     trap 'echo -e "\nStopping logs and returning to main menu...";' INT
     sudo journalctl -u "$GNOLAND_SERVICE_NAME" -fn 100 -o cat || true
     trap - INT
@@ -545,6 +596,11 @@ function backup_node_secrets() {
 }
 
 function restart_gnoland() {
+    if ! service_belongs_to_current_instance; then
+        echo -e "${RED}Restart blocked to protect the other instance.${RESET}"
+        menu
+        return
+    fi
     sudo systemctl daemon-reload
     sudo systemctl restart "$GNOLAND_SERVICE_NAME"
     echo -e "${GREEN}${GNOLAND_SERVICE_NAME}.service restarted.${RESET}"
@@ -552,6 +608,11 @@ function restart_gnoland() {
 }
 
 function stop_gnoland() {
+    if ! service_belongs_to_current_instance; then
+        echo -e "${RED}Stop blocked to protect the other instance.${RESET}"
+        menu
+        return
+    fi
     sudo systemctl stop "$GNOLAND_SERVICE_NAME"
     echo -e "${YELLOW}${GNOLAND_SERVICE_NAME}.service stopped.${RESET}"
     menu
@@ -563,6 +624,21 @@ function delete_gnoland_node() {
     if ! prompt_back_or_continue; then
         return
     fi
+    if ! service_belongs_to_current_instance; then
+        echo -e "${RED}Delete blocked to protect the other instance.${RESET}"
+        menu
+        return
+    fi
+    canonical_home=$(realpath -m "$HOME")
+    canonical_node_home=$(realpath -m "$GNOLAND_HOME")
+    case "$canonical_node_home" in
+        "$canonical_home"/*) ;;
+        *)
+            echo -e "${RED}Delete blocked: node path is outside $HOME.${RESET}"
+            menu
+            return
+            ;;
+    esac
     sudo systemctl stop "$GNOLAND_SERVICE_NAME" || true
     sudo systemctl disable "$GNOLAND_SERVICE_NAME" || true
     sudo rm -f "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
@@ -570,7 +646,6 @@ function delete_gnoland_node() {
     rm -rf "$GNOLAND_HOME"
     rm -f "$GNOLAND_GENESIS"
     rm -f "$GNOLAND_BIN" "$GNOKEY_BIN"
-    sudo rm -f /usr/local/bin/gnoland /usr/local/bin/gnokey
     sed -i '/GNOLAND_/d;/GNOKEY_/d;/GNO_SOURCE_DIR/d;/GNOROOT/d;/go\/bin/d' "$HOME/.bash_profile"
     echo -e "${RED}Gnoland node deleted. Local gnokey home was not deleted: $GNOKEY_HOME${RESET}"
     menu

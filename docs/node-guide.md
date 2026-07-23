@@ -27,7 +27,11 @@ g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g1
 GNO_SOURCE_DIR="$HOME/gno"
 GNOLAND_HOME="$HOME/gno/gnoland-data"
 GNOKEY_HOME="$HOME/.config/gno"
+GNOLAND_BIN="$HOME/go/bin/gnoland"
+GNOKEY_BIN="$HOME/go/bin/gnokey"
 ```
+
+Run installation as the OS user that owns these paths. For multiple nodes on one server, use a different OS user, service name, and port prefix for each instance. Do not create a shared `/usr/local/bin/gnoland` symlink; systemd should execute the per-user binary by absolute path.
 
 Topaz replaces Test13 chain data in `GNOLAND_HOME`. Back up node secrets and the operator keyring first. Preserve `GNOKEY_HOME` if reusing the Test13 operator address.
 
@@ -53,6 +57,10 @@ echo "e74ab25e366668c8c6774e3e8b23dd48288cf23a499a085c101cbbfca2a5f9c3  gnoland_
 echo "660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438  gnokey_linux_amd64" | sha256sum -c -
 install gnoland_linux_amd64 "$HOME/go/bin/gnoland"
 install gnokey_linux_amd64 "$HOME/go/bin/gnokey"
+export PATH="$HOME/go/bin:$PATH"
+hash -r
+test "$(command -v gnoland)" = "$HOME/go/bin/gnoland"
+test "$(command -v gnokey)" = "$HOME/go/bin/gnokey"
 ```
 
 ## Operator key
@@ -112,7 +120,7 @@ gnoland start \
   --log-level info
 ```
 
-The selected two-digit prefix applies to every local Gnoland listener: ABCI `${PORT_PREFIX}658`, P2P `${PORT_PREFIX}656`, and RPC `${PORT_PREFIX}657`. Official seed addresses remain on their published remote port `26656`.
+The selected two-digit prefix must be `01`–`64` so every generated TCP port remains valid. It applies to every local Gnoland listener: ABCI `${PORT_PREFIX}658`, P2P `${PORT_PREFIX}656`, and RPC `${PORT_PREFIX}657`. Official seed addresses remain on their published remote port `26656`.
 
 ## Register the valoper candidate
 

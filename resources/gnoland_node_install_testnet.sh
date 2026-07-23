@@ -42,6 +42,30 @@ GENESIS_FILE="$GNO_SOURCE_DIR/genesis.json"
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
 GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
+OS_USER=$(id -un)
+
+if [ -n "${SUDO_USER:-}" ]; then
+    echo -e "${RED}Run Valley of Gnoland as the node OS user, not with sudo.${RESET}" >&2
+    echo "The installer requests sudo only for packages, firewall, and systemd." >&2
+    false
+fi
+
+path_is_under_home() {
+    local canonical_home canonical_path
+    canonical_home=$(realpath -m "$HOME")
+    canonical_path=$(realpath -m "$1")
+    case "$canonical_path" in
+        "$canonical_home"/*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_HOME" "$GNOKEY_HOME" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
+    if ! path_is_under_home "$instance_path"; then
+        echo -e "${RED}Unsafe instance path outside $HOME: $instance_path${RESET}" >&2
+        false
+    fi
+done
 
 echo -e "\n--- Gno.land Topaz Node Setup ---"
 echo -e "${YELLOW}Migration layout remains compatible with previous Valley of Gnoland installs:${RESET}"
@@ -62,8 +86,12 @@ done
 while :; do
     read -r -p "Enter preferred port prefix (leave empty for default 26): " GNOLAND_PORT
     GNOLAND_PORT=${GNOLAND_PORT:-26}
-    [[ "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]] && break
-    echo -e "${RED}Port prefix must be two digits, for example 26 or 36. Please try again.${RESET}"
+    if [[ "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]] &&
+       [ "$((10#$GNOLAND_PORT))" -ge 1 ] &&
+       [ "$((10#$GNOLAND_PORT))" -le 64 ]; then
+        break
+    fi
+    echo -e "${RED}Port prefix must be two digits from 01 through 64, for example 26 or 36.${RESET}"
 done
 
 read -r -p "Enter public external address host/IP for P2P (optional, example 1.2.3.4): " GNOLAND_EXTERNAL_HOST
@@ -72,10 +100,20 @@ INSTALL_METHOD=${INSTALL_METHOD:-p}
 read -r -p "Configure UFW firewall rules for Gnoland? (y/n, default n): " SETUP_UFW
 SETUP_UFW=${SETUP_UFW:-n}
 
-if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
-    read -r -p "Enter service name (default 'gnoland'): " GNOLAND_SERVICE_NAME
-    GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
-fi
+while :; do
+    if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
+        read -r -p "Enter service name (default 'gnoland'): " GNOLAND_SERVICE_NAME
+        GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
+    fi
+    GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME%.service}
+    if [[ "$GNOLAND_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then
+        break
+    fi
+    echo -e "${RED}Service name must start with a letter or number and may contain _, ., @, and -.${RESET}"
+    GNOLAND_SERVICE_NAME=""
+done
+
+SERVICE_FILE="/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
 
 GNOLAND_RPC_PORT="${GNOLAND_PORT}657"
 GNOLAND_P2P_PORT="${GNOLAND_PORT}656"
@@ -83,6 +121,54 @@ GNOLAND_ABCI_PORT="${GNOLAND_PORT}658"
 BACKUP_ROOT="$HOME/gnoland-migration-backups"
 BACKUP_STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DIR="$BACKUP_ROOT/$BACKUP_STAMP"
+
+service_belongs_to_instance() {
+    local unit_user unit_workdir resolved_service_file
+    resolved_service_file=$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
+    [ -n "$resolved_service_file" ] || return 0
+    if [ ! -f "$resolved_service_file" ]; then
+        echo -e "${RED}Cannot inspect existing service: $resolved_service_file${RESET}" >&2
+        return 1
+    fi
+    unit_user=$(sed -n 's/^User=//p' "$resolved_service_file" | tail -n 1)
+    unit_workdir=$(sed -n 's/^WorkingDirectory=//p' "$resolved_service_file" | tail -n 1)
+    if [ "$unit_user" != "$OS_USER" ] || [ "$unit_workdir" != "$GNO_SOURCE_DIR" ]; then
+        echo -e "${RED}${GNOLAND_SERVICE_NAME}.service belongs to another instance.${RESET}" >&2
+        echo "Existing User=${unit_user:-unknown}, WorkingDirectory=${unit_workdir:-unknown}" >&2
+        echo "Requested User=$OS_USER, WorkingDirectory=$GNO_SOURCE_DIR" >&2
+        return 1
+    fi
+}
+
+port_is_free() {
+    local port=$1
+    ! ss -H -ltn "sport = :$port" 2>/dev/null | grep -q .
+}
+
+if ! command -v ss >/dev/null 2>&1; then
+    echo -e "${RED}Required port-inspection command 'ss' is unavailable.${RESET}" >&2
+    false
+fi
+
+service_belongs_to_instance
+
+if [ -z "$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)" ]; then
+    while ! port_is_free "$GNOLAND_P2P_PORT" ||
+          ! port_is_free "$GNOLAND_RPC_PORT" ||
+          ! port_is_free "$GNOLAND_ABCI_PORT"; do
+        echo -e "${RED}Port prefix $GNOLAND_PORT conflicts with a running listener.${RESET}"
+        read -r -p "Enter another two-digit port prefix: " GNOLAND_PORT
+        if [[ ! "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]] ||
+           [ "$((10#$GNOLAND_PORT))" -lt 1 ] ||
+           [ "$((10#$GNOLAND_PORT))" -gt 64 ]; then
+            echo -e "${RED}Port prefix must be two digits from 01 through 64, for example 26 or 36.${RESET}"
+            continue
+        fi
+        GNOLAND_RPC_PORT="${GNOLAND_PORT}657"
+        GNOLAND_P2P_PORT="${GNOLAND_PORT}656"
+        GNOLAND_ABCI_PORT="${GNOLAND_PORT}658"
+    done
+fi
 
 echo
 echo -e "${YELLOW}Operator key choice:${RESET}"
@@ -95,6 +181,15 @@ while :; do
     echo -e "${RED}Invalid operator key choice. Please try again.${RESET}"
 done
 
+echo
+echo -e "${YELLOW}Installation preview:${RESET}"
+echo "  OS user:          $OS_USER"
+echo "  Service:          ${GNOLAND_SERVICE_NAME}.service"
+echo "  Binary:           $GNOLAND_BIN"
+echo "  Source / GNOROOT: $GNO_SOURCE_DIR"
+echo "  Node data:        $GNOLAND_HOME"
+echo "  Operator keyring: $GNOKEY_HOME"
+echo "  P2P/RPC/ABCI:     $GNOLAND_P2P_PORT / $GNOLAND_RPC_PORT / $GNOLAND_ABCI_PORT"
 echo
 echo -e "${YELLOW}This will replace the chain data under $GNOLAND_HOME with a clean Topaz state.${RESET}"
 echo "The old source checkout and genesis in $GNO_SOURCE_DIR will also be replaced."
@@ -119,9 +214,14 @@ if [ -d "$GNOKEY_HOME" ] && [ -n "$(find "$GNOKEY_HOME" -mindepth 1 -print -quit
 fi
 
 sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
+if ! port_is_free "$GNOLAND_P2P_PORT" ||
+   ! port_is_free "$GNOLAND_RPC_PORT" ||
+   ! port_is_free "$GNOLAND_ABCI_PORT"; then
+    echo -e "${RED}Selected ports remain occupied after stopping ${GNOLAND_SERVICE_NAME}.service.${RESET}" >&2
+    false
+fi
 sudo systemctl disable "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
 sudo rm -f "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
-sudo rm -f /usr/local/bin/gnoland /usr/local/bin/gnokey
 rm -rf "$GNOLAND_HOME"
 rm -f "$GENESIS_FILE"
 sed -i '/GNOLAND_/d;/GNOKEY_/d;/GNO_SOURCE_DIR/d;/GNOROOT/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
@@ -174,15 +274,19 @@ else
     install "$tmpdir/gnokey" "$GNOKEY_BIN"
 fi
 
-sudo ln -sfn "$GNOLAND_BIN" /usr/local/bin/gnoland
-sudo ln -sfn "$GNOKEY_BIN" /usr/local/bin/gnokey
-if [ ! -x /usr/local/bin/gnoland ] || [ ! -x /usr/local/bin/gnokey ]; then
-    echo -e "${RED}Gnoland command links were not installed into /usr/local/bin.${RESET}" >&2
+if [ ! -x "$GNOLAND_BIN" ] || [ ! -x "$GNOKEY_BIN" ]; then
+    echo -e "${RED}Per-user Gnoland binaries are missing or not executable.${RESET}" >&2
     false
 fi
 
 export GNOROOT
 export PATH="$HOME/go/bin:$PATH"
+hash -r
+if [ "$(command -v gnoland)" != "$GNOLAND_BIN" ] ||
+   [ "$(command -v gnokey)" != "$GNOKEY_BIN" ]; then
+    echo -e "${RED}Per-user commands do not resolve to $HOME/go/bin.${RESET}" >&2
+    false
+fi
 mkdir -p "$GNOKEY_HOME"
 
 operator_key_exists() {
@@ -278,13 +382,13 @@ if [[ "$SETUP_UFW" =~ ^[Yy]$ ]]; then
     sudo ufw status verbose
 fi
 
-sudo tee "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service" >/dev/null <<EOF
+sudo tee "$SERVICE_FILE" >/dev/null <<EOF
 [Unit]
 Description=Gno.land Topaz Node (${GNOLAND_SERVICE_NAME})
 After=network-online.target
 
 [Service]
-User=$USER
+User=$OS_USER
 WorkingDirectory=$GNO_SOURCE_DIR
 Environment=GNOROOT=$GNOROOT
 Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -369,7 +473,7 @@ if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME" &&
     echo "After sync, register the Topaz valoper profile with '$OPERATOR_KEY_NAME'."
     echo "Existing validators must use the same operator g1 address used on Test13."
     echo "Backups created under: $BACKUP_DIR"
-    echo "Commands are available as: gnoland and gnokey"
+    echo "Per-user commands are available from $HOME/go/bin: gnoland and gnokey"
 else
     echo -e "${RED}Gnoland failed the Topaz RPC startup check.${RESET}"
     echo "Expected RPC network: $CHAIN_ID"

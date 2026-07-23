@@ -14,10 +14,12 @@ Topaz uses the same Valley of Gnoland paths as before:
 - `~/gno/gnoland-data`
 - `~/gno/genesis.json`
 - `~/.config/gno`
-- `gnoland.service`
-- `gnoland` and `gnokey` commands via `/usr/local/bin`
+- a user-selected service name, default `gnoland.service`
+- `gnoland` and `gnokey` under the current user's `~/go/bin`
 
-Because these names remain unchanged, migration is an in-place clean deployment. Test13 and Topaz cannot run side by side through this installer.
+Within one OS user, migration is an in-place clean deployment. For side-by-side instances, use separate OS users, separate service names, and separate port prefixes. Each user's `$HOME`, source, data, keyring, and binaries remain isolated.
+
+Run VOG directly as the node OS user. Do not use `sudo bash ...`; VOG requests `sudo` internally only for packages, firewall, and systemd.
 
 During option `1a`, choose one operator-key path:
 
@@ -40,12 +42,12 @@ Invalid moniker, port, key-menu, or existing-key input is prompted again. A real
 
 | Option | Behaviour |
 |---|---|
-| `1a` | Clean-deploys Topaz in the existing directories, with backup and operator-key selection. The chosen two-digit prefix applies to local ABCI (`prefix658`), P2P (`prefix656`), and RPC (`prefix657`) listeners. Success requires those config ports plus RPC network `topaz-1`; failures print diagnostics. |
+| `1a` | Clean-deploys Topaz in the current user's directories, with backup and operator-key selection. It validates the service owner and rejects occupied ports before cleanup. The chosen prefix must be `01`–`64` and applies to local ABCI (`prefix658`), P2P (`prefix656`), and RPC (`prefix657`) listeners. Success requires those config ports plus RPC network `topaz-1`; failures print diagnostics. |
 | `1b` | Updates the source and binaries to the pinned Topaz release after checksum verification. |
 | `1c` | Reports that no verified Topaz snapshot is available; makes no changes. |
 | `1d` | Adds persistent peers manually or restores official Topaz seeds. |
 | `1e` | Shows local/network heights, sync state, peers, disk, and validator address. |
-| `1f` | Follows `gnoland.service` logs. |
+| `1f` | Follows the current user's selected Gnoland service logs. |
 | `2a` | Lists/reuses, recovers, or creates an operator key without overwriting an existing name. |
 | `2b` | Shows the fresh Topaz consensus `gpub1...` key. |
 | `2c` | Previews and optionally broadcasts Topaz valoper registration. |
@@ -67,6 +69,8 @@ Invalid moniker, port, key-menu, or existing-key input is prompted again. A real
 - Never apply a Test13 snapshot to Topaz.
 - Never share mnemonics or node secrets.
 - Inspect backup archives and copy them offline before relying on them.
+- Use one OS user, service name, and port prefix per instance.
+- VOG never creates or removes global `/usr/local/bin/gnoland` or `/usr/local/bin/gnokey` links.
 - Registration creates a candidate profile only; it does not guarantee active-set admission.
 
 last updated by: John

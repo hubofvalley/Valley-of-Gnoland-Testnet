@@ -11,8 +11,8 @@ Interactive terminal tool by **Grand Valley** to deploy and manage a Gno.land To
 - Node directory: `~/gno/gnoland-data`
 - Operator keyring: `~/.config/gno`
 - Genesis file: `~/gno/genesis.json`
-- Service: `gnoland.service`
-- Command links: `/usr/local/bin/gnoland`, `/usr/local/bin/gnokey`
+- Service: user-selected, default `gnoland.service`
+- Per-user binaries: `~/go/bin/gnoland`, `~/go/bin/gnokey`
 - RPC: `https://rpc.topaz.testnets.gno.land`
 - Faucet: https://topaz.testnets.gno.land/faucet
 
@@ -36,7 +36,7 @@ The installer keeps the established Valley of Gnoland layout. It does not rename
 6. Invalid interactive input is prompted again instead of terminating the installer.
 7. Runtime failures report the exact installation stage, line, command, and exit code before returning to the main menu.
 
-The migration is in-place because the directory and service names remain unchanged. The installer stops `gnoland.service` and replaces `~/gno/gnoland-data`; it does not run Test13 and Topaz in parallel.
+Within one OS user, migration remains in-place: the installer stops only that user's selected service and replaces only that user's `~/gno/gnoland-data`. Separate OS users, unique service names, and unique port prefixes can run isolated Gnoland instances on the same server.
 
 ## Features
 
@@ -44,6 +44,8 @@ The migration is in-place because the directory and service names remain unchang
 - Official Topaz genesis verification
 - Official Topaz seeds and required node settings
 - Custom ABCI/P2P/RPC port prefix, optional UFW, and systemd service
+- Per-user binaries and custom service names for isolated multi-instance deployments
+- Service ownership and port-collision guards before destructive work
 - Safe operator-key reuse/recovery/new-key flow
 - Node status, logs, seed/peer configuration, and transaction preview
 - Verified startup gate: success requires a live local RPC reporting `topaz-1`

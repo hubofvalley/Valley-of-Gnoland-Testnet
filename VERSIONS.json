@@ -1,25 +1,26 @@
 {
   "project": "Valley of Gnoland - Testnet",
-  "network": "Gno.land Test13",
-  "chain_id": "test-13",
-  "release_tag": "chain/test13",
-  "release_commit": "75c4bdf0598e7d7732c7f5d6fdd7ea4a03a3bd28",
-  "release_url": "https://github.com/gnolang/gno/releases/tag/chain/test13",
-  "genesis_sha256": "56f56e135174feff9f93283d5ec7e4ec955cd5155108aff5009d4fd51c5adaf2",
+  "network": "Gno.land Topaz",
+  "chain_id": "topaz-1",
+  "release_tag": "chain/topaz",
+  "release_commit": "fc40526511474e40b8a66419f5ba28255085bc08",
+  "release_url": "https://github.com/gnolang/gno/releases/tag/chain/topaz",
+  "genesis_sha256": "2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff",
   "endpoints": {
-    "public_provider": "Grand Valley",
-    "rpc_node": "https://lightnode-rpc-gnoland.grandvalleys.com",
-    "persistent_peer": "g1c2s40hsjtgv25nnrtgjfqa9cn4v5z9l7pgyceh@peer-gnoland.grandvalleys.com:18656"
+    "public_provider": "Gno.land",
+    "rpc_node": "https://rpc.topaz.testnets.gno.land",
+    "faucet": "https://topaz.testnets.gno.land/faucet",
+    "seeds": "g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
   },
   "snapshot": {
-    "provider": "UTSA",
-    "url": "https://share118.utsa.tech/gno_test13/gno-test13-snapshot.tar.lz4",
+    "status": "unavailable",
+    "reason": "No verified Topaz snapshot is configured; Test13 snapshots are blocked.",
     "script": "resources/apply_snapshot.sh"
   },
   "binaries": {
-    "gnoland_linux_amd64": "050f26c8dbff628a917dfae124b91696c1b25a26eddb645edb847e497b229ab9",
-    "gnokey_linux_amd64": "eece8675dfad4ce9801a57aa6b0284b278272f41e0aac4579c219bc30049a4de"
+    "gnoland_linux_amd64": "e74ab25e366668c8c6774e3e8b23dd48288cf23a499a085c101cbbfca2a5f9c3",
+    "gnokey_linux_amd64": "660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438"
   },
   "status": "live_verified",
-  "last_reviewed": "2026-07-06"
+  "last_reviewed": "2026-07-23"
 }

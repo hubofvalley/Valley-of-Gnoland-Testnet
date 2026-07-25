@@ -15,7 +15,7 @@ Official validator source:
 | Release commit | `fc40526511474e40b8a66419f5ba28255085bc08` |
 | Genesis SHA256 | `2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff` |
 
-Official seeds:
+Official persistent peers:
 
 ```text
 g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656
@@ -102,16 +102,19 @@ echo "2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff  genesis.
 ## Configure and start
 
 ```bash
-SEEDS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
+OFFICIAL_TOPAZ_PEERS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
 GRAND_VALLEY_PEER="g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656"
+PERSISTENT_PEERS="${OFFICIAL_TOPAZ_PEERS},${GRAND_VALLEY_PEER}"
 PORT_PREFIX="26"
+EXTERNAL_HOST="your-public-host-or-ip"
 
 gnoland config set moniker "your-moniker"
 gnoland config set proxy_app "tcp://127.0.0.1:${PORT_PREFIX}658"
 gnoland config set p2p.laddr "tcp://0.0.0.0:${PORT_PREFIX}656"
 gnoland config set rpc.laddr "tcp://127.0.0.1:${PORT_PREFIX}657"
-gnoland config set p2p.seeds "$SEEDS"
-gnoland config set p2p.persistent_peers "$GRAND_VALLEY_PEER"
+gnoland config set p2p.seeds ""
+gnoland config set p2p.persistent_peers "$PERSISTENT_PEERS"
+gnoland config set p2p.external_address "${EXTERNAL_HOST}:${PORT_PREFIX}656"
 gnoland config set application.prune_strategy syncable
 gnoland config set consensus.timeout_commit 3s
 gnoland config set consensus.peer_gossip_sleep_duration 10ms
@@ -127,7 +130,9 @@ gnoland start \
   --log-level info
 ```
 
-The selected two-digit prefix must be `01`–`64` so every generated TCP port remains valid. It applies to every local Gnoland listener: ABCI `${PORT_PREFIX}658`, P2P `${PORT_PREFIX}656`, and RPC `${PORT_PREFIX}657`. Official seed addresses remain on their published remote port `26656`.
+The selected two-digit prefix must be `01`–`64` so every generated TCP port remains valid. It applies to every local Gnoland listener: ABCI `${PORT_PREFIX}658`, P2P `${PORT_PREFIX}656`, and RPC `${PORT_PREFIX}657`. The two official peer addresses remain on their published remote port `26656`.
+
+Topaz does not consume `p2p.seeds`; the official bootstrap nodes must be configured in `p2p.persistent_peers`. `p2p.external_address` must advertise a host or public IP that other peers can dial.
 
 ## Register the valoper candidate
 

@@ -44,12 +44,12 @@ Within one OS user, migration remains in-place: the installer stops only that us
 
 - Pinned Topaz source and official release checksums
 - Official Topaz genesis verification
-- Official Topaz seeds, Grand Valley persistent peer, and required node settings
+- Official Topaz bootstrap nodes and the Grand Valley peer configured as persistent peers
 - Custom ABCI/P2P/RPC port prefix, optional UFW, and systemd service
 - Per-user binaries and custom service names for isolated multi-instance deployments
 - Service ownership and port-collision guards before destructive work
 - Safe operator-key reuse/recovery/new-key flow
-- Node status, logs, seed/peer configuration, and transaction preview
+- Node status, logs, persistent-peer configuration, and transaction preview
 - Verified startup gate: success requires a live local RPC reporting `topaz-1`
 - Valoper candidate registration on `gno.land/r/gnops/valopers`
 - UTSA Topaz snapshot flow with provider selection, availability check, and explicit confirmation

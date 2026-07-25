@@ -35,8 +35,9 @@ export PATH="$HOME/go/bin:$PATH"
 GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-topaz-1}
 GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.topaz.testnets.gno.land}
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
-TOPAZ_SEEDS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
+OFFICIAL_TOPAZ_PEERS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
 GRAND_VALLEY_PEER="g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656"
+TOPAZ_PERSISTENT_PEERS="${OFFICIAL_TOPAZ_PEERS},${GRAND_VALLEY_PEER}"
 VALOPER_GAS_WANTED=100000000
 
 while :; do
@@ -152,7 +153,7 @@ Gno.land useful links:${RESET}
 ${GREEN}Network facts:${RESET}
 - Chain ID: ${CYAN}topaz-1${RESET}
 - RPC: ${CYAN}https://rpc.topaz.testnets.gno.land${RESET}
-- Official seeds: ${CYAN}${TOPAZ_SEEDS}${RESET}
+- Official Topaz persistent peers: ${CYAN}${OFFICIAL_TOPAZ_PEERS}${RESET}
 - Grand Valley persistent peer: ${CYAN}${GRAND_VALLEY_PEER}${RESET}
 - Genesis SHA256: ${CYAN}2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff${RESET}
 
@@ -330,7 +331,7 @@ function apply_snapshot() {
 function add_peers() {
     echo "Select an option:"
     echo "1. Add peers manually"
-    echo "2. Reset to official Topaz seeds and Grand Valley peer"
+    echo "2. Reset to official Topaz peers and Grand Valley peer"
     echo "3. Back"
     read -r -p "Enter your choice (1, 2, or 3): " choice
 
@@ -357,9 +358,9 @@ function add_peers() {
             fi
             ;;
         2)
-            gnoland config set -config-path "$CFG" p2p.seeds "$TOPAZ_SEEDS"
-            gnoland config set -config-path "$CFG" p2p.persistent_peers "$GRAND_VALLEY_PEER"
-            echo "Official Topaz seeds and Grand Valley persistent peer restored."
+            gnoland config set -config-path "$CFG" p2p.seeds ""
+            gnoland config set -config-path "$CFG" p2p.persistent_peers "$TOPAZ_PERSISTENT_PEERS"
+            echo "Official Topaz peers and Grand Valley persistent peer restored."
             ;;
         *)
             echo "Invalid choice."

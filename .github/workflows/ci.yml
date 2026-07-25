@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shell-validation:
+    name: Shell validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Show ShellCheck version
+        run: shellcheck --version
+
+      - name: Check Bash syntax
+        run: bash -n resources/*.sh tests/*.sh
+
+      - name: Run ShellCheck
+        run: shellcheck --severity=warning resources/*.sh tests/*.sh
+
+      - name: Run multi-instance regression test
+        run: bash tests/multi_instance_test.sh
+
+      - name: Check patch whitespace
+        run: git show --check --format= HEAD

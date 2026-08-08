@@ -52,7 +52,7 @@ Within one OS user, migration remains in-place: the installer stops only that us
 - Node status, logs, persistent-peer configuration, and transaction preview
 - Verified startup gate: success requires a live local RPC reporting `topaz-1`
 - Valoper candidate registration on `gno.land/r/gnops/valopers`
-- UTSA Topaz snapshot flow with provider selection, availability check, and explicit confirmation
+- UTSA and Hazen Topaz snapshot flow with live metadata, pre-download verification, optional backup, and automatic rollback
 
 ## Documentation
 

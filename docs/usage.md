@@ -44,7 +44,7 @@ Invalid moniker, port, key-menu, or existing-key input is prompted again. A real
 |---|---|
 | `1a` | Clean-deploys Topaz in the current user's directories, with backup and operator-key selection. It configures the official Topaz bootstrap nodes and Grand Valley peer together as persistent peers, validates the service owner, and rejects occupied ports before cleanup. The chosen prefix must be `01`–`64` and applies to local ABCI (`prefix658`), P2P (`prefix656`), and RPC (`prefix657`) listeners. Success requires those config ports plus RPC network `topaz-1`; failures print diagnostics. |
 | `1b` | Updates the source and binaries to the pinned Topaz release after checksum verification. |
-| `1c` | Opens the snapshot provider menu and applies the UTSA Topaz snapshot after availability and confirmation checks. It stops the selected service, replaces only `db` and `wal`, restarts the service, and follows live logs. |
+| `1c` | Opens the UTSA/Hazen snapshot provider menu and shows available date, height, size, and verification metadata. It downloads and validates the archive before downtime, optionally backs up `db` and `wal`, restarts the selected service, and automatically restores the previous database if activation fails. |
 | `1d` | Adds persistent peers manually or restores the official Topaz bootstrap nodes plus the Grand Valley persistent peer. |
 | `1e` | Shows local/network heights, sync state, peers, disk, and validator address. |
 | `1f` | Follows the current user's selected Gnoland service logs. |

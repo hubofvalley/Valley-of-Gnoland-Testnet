@@ -688,7 +688,7 @@ function show_guidelines() {
     echo -e "${GREEN}Node Interactions:${RESET}"
     echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Topaz node."
     echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Topaz binaries."
-    echo "   c. Apply Snapshot: Applies the UTSA Topaz snapshot to speed up sync."
+    echo "   c. Apply Snapshot: Applies a verified provider snapshot to speed up sync."
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."

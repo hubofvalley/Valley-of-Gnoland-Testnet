@@ -7,13 +7,13 @@ source "$HOME/.bash_profile" 2>/dev/null || true
 
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME%.service}
-RELEASE_COMMIT="fc40526511474e40b8a66419f5ba28255085bc08"
+RELEASE_COMMIT="9ab5198acac68016341655c82290ecaff5591edb"
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
 GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
-GNOLAND_SHA256="e74ab25e366668c8c6774e3e8b23dd48288cf23a499a085c101cbbfca2a5f9c3"
-GNOKEY_SHA256="660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438"
+GNOLAND_SHA256="b77b033df80a10bd97d836a2c3eb2b4257279cd7240f21ed6e06b67c7306a434"
+GNOKEY_SHA256="f27c7ad0430bdc4a7855af6a6762d202b7d609161f80a8fa223f85882bef486d"
 OS_USER=$(id -un)
 SERVICE_FILE=$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
 
@@ -75,12 +75,12 @@ if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
     exit 1
 fi
 if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
-    echo "Missing Topaz stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs."
+    echo "Missing Sapphire stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs."
     exit 1
 fi
 
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/topaz/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/topaz/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/sapphire/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/sapphire/gnokey_linux_amd64" -o "$tmpdir/gnokey"
 echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
 echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
 chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"

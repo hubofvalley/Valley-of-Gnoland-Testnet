@@ -1,28 +1,26 @@
 {
   "project": "Valley of Gnoland - Testnet",
-  "network": "Gno.land Topaz",
-  "chain_id": "topaz-1",
-  "release_tag": "chain/topaz",
-  "release_commit": "fc40526511474e40b8a66419f5ba28255085bc08",
-  "release_url": "https://github.com/gnolang/gno/releases/tag/chain/topaz",
-  "genesis_sha256": "2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff",
+  "network": "Gno.land Sapphire",
+  "chain_id": "sapphire-1",
+  "release_tag": "chain/sapphire",
+  "release_commit": "9ab5198acac68016341655c82290ecaff5591edb",
+  "release_url": "https://github.com/gnolang/gno/releases/tag/chain/sapphire",
+  "genesis_sha256": "d511e0e5b767d4e53f5c1afeeea1bc61d2c7b2118146c820f1f3e4296f67498e",
   "endpoints": {
     "public_provider": "Gno.land",
-    "rpc_node": "https://rpc.topaz.testnets.gno.land",
-    "faucet": "https://topaz.testnets.gno.land/faucet",
-    "grand_valley_valoper_profile": "https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym",
-    "grand_valley_persistent_peer": "g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656",
-    "official_persistent_peers": "g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
+    "rpc_node": "https://rpc.sapphire.testnets.gno.land",
+    "faucet": "https://sapphire.testnets.gno.land/faucet",
+    "official_persistent_peers": "g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656"
   },
   "snapshot": {
-    "provider": "UTSA",
-    "url": "https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4",
+    "status": "unavailable",
+    "reason": "No verified Sapphire snapshot provider is configured",
     "script": "resources/apply_snapshot.sh"
   },
   "binaries": {
-    "gnoland_linux_amd64": "e74ab25e366668c8c6774e3e8b23dd48288cf23a499a085c101cbbfca2a5f9c3",
-    "gnokey_linux_amd64": "660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438"
+    "gnoland_linux_amd64": "b77b033df80a10bd97d836a2c3eb2b4257279cd7240f21ed6e06b67c7306a434",
+    "gnokey_linux_amd64": "f27c7ad0430bdc4a7855af6a6762d202b7d609161f80a8fa223f85882bef486d"
   },
-  "status": "live_verified",
-  "last_reviewed": "2026-07-26"
+  "status": "migration_candidate",
+  "last_reviewed": "2026-08-11"
 }

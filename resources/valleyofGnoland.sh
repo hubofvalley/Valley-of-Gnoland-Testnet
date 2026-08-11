@@ -32,12 +32,11 @@ GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 export GNOROOT
 export PATH="$HOME/go/bin:$PATH"
-GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-topaz-1}
-GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.topaz.testnets.gno.land}
+GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-sapphire-1}
+GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.sapphire.testnets.gno.land}
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
-OFFICIAL_TOPAZ_PEERS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
-GRAND_VALLEY_PEER="g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656"
-TOPAZ_PERSISTENT_PEERS="${OFFICIAL_TOPAZ_PEERS},${GRAND_VALLEY_PEER}"
+OFFICIAL_SAPPHIRE_PEERS="g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656"
+SAPPHIRE_PERSISTENT_PEERS="$OFFICIAL_SAPPHIRE_PEERS"
 VALOPER_GAS_WANTED=100000000
 
 while :; do
@@ -100,7 +99,7 @@ LOGO="
 INTRO="
 Valley of Gnoland by ${ORANGE}Grand Valley${RESET}
 
-${GREEN}Gno.land Topaz Node System Requirements${RESET}
+${GREEN}Gno.land Sapphire Node System Requirements${RESET}
 ${YELLOW}| Category  | Requirements |
 | --------- | ------------ |
 | CPU       | 4+ vCPU      |
@@ -109,8 +108,8 @@ ${YELLOW}| Category  | Requirements |
 | Bandwidth | 100+ MBit/s  |${RESET}
 
 - service file name: ${CYAN}${GNOLAND_SERVICE_NAME}.service${RESET}
-- current network: ${CYAN}Gno.land Topaz${RESET}
-- current chain ID: ${CYAN}topaz-1${RESET}
+- current network: ${CYAN}Gno.land Sapphire${RESET}
+- current chain ID: ${CYAN}sapphire-1${RESET}
 - native denom: ${CYAN}ugnot${RESET}
 - binaries: ${CYAN}$HOME/go/bin/gnoland, $HOME/go/bin/gnokey${RESET}
 - node directory: ${CYAN}${GNOLAND_HOME}${RESET}
@@ -125,8 +124,8 @@ ${GREEN}No User Data Stored Externally${RESET}
 - This script does not store any user data externally. All operations are performed locally on your machine.
 
 ${GREEN}Candidate-only Validator Gate${RESET}
-- Topaz registration creates a validator candidate profile only.
-- Existing Test13 validators must reuse the same operator g1 address.
+- Sapphire registration creates a validator candidate profile only.
+- Existing Topaz validators must reuse the same operator g1 address.
 - GovDAO approval is required before a candidate joins the active validator set.
 
 ${GREEN}Security Best Practices${RESET}
@@ -143,19 +142,17 @@ Gno.land useful links:${RESET}
 - Official Docs: ${BLUE}https://docs.gno.land/${RESET}
 - Networks: ${BLUE}https://docs.gno.land/resources/gnoland-networks/${RESET}
 - GitHub: ${BLUE}https://github.com/gnolang/gno${RESET}
-- Topaz Release: ${BLUE}https://github.com/gnolang/gno/releases/tag/chain/topaz${RESET}
-- Topaz Validator Docs: ${BLUE}https://github.com/gnolang/gno/blob/chain/topaz/misc/deployments/topaz.gno.land/VALIDATOR.md${RESET}
-- Faucet: ${BLUE}https://topaz.testnets.gno.land/faucet${RESET}
-- Valoper Candidates: ${BLUE}https://topaz.testnets.gno.land/r/gnops/valopers${RESET}
-- Grand Valley Validator Profile: ${BLUE}https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym${RESET}
-- Active Validators Realm: ${BLUE}https://topaz.testnets.gno.land/r/sys/validators/v3${RESET}
+- Sapphire Release: ${BLUE}https://github.com/gnolang/gno/releases/tag/chain/sapphire${RESET}
+- Sapphire Validator Docs: ${BLUE}https://github.com/gnolang/gno/blob/chain/sapphire/misc/deployments/sapphire.gno.land/VALIDATOR.md${RESET}
+- Faucet: ${BLUE}https://sapphire.testnets.gno.land/faucet${RESET}
+- Valoper Candidates: ${BLUE}https://sapphire.testnets.gno.land/r/gnops/valopers${RESET}
+- Active Validators Realm: ${BLUE}https://sapphire.testnets.gno.land/r/sys/validators/v3${RESET}
 
 ${GREEN}Network facts:${RESET}
-- Chain ID: ${CYAN}topaz-1${RESET}
-- RPC: ${CYAN}https://rpc.topaz.testnets.gno.land${RESET}
-- Official Topaz persistent peers: ${CYAN}${OFFICIAL_TOPAZ_PEERS}${RESET}
-- Grand Valley persistent peer: ${CYAN}${GRAND_VALLEY_PEER}${RESET}
-- Genesis SHA256: ${CYAN}2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff${RESET}
+- Chain ID: ${CYAN}sapphire-1${RESET}
+- RPC: ${CYAN}https://rpc.sapphire.testnets.gno.land${RESET}
+- Official Sapphire persistent peers: ${CYAN}${OFFICIAL_SAPPHIRE_PEERS}${RESET}
+- Genesis SHA256: ${CYAN}d511e0e5b767d4e53f5c1afeeea1bc61d2c7b2118146c820f1f3e4296f67498e${RESET}
 
 ${GREEN}Connect with Grand Valley:${RESET}
 - X: ${BLUE}https://x.com/bacvalley${RESET}
@@ -175,13 +172,13 @@ read -r
 
 sed -i '/^export GNOLAND_CHAIN_ID=/d;/^export GNOLAND_HOME=/d;/^export GNOLAND_GENESIS=/d;/^export GNOKEY_HOME=/d;/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/^export GNOLAND_PUBLIC_REMOTE=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 {
-    echo "export GNOLAND_CHAIN_ID=\"topaz-1\""
+    echo "export GNOLAND_CHAIN_ID=\"sapphire-1\""
     echo "export GNOLAND_HOME=\"$GNOLAND_HOME\""
     echo "export GNOLAND_GENESIS=\"$GNOLAND_GENESIS\""
     echo "export GNOKEY_HOME=\"$GNOKEY_HOME\""
     echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
     echo "export GNOROOT=\"$GNOROOT\""
-    echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.topaz.testnets.gno.land\""
+    echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.sapphire.testnets.gno.land\""
     # shellcheck disable=SC2016
     echo 'export PATH="$HOME/go/bin:$PATH"'
 } >> "$HOME/.bash_profile"
@@ -292,7 +289,7 @@ function deploy_gnoland_node() {
     echo -e "${RED}Migration replaces chain data only inside the current OS user's node directory.${RESET}"
     echo -e "${YELLOW}The installer backs up node secrets and the operator keyring before cleanup.${RESET}"
     echo
-    echo "This installs a Topaz full node and does not guarantee active validator status."
+    echo "This installs a Sapphire full node and does not guarantee active validator status."
     echo "GovDAO proposal approval is required after candidate registration."
     read -r -p $'\n\e[33mDo you want to proceed with installation? (yes/no): \e[0m' confirm
     if [[ "${confirm,,}" != "yes" ]]; then
@@ -305,7 +302,7 @@ function deploy_gnoland_node() {
 }
 
 function update_gnoland_binary() {
-    echo -e "${YELLOW}Update gnoland and gnokey to the pinned Topaz release binaries.${RESET}"
+    echo -e "${YELLOW}Update gnoland and gnokey to the pinned Sapphire release binaries.${RESET}"
     if ! prompt_back_or_continue; then
         return
     fi
@@ -331,7 +328,7 @@ function apply_snapshot() {
 function add_peers() {
     echo "Select an option:"
     echo "1. Add peers manually"
-    echo "2. Reset to official Topaz peers and Grand Valley peer"
+    echo "2. Reset to official Sapphire persistent peers"
     echo "3. Back"
     read -r -p "Enter your choice (1, 2, or 3): " choice
 
@@ -359,8 +356,8 @@ function add_peers() {
             ;;
         2)
             gnoland config set -config-path "$CFG" p2p.seeds ""
-            gnoland config set -config-path "$CFG" p2p.persistent_peers "$TOPAZ_PERSISTENT_PEERS"
-            echo "Official Topaz peers and Grand Valley persistent peer restored."
+            gnoland config set -config-path "$CFG" p2p.persistent_peers "$SAPPHIRE_PERSISTENT_PEERS"
+            echo "Official Sapphire persistent peers restored."
             ;;
         *)
             echo "Invalid choice."
@@ -451,15 +448,15 @@ function show_logs() {
 
 function create_operator_key() {
     echo "Choose an option:"
-    echo "1. Reuse/list an existing local Test13 operator key"
-    echo "2. Recover the existing Test13 operator key from mnemonic"
+    echo "1. Reuse/list an existing local Topaz operator key"
+    echo "2. Recover the existing Topaz operator key from mnemonic"
     echo "3. Create a new operator key"
     echo "4. Back"
     read -r -p "Enter your choice: " choice
 
     case $choice in
         1)
-            echo -e "${YELLOW}Existing Topaz validators should use the same operator g1 address used on Test13.${RESET}"
+            echo -e "${YELLOW}Existing Topaz validators should use the same operator g1 address on Sapphire.${RESET}"
             gnokey -home "$GNOKEY_HOME" list
             ;;
         2)
@@ -489,7 +486,7 @@ function create_operator_key() {
             echo "Invalid choice."
             ;;
     esac
-    echo -e "\n${YELLOW}Fund the operator g1 address via: ${BLUE}https://topaz.testnets.gno.land/faucet${RESET}"
+    echo -e "\n${YELLOW}Fund the operator g1 address via: ${BLUE}https://sapphire.testnets.gno.land/faucet${RESET}"
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -504,7 +501,7 @@ function show_validator_pubkey() {
 }
 
 function register_valoper_candidate() {
-    echo -e "${CYAN}Register Gno.land Topaz Valoper Candidate${RESET}"
+    echo -e "${CYAN}Register Gno.land Sapphire Valoper Candidate${RESET}"
     echo -e "${YELLOW}This broadcasts a transaction. It creates a candidate profile only, not active validator status.${RESET}"
     echo -e "${YELLOW}Requirements: synced node, funded operator key, and consensus gpub1... from option 2b.${RESET}"
     if ! prompt_back_or_continue; then
@@ -530,7 +527,7 @@ gnokey maketx call \\
   --args "$OPERATOR_ADDR" \\
   --args "$CONSENSUS_PUBKEY" \\
   --gas-fee 1000000ugnot --gas-wanted $VALOPER_GAS_WANTED \\
-  --chainid topaz-1 \\
+  --chainid sapphire-1 \\
   --remote $GNOLAND_PUBLIC_REMOTE \\
   --broadcast \\
   $KEY_NAME
@@ -582,9 +579,8 @@ function query_balance_or_realm() {
             gnokey_cmd query "$path"
             ;;
         2)
-            echo "Valoper candidates: https://topaz.testnets.gno.land/r/gnops/valopers"
-            echo "Grand Valley validator profile: https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym"
-            echo "Active validators: https://topaz.testnets.gno.land/r/sys/validators/v3"
+            echo "Valoper candidates: https://sapphire.testnets.gno.land/r/gnops/valopers"
+            echo "Active validators: https://sapphire.testnets.gno.land/r/sys/validators/v3"
             ;;
         3)
             menu
@@ -679,16 +675,16 @@ function show_guidelines() {
     echo -e "${CYAN}Guidelines on How to Use the Valley of Gnoland${RESET}"
     echo -e "${GREEN}Recommended flow:${RESET}"
     echo " - 1a Deploy node -> wait until 1e shows synced"
-    echo " - 2a Reuse/recover the Test13 operator key (or create a new key) -> fund via faucet"
+    echo " - 2a Reuse/recover the Topaz operator key (or create a new key) -> fund via faucet"
     echo " - 2b Show consensus pubkey"
     echo " - 2c Register valoper candidate"
     echo " - 3d Backup node secrets"
     echo -e "${YELLOW}Candidate registration is not active validator admission. GovDAO approval is required.${RESET}"
     echo
     echo -e "${GREEN}Node Interactions:${RESET}"
-    echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Topaz node."
-    echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Topaz binaries."
-    echo "   c. Apply Snapshot: Applies a verified provider snapshot to speed up sync."
+    echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Sapphire node."
+    echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Sapphire binaries."
+    echo "   c. Apply Snapshot: Reports snapshot availability; currently blocked for Sapphire."
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."
@@ -749,8 +745,7 @@ function menu() {
     echo "5. Show Guidelines"
     echo "6. Exit"
     echo
-    echo -e "Topaz Valoper Candidates: ${BLUE}https://topaz.testnets.gno.land/r/gnops/valopers${RESET}"
-    echo -e "Grand Valley Validator Profile: ${BLUE}https://topaz.testnets.gno.land/r/gnops/valopers:g19sqhfxveuzdmf244xsslmwd638l9mjcdq76hym${RESET}"
+    echo -e "Sapphire Valoper Candidates: ${BLUE}https://sapphire.testnets.gno.land/r/gnops/valopers${RESET}"
     echo -e "${GREEN}Let's Buidl Gnoland Together - Grand Valley${RESET}"
     if ! read -r -p "Choose an option: " choice; then
         echo

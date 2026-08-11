@@ -14,7 +14,7 @@ on_error() {
     local line_number=${1:-unknown}
     local failed_command=${2:-unknown}
     trap - ERR
-    echo -e "${RED}Topaz installation failed.${RESET}" >&2
+    echo -e "${RED}Sapphire installation failed.${RESET}" >&2
     echo "Stage: $CURRENT_STAGE" >&2
     echo "Line: $line_number" >&2
     echo "Command: $failed_command" >&2
@@ -25,17 +25,16 @@ on_error() {
 
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
-CHAIN_ID="topaz-1"
-RELEASE_TAG="chain/topaz"
-RELEASE_COMMIT="fc40526511474e40b8a66419f5ba28255085bc08"
-GENESIS_URL="https://github.com/gnolang/gno/releases/download/chain/topaz/genesis.json"
-GENESIS_SHA256="2dd049f973b82858727440df9aff5722cb0b322fd00890f40f2b0688276898ff"
-GNOLAND_SHA256="e74ab25e366668c8c6774e3e8b23dd48288cf23a499a085c101cbbfca2a5f9c3"
-GNOKEY_SHA256="660f5047c5fb4cd5768f0169f1140e95379996df421cbddf0e5e2602f1050438"
-OFFICIAL_TOPAZ_PEERS="g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656"
-GRAND_VALLEY_PEER="g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656"
-PERSISTENT_PEERS="${OFFICIAL_TOPAZ_PEERS},${GRAND_VALLEY_PEER}"
-PUBLIC_RPC="https://rpc.topaz.testnets.gno.land"
+CHAIN_ID="sapphire-1"
+RELEASE_TAG="chain/sapphire"
+RELEASE_COMMIT="9ab5198acac68016341655c82290ecaff5591edb"
+GENESIS_URL="https://github.com/gnolang/gno/releases/download/chain/sapphire/genesis.json"
+GENESIS_SHA256="d511e0e5b767d4e53f5c1afeeea1bc61d2c7b2118146c820f1f3e4296f67498e"
+GNOLAND_SHA256="b77b033df80a10bd97d836a2c3eb2b4257279cd7240f21ed6e06b67c7306a434"
+GNOKEY_SHA256="f27c7ad0430bdc4a7855af6a6762d202b7d609161f80a8fa223f85882bef486d"
+OFFICIAL_SAPPHIRE_PEERS="g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656"
+PERSISTENT_PEERS="${OFFICIAL_SAPPHIRE_PEERS}"
+PUBLIC_RPC="https://rpc.sapphire.testnets.gno.land"
 
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOLAND_HOME=${GNOLAND_HOME:-$GNO_SOURCE_DIR/gnoland-data}
@@ -69,14 +68,14 @@ for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_HOME" "$GNOKEY_HOME" "$GNOLAND_
     fi
 done
 
-echo -e "\n--- Gno.land Topaz Node Setup ---"
+echo -e "\n--- Gno.land Sapphire Node Setup ---"
 echo -e "${YELLOW}Migration layout remains compatible with previous Valley of Gnoland installs:${RESET}"
 echo "  Source / GNOROOT: $GNO_SOURCE_DIR"
 echo "  Node data:        $GNOLAND_HOME"
 echo "  Operator keyring: $GNOKEY_HOME"
 echo "  Service:          gnoland.service (default)"
 echo
-echo -e "${RED}Topaz is a new chain. Existing Test13 chain data cannot be reused.${RESET}"
+echo -e "${RED}Sapphire is a new chain. Existing Topaz chain data cannot be reused.${RESET}"
 echo -e "${GREEN}The installer preserves the operator keyring and backs it up before cleanup.${RESET}"
 
 while :; do
@@ -174,8 +173,8 @@ fi
 
 echo
 echo -e "${YELLOW}Operator key choice:${RESET}"
-echo "1. Reuse an existing local Test13 operator key (recommended for existing validators)"
-echo "2. Recover an existing Test13 operator key from its mnemonic"
+echo "1. Reuse an existing local Topaz operator key (recommended for existing validators)"
+echo "2. Recover an existing Topaz operator key from its mnemonic"
 echo "3. Create a new operator key"
 while :; do
     read -r -p "Choose 1, 2, or 3: " OPERATOR_KEY_ACTION
@@ -193,11 +192,11 @@ echo "  Node data:        $GNOLAND_HOME"
 echo "  Operator keyring: $GNOKEY_HOME"
 echo "  P2P/RPC/ABCI:     $GNOLAND_P2P_PORT / $GNOLAND_RPC_PORT / $GNOLAND_ABCI_PORT"
 echo
-echo -e "${YELLOW}This will replace the chain data under $GNOLAND_HOME with a clean Topaz state.${RESET}"
+echo -e "${YELLOW}This will replace the chain data under $GNOLAND_HOME with a clean Sapphire state.${RESET}"
 echo "The old source checkout and genesis in $GNO_SOURCE_DIR will also be replaced."
 echo "The operator keyring at $GNOKEY_HOME will not be deleted."
-read -r -p "Type MIGRATE-TO-TOPAZ to continue: " CONFIRM
-if [ "$CONFIRM" != "MIGRATE-TO-TOPAZ" ]; then
+read -r -p "Type MIGRATE-TO-SAPPHIRE to continue: " CONFIRM
+if [ "$CONFIRM" != "MIGRATE-TO-SAPPHIRE" ]; then
     echo "Installation cancelled."
     exit 0
 fi
@@ -205,9 +204,9 @@ fi
 mkdir -p "$BACKUP_DIR"
 CURRENT_STAGE="backup existing keys and node secrets"
 if [ -d "$GNOLAND_HOME/secrets" ]; then
-    tar -czf "$BACKUP_DIR/test13-node-secrets.tar.gz" -C "$GNOLAND_HOME" secrets
-    chmod 600 "$BACKUP_DIR/test13-node-secrets.tar.gz"
-    echo -e "${GREEN}Backed up existing node secrets to $BACKUP_DIR/test13-node-secrets.tar.gz${RESET}"
+    tar -czf "$BACKUP_DIR/topaz-node-secrets.tar.gz" -C "$GNOLAND_HOME" secrets
+    chmod 600 "$BACKUP_DIR/topaz-node-secrets.tar.gz"
+    echo -e "${GREEN}Backed up existing node secrets to $BACKUP_DIR/topaz-node-secrets.tar.gz${RESET}"
 fi
 if [ -d "$GNOKEY_HOME" ] && [ -n "$(find "$GNOKEY_HOME" -mindepth 1 -print -quit 2>/dev/null)" ]; then
     tar -czf "$BACKUP_DIR/operator-keyring.tar.gz" -C "$(dirname "$GNOKEY_HOME")" "$(basename "$GNOKEY_HOME")"
@@ -235,8 +234,8 @@ mkdir -p "$HOME/go/bin"
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-echo -e "${CYAN}Preparing the pinned Gno Topaz source tree and stdlibs.${RESET}"
-CURRENT_STAGE="prepare pinned Topaz source"
+echo -e "${CYAN}Preparing the pinned Gno Sapphire source tree and stdlibs.${RESET}"
+CURRENT_STAGE="prepare pinned Sapphire source"
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
     rm -rf "$GNO_SOURCE_DIR"
     mkdir -p "$GNO_SOURCE_DIR"
@@ -254,11 +253,11 @@ if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
     false
 fi
 if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
-    echo -e "${RED}Missing Topaz stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2
+    echo -e "${RED}Missing Sapphire stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2
     false
 fi
 
-CURRENT_STAGE="install verified Topaz binaries"
+CURRENT_STAGE="install verified Sapphire binaries"
 if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
     echo -e "${CYAN}Building gnoland and gnokey from ${RELEASE_TAG}.${RESET}"
     (
@@ -266,9 +265,9 @@ if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
         make -C gno.land install.gnoland install.gnokey
     )
 else
-    echo -e "${CYAN}Downloading official Topaz release binaries.${RESET}"
-    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/topaz/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/topaz/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+    echo -e "${CYAN}Downloading official Sapphire release binaries.${RESET}"
+    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/sapphire/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/sapphire/gnokey_linux_amd64" -o "$tmpdir/gnokey"
     echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
     echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
     chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
@@ -311,7 +310,7 @@ case "$OPERATOR_KEY_ACTION" in
             done
         else
             echo "$LOCAL_KEYS"
-            echo -e "${YELLOW}Confirm that the selected g1... address is the same operator address used on Test13.${RESET}"
+            echo -e "${YELLOW}Confirm that the selected g1... address is the same operator address used on Topaz.${RESET}"
             while :; do
                 read -r -p "Type the existing key name to reuse: " OPERATOR_KEY_NAME
                 if [ -n "$OPERATOR_KEY_NAME" ] && operator_key_exists "$OPERATOR_KEY_NAME"; then
@@ -325,7 +324,7 @@ esac
 
 case "$OPERATOR_KEY_ACTION" in
     2)
-        read -r -p "Enter key name for the recovered Test13 operator (default 'operator'): " OPERATOR_KEY_NAME
+        read -r -p "Enter key name for the recovered Topaz operator (default 'operator'): " OPERATOR_KEY_NAME
         OPERATOR_KEY_NAME=${OPERATOR_KEY_NAME:-operator}
         if operator_key_exists "$OPERATOR_KEY_NAME"; then
             echo -e "${YELLOW}Key '$OPERATOR_KEY_NAME' already exists; reusing it without overwrite.${RESET}"
@@ -349,15 +348,15 @@ echo -e "${GREEN}Operator key selected: $OPERATOR_KEY_NAME${RESET}"
 "$GNOKEY_BIN" -home "$GNOKEY_HOME" list
 
 cd "$GNO_SOURCE_DIR"
-CURRENT_STAGE="initialise Topaz config and node secrets"
+CURRENT_STAGE="initialise Sapphire config and node secrets"
 "$GNOLAND_BIN" config init -force
 "$GNOLAND_BIN" secrets init -force
-echo -e "${YELLOW}A fresh Topaz consensus/node identity was generated. This does not change the reused operator g1 address.${RESET}"
+echo -e "${YELLOW}A fresh Sapphire consensus/node identity was generated. This does not change the reused operator g1 address.${RESET}"
 
 curl -fsSL "$GENESIS_URL" -o "$GENESIS_FILE"
 echo "${GENESIS_SHA256}  $GENESIS_FILE" | sha256sum -c -
 
-CURRENT_STAGE="apply official Topaz configuration"
+CURRENT_STAGE="apply official Sapphire configuration"
 "$GNOLAND_BIN" config set moniker "$GNOLAND_MONIKER"
 "$GNOLAND_BIN" config set proxy_app "tcp://127.0.0.1:${GNOLAND_ABCI_PORT}"
 "$GNOLAND_BIN" config set p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
@@ -379,14 +378,14 @@ fi
 if [[ "$SETUP_UFW" =~ ^[Yy]$ ]]; then
     sudo apt install -y ufw
     sudo ufw allow 22/tcp comment "SSH Access"
-    sudo ufw allow "${GNOLAND_P2P_PORT}/tcp" comment "Gno.land Topaz P2P"
+    sudo ufw allow "${GNOLAND_P2P_PORT}/tcp" comment "Gno.land Sapphire P2P"
     sudo ufw --force enable
     sudo ufw status verbose
 fi
 
 sudo tee "$SERVICE_FILE" >/dev/null <<EOF
 [Unit]
-Description=Gno.land Topaz Node (${GNOLAND_SERVICE_NAME})
+Description=Gno.land Sapphire Node (${GNOLAND_SERVICE_NAME})
 After=network-online.target
 
 [Service]
@@ -428,7 +427,7 @@ CURRENT_STAGE="start gnoland service"
 sudo systemctl enable "$GNOLAND_SERVICE_NAME"
 sudo systemctl restart "$GNOLAND_SERVICE_NAME"
 
-echo -e "${CYAN}Waiting for the Topaz RPC startup check (up to 90 seconds).${RESET}"
+echo -e "${CYAN}Waiting for the Sapphire RPC startup check (up to 90 seconds).${RESET}"
 RPC_STATUS=""
 for _ in $(seq 1 90); do
     if ! systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then
@@ -468,16 +467,16 @@ if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME" &&
    [ "$CONFIG_ABCI_PORT" = "$GNOLAND_ABCI_PORT" ] &&
    [ "$CONFIG_P2P_PORT" = "$GNOLAND_P2P_PORT" ] &&
    [ "$CONFIG_RPC_PORT" = "$GNOLAND_RPC_PORT" ]; then
-    echo -e "${GREEN}Topaz Gnoland service started successfully.${RESET}"
+    echo -e "${GREEN}Sapphire Gnoland service started successfully.${RESET}"
     echo "Verified RPC network: $RPC_NETWORK"
     echo "Verified local ports: ABCI $CONFIG_ABCI_PORT, P2P $CONFIG_P2P_PORT, RPC $CONFIG_RPC_PORT"
     echo "Local status: curl -s http://127.0.0.1:${GNOLAND_RPC_PORT}/status | jq '.result.sync_info'"
-    echo "After sync, register the Topaz valoper profile with '$OPERATOR_KEY_NAME'."
-    echo "Existing validators must use the same operator g1 address used on Test13."
+    echo "After sync, register the Sapphire valoper profile with '$OPERATOR_KEY_NAME'."
+    echo "Existing validators must use the same operator g1 address used on Topaz."
     echo "Backups created under: $BACKUP_DIR"
     echo "Per-user commands are available from $HOME/go/bin: gnoland and gnokey"
 else
-    echo -e "${RED}Gnoland failed the Topaz RPC startup check.${RESET}"
+    echo -e "${RED}Gnoland failed the Sapphire RPC startup check.${RESET}"
     echo "Expected RPC network: $CHAIN_ID"
     echo "Observed RPC network: ${RPC_NETWORK:-unavailable}"
     echo "Expected local ports: ABCI $GNOLAND_ABCI_PORT, P2P $GNOLAND_P2P_PORT, RPC $GNOLAND_RPC_PORT"

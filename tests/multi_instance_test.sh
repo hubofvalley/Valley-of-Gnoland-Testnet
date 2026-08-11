@@ -49,7 +49,7 @@ EOF
 cat > "$MOCK_BIN/git" <<'EOF'
 #!/bin/bash
 case " $* " in
-    *" rev-parse HEAD "*) printf '%s\n' "fc40526511474e40b8a66419f5ba28255085bc08" ;;
+    *" rev-parse HEAD "*) printf '%s\n' "9ab5198acac68016341655c82290ecaff5591edb" ;;
     *" remote get-url origin "*) printf '%s\n' "https://github.com/gnolang/gno.git" ;;
 esac
 exit 0
@@ -78,7 +78,7 @@ while [ "$#" -gt 0 ]; do
     case "$1" in
         -o) out=$2; shift 2 ;;
         http://127.0.0.1:*/status)
-            printf '%s\n' '{"result":{"node_info":{"network":"topaz-1"},"sync_info":{"latest_block_height":"1","catching_up":false}}}'
+            printf '%s\n' '{"result":{"node_info":{"network":"sapphire-1"},"sync_info":{"latest_block_height":"1","catching_up":false}}}'
             exit 0
             ;;
         http*|https*) url=$1; shift ;;
@@ -97,7 +97,7 @@ cat > "$FIXTURES/gnoland" <<'EOF'
 #!/bin/bash
 set -e
 case "${1:-}" in
-    version) echo "mock-topaz" ;;
+    version) echo "mock-sapphire" ;;
     config)
         case "${2:-}" in
             init)
@@ -170,7 +170,7 @@ run_install() {
     local home=$1 service=$2 prefix=$3 log=$4
     local installer="$TEST_ROOT/${service}-installer.sh"
     make_installer "$installer"
-    printf 'node-%s\n%s\n\np\nn\n1\nMIGRATE-TO-TOPAZ\noperator\n' "$service" "$prefix" |
+    printf 'node-%s\n%s\n\np\nn\n1\nMIGRATE-TO-SAPPHIRE\noperator\n' "$service" "$prefix" |
         env -u SUDO_USER \
             HOME="$home" \
             PATH="$MOCK_BIN:/usr/bin:/bin" \
@@ -193,21 +193,21 @@ prepare_home "$HOME_B"
 
 run_install "$HOME_A" gnoland 26 "$TEST_ROOT/a.log"
 HASH_A=$(sha256sum "$HOME_A/go/bin/gnoland" | awk '{print $1}')
-run_install "$HOME_B" gnoland-topaz 36 "$TEST_ROOT/b.log"
+run_install "$HOME_B" gnoland-sapphire 36 "$TEST_ROOT/b.log"
 
 test -x "$HOME_A/go/bin/gnoland"
 test -x "$HOME_B/go/bin/gnoland"
 test "$HASH_A" = "$(sha256sum "$HOME_A/go/bin/gnoland" | awk '{print $1}')"
 grep -q "^User=$(id -un)$" "$SYSTEMD_DIR/gnoland.service"
 grep -q "^WorkingDirectory=$HOME_A/gno$" "$SYSTEMD_DIR/gnoland.service"
-grep -q "^WorkingDirectory=$HOME_B/gno$" "$SYSTEMD_DIR/gnoland-topaz.service"
+grep -q "^WorkingDirectory=$HOME_B/gno$" "$SYSTEMD_DIR/gnoland-sapphire.service"
 grep -q 'proxy_app = "tcp://127.0.0.1:36658"' "$HOME_B/gno/gnoland-data/config/config.toml"
 grep -q 'laddr = "tcp://0.0.0.0:36656"' "$HOME_B/gno/gnoland-data/config/config.toml"
 grep -q 'laddr = "tcp://127.0.0.1:36657"' "$HOME_B/gno/gnoland-data/config/config.toml"
 grep -q 'seeds = ""' "$HOME_B/gno/gnoland-data/config/config.toml"
-grep -q 'persistent_peers = "g19q07ssuafhmg6r7ys7wp7rpc4jxc85cpvdy426@seed-1.topaz.testnets.gno.land:26656,g15k98e65gm8h7fdr3yr4tqn82lvch4a97a3sg3j@seed-2.topaz.testnets.gno.land:26656,g1yzrxmspjavrkv64hl958d7xrc9vj2w9h0jefhs@peer-gnoland.grandvalleys.com:18656"' "$HOME_B/gno/gnoland-data/config/config.toml"
-grep -q "Topaz Gnoland service started successfully" "$TEST_ROOT/a.log"
-grep -q "Topaz Gnoland service started successfully" "$TEST_ROOT/b.log"
+grep -q 'persistent_peers = "g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656"' "$HOME_B/gno/gnoland-data/config/config.toml"
+grep -q "Sapphire Gnoland service started successfully" "$TEST_ROOT/a.log"
+grep -q "Sapphire Gnoland service started successfully" "$TEST_ROOT/b.log"
 
 env -u SUDO_USER \
     HOME="$HOME_B" \
@@ -248,7 +248,7 @@ test -x "$HOME_A/go/bin/gnoland"
 HOME_C="$TEST_ROOT/home-c"
 prepare_home "$HOME_C"
 make_installer "$TEST_ROOT/port-installer.sh"
-printf 'port-test\n71\n46\n\np\nn\n47\n1\nMIGRATE-TO-TOPAZ\noperator\n' |
+printf 'port-test\n71\n46\n\np\nn\n47\n1\nMIGRATE-TO-SAPPHIRE\noperator\n' |
     env -u SUDO_USER \
         HOME="$HOME_C" \
         PATH="$MOCK_BIN:/usr/bin:/bin" \

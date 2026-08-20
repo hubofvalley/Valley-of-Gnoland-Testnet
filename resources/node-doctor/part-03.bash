@@ -112,4 +112,3 @@ check_runtime_and_paths() {
     else
         add_result "runtime" "sudo_context" "PASS" "Running as the node OS user" "OS user: $OS_USER"
     fi
-

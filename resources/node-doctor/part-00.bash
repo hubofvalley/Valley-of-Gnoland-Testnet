@@ -92,4 +92,3 @@ Exit codes:
   2  Invalid command-line arguments.
 USAGE
 }
-

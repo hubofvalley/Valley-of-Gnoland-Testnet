@@ -4,12 +4,12 @@ set -euo pipefail
 
 TEST_PARTS=(
     "part-00.bash:b4133f56daf3cd70c7bd5c7f6f9dc58ef09921f1b5a83951af6d4c8e1d857530"
-    "part-01.bash:f883d579be8f9162ac7c5f76a0e44adfbf370f833f1c41318bbecc3ac50ba7a5"
-    "part-02.bash:dfbb7ee8280aec12361b8bcdfda44fbc5df25373cd2e0ea30fc731cfed3cd158"
+    "part-01.bash:e0aa3e71a97e9b8bb76a2b4e67c358ff7a95718a4946cfd5f78b32a7177f7adc"
+    "part-02.bash:ed79d745048bfd6fc9cdde3a24451b7ceca1043b1b9b210e5d9b078b81ed943b"
     "part-03.bash:5f8c9d1777a56c27b510031b10f5a857641de6def5b9b98b9982a7dadd70283a"
     "part-04.bash:ffa31d7ac3e56c810eab66210593c2c52479ecd12eb15c083906687e808c7423"
 )
-EXPECTED_ASSEMBLED_SHA256="6f4fa583e82ee2adfac7e8c47f2f05d81cf47c800675e486b2b2cf0a0bc899a1"
+EXPECTED_ASSEMBLED_SHA256="ee8e70cd77a170ed62d913d1560abd913206d1dc99cb46674d023c355bb3d590"
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PART_DIR="$SCRIPT_DIR/node-doctor"

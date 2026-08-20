@@ -57,4 +57,3 @@ assert_jq "$TEST_ROOT/json-escape.json" '.instance.service == "bad\\name.service
 assert_jq "$TEST_ROOT/invalid-thresholds.json" '.summary.fail == 0'
 assert_jq "$TEST_ROOT/invalid-thresholds.json" '.summary.warn >= 1'
 assert_jq "$TEST_ROOT/invalid-thresholds.json" '.checks[] | select(.id == "threshold_overrides" and .status == "WARN")'
-

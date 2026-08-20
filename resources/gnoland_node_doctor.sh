@@ -3,10 +3,10 @@
 set -u -o pipefail
 
 NODE_DOCTOR_PARTS=(
-    "part-00.bash:b3f4d2dce9ec6b60f6ebd8b604f4934357cee15803ff3461be694037e2e4f852"
+    "part-00.bash:785578f7841238cd2924ad344138af6a6610b3863e9d9a3b33f54690d2a053ec"
     "part-01.bash:4cef87d8f71f94abf04d4e71a0fb52154ab5593392d0d7a7da8d35a94f129850"
     "part-02.bash:53d42d1f181f8f178281b6f092cf3268328d0ce7901f74416aa4b76114900f54"
-    "part-03.bash:dba67fe7963bf7a4c0726edba502a0b9d2fbdf2607240cb7ce5c5d8b3cc97525"
+    "part-03.bash:4fa42463f6f9f5758565ca8aa78c5dd940221d130db23a1ba6985b40f76fc23f"
     "part-04.bash:576f70d9c9c2c80ddad0336143d2b0c0f1852390bd95abdfff703b5791e8e5d8"
     "part-05.bash:822d4ba20ed5cbe2d323ecb0c19c2e22479ce7cde512d5692b37f73ddd3dbd8a"
     "part-06.bash:ef726f737827e11c7faa10a55a0ab4df3c9bdeb660f05975e1734c6b77c7646b"
@@ -18,7 +18,7 @@ NODE_DOCTOR_PARTS=(
     "part-12.bash:9a62aacdeb5b43808366c22f9d21f04a8a5783b08ee962249a6891fcc7160c12"
     "part-13.bash:ec0347833ef60cddadf43dfeb7fb5a514eecf4a64fe1598501b6540dccd94aee"
 )
-EXPECTED_ASSEMBLED_SHA256="9888721450926cb1af5485ae49589dd20c201aa6f538c99832505b554e83ece9"
+EXPECTED_ASSEMBLED_SHA256="1e0c93edd77c10baad3e7340ad1aa2a71a39a4c605593dfac95877651e36b2eb"
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
 LOCAL_PART_DIR="$SCRIPT_DIR/node-doctor"

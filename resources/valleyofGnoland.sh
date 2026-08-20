@@ -8,6 +8,46 @@ YELLOW='\033[0;33m'
 ORANGE='\033[38;5;214m'
 RESET='\033[0m'
 
+NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
+
+run_node_doctor_script() {
+    local script_dir script_file exit_code
+
+    script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
+    if [ -n "$script_dir" ] && [ -f "$script_dir/gnoland_node_doctor.sh" ]; then
+        bash "$script_dir/gnoland_node_doctor.sh" "$@"
+        return $?
+    fi
+
+    if ! command -v curl >/dev/null 2>&1; then
+        echo -e "${RED}curl is required to download the Node Doctor.${RESET}" >&2
+        return 2
+    fi
+
+    script_file=$(mktemp)
+    if ! curl -fsSL \
+        "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/${NODE_DOCTOR_RELATIVE_PATH}" \
+        -o "$script_file"; then
+        rm -f "$script_file"
+        echo -e "${RED}Failed to download the Node Doctor. Nothing was executed.${RESET}" >&2
+        return 2
+    fi
+
+    chmod +x "$script_file"
+    bash "$script_file" "$@"
+    exit_code=$?
+    rm -f "$script_file"
+    return "$exit_code"
+}
+
+# Non-interactive command mode intentionally runs before .bash_profile is sourced,
+# before prompts, and before banners. This keeps the doctor read-only and JSON clean.
+if [ "${1:-}" = "doctor" ] || [ "${1:-}" = "node-doctor" ]; then
+    shift
+    run_node_doctor_script "$@"
+    exit $?
+fi
+
 # shellcheck source=/dev/null
 source "$HOME/.bash_profile" 2>/dev/null
 
@@ -103,8 +143,8 @@ ${GREEN}Gno.land Sapphire Node System Requirements${RESET}
 ${YELLOW}| Category  | Requirements |
 | --------- | ------------ |
 | CPU       | 4+ vCPU      |
-| RAM       | 8+ GB        |
-| Storage   | 200+ GB SSD  |
+| RAM       | 16+ GB       |
+| Storage   | 200+ GB NVMe |
 | Bandwidth | 100+ MBit/s  |${RESET}
 
 - service file name: ${CYAN}${GNOLAND_SERVICE_NAME}.service${RESET}
@@ -434,6 +474,32 @@ function show_node_status() {
     menu
 }
 
+function run_node_doctor() {
+    local doctor_exit
+
+    clear
+    echo -e "${CYAN}Valley of Gnoland Node Doctor${RESET}"
+    echo -e "${YELLOW}Read-only inspection: no config, service, firewall, or key will be changed.${RESET}"
+    echo
+
+    run_node_doctor_script
+    doctor_exit=$?
+    case "$doctor_exit" in
+        0)
+            echo -e "\n${GREEN}Node Doctor completed. Review any WARN results before maintenance.${RESET}"
+            ;;
+        1)
+            echo -e "\n${RED}Node Doctor found one or more failures. Review them before maintenance.${RESET}"
+            ;;
+        *)
+            echo -e "\n${RED}Node Doctor could not complete (exit code $doctor_exit).${RESET}"
+            ;;
+    esac
+    echo -e "${YELLOW}Press Enter to go back to the main menu${RESET}"
+    read -r
+    menu
+}
+
 function show_logs() {
     if ! service_belongs_to_current_instance; then
         echo -e "${RED}Logs blocked: selected service belongs to another instance.${RESET}"
@@ -688,6 +754,7 @@ function show_guidelines() {
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."
+    echo "   g. Run Node Doctor: Read-only health and Sapphire configuration-drift inspection."
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -728,6 +795,7 @@ function menu() {
     echo "   1d. Add/Reset Peers"
     echo "   1e. Show Node Status"
     echo "   1f. Show Node Logs"
+    echo "   1g. Run Node Doctor (Read-only)"
     echo
     echo "2. Validator/Key Interactions"
     echo "   2a. Reuse/Recover/Create Operator Key"
@@ -759,6 +827,7 @@ function menu() {
         1d|1-d) add_peers ;;
         1e|1-e) show_node_status ;;
         1f|1-f) show_logs ;;
+        1g|1-g) run_node_doctor ;;
         2a|2-a) create_operator_key ;;
         2b|2-b) show_validator_pubkey ;;
         2c|2-c) register_valoper_candidate ;;

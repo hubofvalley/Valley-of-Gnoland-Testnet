@@ -6,6 +6,22 @@
 bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh)
 ```
 
+## Node Doctor command mode
+
+Run the read-only health and configuration-drift inspection without opening the interactive menu:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor
+```
+
+JSON output for monitoring or AGVI/OpenClaw parsing:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor --json
+```
+
+The doctor reports PASS, WARN, and FAIL results. It does not edit `config.toml`, change firewall rules, restart services, or modify keys. See [Node Doctor](node-doctor.md) for checks, thresholds, JSON fields, and exit codes.
+
 ## Topaz to Sapphire migration
 
 Sapphire uses the same Valley of Gnoland paths as before:
@@ -48,6 +64,7 @@ Invalid moniker, port, key-menu, or existing-key input is prompted again. A real
 | `1d` | Adds persistent peers manually or restores the official Sapphire persistent peers. |
 | `1e` | Shows local/network heights, sync state, peers, disk, and validator address. |
 | `1f` | Follows the current user's selected Gnoland service logs. |
+| `1g` | Runs the read-only Node Doctor and Sapphire configuration-drift guard. |
 | `2a` | Lists/reuses, recovers, or creates an operator key without overwriting an existing name. |
 | `2b` | Shows the fresh Sapphire consensus `gpub1...` key. |
 | `2c` | Previews and optionally broadcasts Sapphire valoper registration. |
@@ -72,5 +89,6 @@ Invalid moniker, port, key-menu, or existing-key input is prompted again. A real
 - Use one OS user, service name, and port prefix per instance.
 - VOG never creates or removes global `/usr/local/bin/gnoland` or `/usr/local/bin/gnokey` links.
 - Registration creates a candidate profile only; it does not guarantee active-set admission.
+- Treat Node Doctor remediation as guidance only. Review and test changes on a non-validator or non-production node before applying them to an active validator.
 
 last updated by: John

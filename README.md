@@ -24,6 +24,18 @@ Sapphire is a new chain. Topaz chain data cannot be reused, but an existing Topa
 bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh)
 ```
 
+Run the read-only Node Doctor and Sapphire configuration-drift guard:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor
+```
+
+Machine-readable JSON output for monitoring or agent workflows:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor --json
+```
+
 ## Safe Topaz migration
 
 The installer keeps the established Valley of Gnoland layout. It does not rename the source, node, or service paths.
@@ -50,12 +62,15 @@ Within one OS user, migration remains in-place: the installer stops only that us
 - Node status, logs, persistent-peer configuration, and transaction preview
 - Verified startup gate: success requires a live local RPC reporting `sapphire-1`
 - Valoper candidate registration on `gno.land/r/gnops/valopers`
+- Read-only Node Doctor with PASS/WARN/FAIL results and JSON output
+- Sapphire configuration-drift, RPC exposure, release artefact, hardware, time-sync, and secret-permission checks
 - Explicit snapshot guard that blocks incompatible Topaz archives
 
 ## Documentation
 
 - [Usage guide](docs/usage.md)
 - [Manual node guide](docs/node-guide.md)
+- [Node Doctor guide](docs/node-doctor.md)
 - [Snapshot guide](docs/snapshots.md)
 
 Candidate registration does not add a node directly to the active validator set. A GovDAO member must create and pass the validator proposal.

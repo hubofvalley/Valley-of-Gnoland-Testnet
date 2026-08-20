@@ -36,5 +36,8 @@ jobs:
       - name: Run multi-instance regression test
         run: bash tests/multi_instance_test.sh
 
+      - name: Run Node Doctor regression test
+        run: bash tests/node_doctor_test.sh
+
       - name: Check patch whitespace
         run: git show --check --format= HEAD

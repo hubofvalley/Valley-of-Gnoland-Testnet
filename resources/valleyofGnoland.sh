@@ -8,6 +8,9 @@ YELLOW='\033[0;33m'
 ORANGE='\033[38;5;214m'
 RESET='\033[0m'
 
+# Security boundary: runtime-downloaded executable helpers are pinned to an
+# immutable Git commit. Bump this only after reviewing the helper scripts and CI.
+readonly VALLEY_RUNTIME_REF="1bd99d42148e8a32f3e993c879d81dff9502723e"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -26,15 +29,15 @@ run_node_doctor_script() {
 
     script_file=$(mktemp)
     if ! curl -fsSL \
-        "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/${NODE_DOCTOR_RELATIVE_PATH}" \
+        "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/${VALLEY_RUNTIME_REF}/${NODE_DOCTOR_RELATIVE_PATH}" \
         -o "$script_file"; then
         rm -f "$script_file"
-        echo -e "${RED}Failed to download the Node Doctor. Nothing was executed.${RESET}" >&2
+        echo -e "${RED}Failed to download the Node Doctor from pinned commit ${VALLEY_RUNTIME_REF}. Nothing was executed.${RESET}" >&2
         return 2
     fi
 
     chmod +x "$script_file"
-    bash "$script_file" "$@"
+    GNOLAND_NODE_DOCTOR_REF="$VALLEY_RUNTIME_REF" bash "$script_file" "$@"
     exit_code=$?
     rm -f "$script_file"
     return "$exit_code"
@@ -303,9 +306,9 @@ function run_repository_script() {
     local relative_path=$1
     local script_file exit_code
     script_file=$(mktemp)
-    if ! curl -fsSL "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/${relative_path}" -o "$script_file"; then
+    if ! curl -fsSL "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/${VALLEY_RUNTIME_REF}/${relative_path}" -o "$script_file"; then
         rm -f "$script_file"
-        echo -e "${RED}Failed to download ${relative_path} from main. Nothing was executed.${RESET}"
+        echo -e "${RED}Failed to download ${relative_path} from pinned commit ${VALLEY_RUNTIME_REF}. Nothing was executed.${RESET}"
         return 1
     fi
     chmod +x "$script_file"
@@ -502,7 +505,7 @@ function run_node_doctor() {
 
 function show_logs() {
     if ! service_belongs_to_current_instance; then
-        echo -e "${RED}Logs blocked: selected service belongs to another instance.${RESET}"
+        echo -e "${RED}Logs blocked: selected service belongs to another instance.${RESET}" >&2
         menu
         return
     fi

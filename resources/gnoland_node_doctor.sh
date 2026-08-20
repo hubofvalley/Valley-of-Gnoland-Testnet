@@ -22,7 +22,8 @@ EXPECTED_ASSEMBLED_SHA256="1e0c93edd77c10baad3e7340ad1aa2a71a39a4c605593dfac9587
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
 LOCAL_PART_DIR="$SCRIPT_DIR/node-doctor"
-NODE_DOCTOR_REF=${GNOLAND_NODE_DOCTOR_REF:-main}
+readonly DEFAULT_NODE_DOCTOR_REF="1bd99d42148e8a32f3e993c879d81dff9502723e"
+NODE_DOCTOR_REF=${GNOLAND_NODE_DOCTOR_REF:-$DEFAULT_NODE_DOCTOR_REF}
 REMOTE_PART_BASE=${GNOLAND_NODE_DOCTOR_RAW_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$NODE_DOCTOR_REF/resources/node-doctor}
 TEMP_DIR=$(mktemp -d)
 ASSEMBLED_SCRIPT="$TEMP_DIR/gnoland_node_doctor_assembled.sh"
@@ -36,6 +37,10 @@ node_doctor_loader_error() {
     echo "Node Doctor loader failed: $*" >&2
     exit 2
 }
+
+if [ -z "${GNOLAND_NODE_DOCTOR_RAW_BASE:-}" ] && [[ ! "$NODE_DOCTOR_REF" =~ ^[0-9a-f]{40}$ ]]; then
+    node_doctor_loader_error "GNOLAND_NODE_DOCTOR_REF must be a full 40-character Git commit SHA."
+fi
 
 if ! command -v sha256sum >/dev/null 2>&1; then
     node_doctor_loader_error "sha256sum is required to verify Node Doctor parts."

@@ -39,5 +39,8 @@ jobs:
       - name: Run Node Doctor regression test
         run: bash tests/node_doctor_test.sh
 
+      - name: Run immutable runtime pin regression test
+        run: bash tests/runtime_script_pin_test.sh
+
       - name: Check patch whitespace
         run: git show --check --format= HEAD

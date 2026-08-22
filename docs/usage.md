@@ -60,7 +60,7 @@ Invalid moniker, port, key-menu, or existing-key input is prompted again. A real
 |---|---|
 | `1a` | Clean-deploys Sapphire in the current user's directories, with backup and operator-key selection. It configures the official Sapphire persistent peers, validates the service owner, and rejects occupied ports before cleanup. The chosen prefix must be `01`–`64` and applies to local ABCI (`prefix658`), P2P (`prefix656`), and RPC (`prefix657`) listeners. Success requires those config ports plus RPC network `sapphire-1`; failures print diagnostics. |
 | `1b` | Updates the source and binaries to the pinned Sapphire release after checksum verification. |
-| `1c` | Reports that snapshots are temporarily unavailable. Topaz archives are blocked because they are incompatible with `sapphire-1`. |
+| `1c` | Opens the UTSA/Hazen snapshot provider menu and shows available date, height, size, and verification metadata. It downloads and validates the archive before downtime, optionally backs up `db` and `wal`, restarts the selected service, and automatically restores the previous database if activation fails. |
 | `1d` | Adds persistent peers manually or restores the official Sapphire persistent peers. |
 | `1e` | Shows local/network heights, sync state, peers, disk, and validator address. |
 | `1f` | Follows the current user's selected Gnoland service logs. |
@@ -75,15 +75,18 @@ Invalid moniker, port, key-menu, or existing-key input is prompted again. A real
 
 1. Record the Topaz operator `g1...` address and ensure its mnemonic is backed up offline.
 2. Run `1a`, select reuse/recovery, and verify the listed address matches Topaz.
-3. Let `1e` show the Sapphire node is synced.
-4. Fund the same operator address from https://sapphire.testnets.gno.land/faucet.
-5. Use `2b` to obtain the new Sapphire consensus public key.
-6. Use `2c` to register with the same Topaz operator address.
-7. Wait for GovDAO admission through `r/sys/validators/v3`.
+3. Optionally use `1c` to speed up Sapphire sync with the UTSA or Hazen snapshot.
+4. Let `1e` show the Sapphire node is synced.
+5. Fund the same operator address from https://sapphire.testnets.gno.land/faucet.
+6. Use `2b` to obtain the new Sapphire consensus public key.
+7. Use `2c` to register with the same Topaz operator address.
+8. Wait for GovDAO admission through `r/sys/validators/v3`.
 
 ## Safety
 
-- Never apply a Topaz snapshot archive to Sapphire. Snapshot support remains blocked until a Sapphire-specific provider is verified.
+- Use only Sapphire snapshot providers documented in `docs/snapshots.md`; never apply a Topaz archive to Sapphire.
+- Hazen metadata must report chain ID `sapphire-1` before its archive is accepted.
+- Snapshot archive validation permits only `db` and `wal`; config and node secrets remain in place.
 - Never share mnemonics or node secrets.
 - Inspect backup archives and copy them offline before relying on them.
 - Use one OS user, service name, and port prefix per instance.

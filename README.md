@@ -64,7 +64,7 @@ Within one OS user, migration remains in-place: the installer stops only that us
 - Valoper candidate registration on `gno.land/r/gnops/valopers`
 - Read-only Node Doctor with PASS/WARN/FAIL results and JSON output
 - Sapphire configuration-drift, RPC exposure, release artefact, hardware, time-sync, and secret-permission checks
-- Explicit snapshot guard that blocks incompatible Topaz archives
+- UTSA and Hazen Sapphire snapshot flow with live metadata, pre-download verification, optional backup, and automatic rollback
 
 ## Documentation
 

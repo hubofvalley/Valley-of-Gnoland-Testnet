@@ -13,8 +13,17 @@
     "official_persistent_peers": "g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656"
   },
   "snapshot": {
-    "status": "unavailable",
-    "reason": "No verified Sapphire snapshot provider is configured",
+    "providers": {
+      "utsa": {
+        "name": "UTSA",
+        "url": "https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4"
+      },
+      "hazen": {
+        "name": "Hazen Network Solutions",
+        "index_url": "https://server-9.hazennetworksolutions.com/gnoland-sapphire/index.json",
+        "url": "https://server-9.hazennetworksolutions.com/gnoland-db-snapshot.tar.lz4"
+      }
+    },
     "script": "resources/apply_snapshot.sh"
   },
   "binaries": {
@@ -22,5 +31,5 @@
     "gnokey_linux_amd64": "f27c7ad0430bdc4a7855af6a6762d202b7d609161f80a8fa223f85882bef486d"
   },
   "status": "migration_candidate",
-  "last_reviewed": "2026-08-11"
+  "last_reviewed": "2026-08-22"
 }

@@ -10,7 +10,7 @@ RESET='\033[0m'
 
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
-readonly VALLEY_RUNTIME_REF="1bd99d42148e8a32f3e993c879d81dff9502723e"
+readonly VALLEY_RUNTIME_REF="3dfbf39aa0eb234c4096a5e4b4fab5c7bcd7e9bf"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -753,7 +753,7 @@ function show_guidelines() {
     echo -e "${GREEN}Node Interactions:${RESET}"
     echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Sapphire node."
     echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Sapphire binaries."
-    echo "   c. Apply Snapshot: Reports snapshot availability; currently blocked for Sapphire."
+    echo "   c. Apply Snapshot: Applies a UTSA or Hazen Sapphire snapshot to speed up sync."
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."

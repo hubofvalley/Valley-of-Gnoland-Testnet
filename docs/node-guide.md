@@ -126,6 +126,23 @@ The selected two-digit prefix must be `01`–`64` so every generated TCP port re
 
 Sapphire does not consume `p2p.seeds`; the official bootstrap nodes must be configured in `p2p.persistent_peers`. `p2p.external_address` must advertise a host or public IP that other peers can dial.
 
+## Apply a Sapphire snapshot
+
+Grand Valley extends its gratitude to **UTSA** and **Hazen Network Solutions** for providing snapshot support.
+
+Use Valley of Gnoland option `1c. Apply Snapshot` and choose the provider. The restored flow checks provider availability and metadata, downloads the archive before stopping Gnoland, validates that the archive contains only `db` and `wal`, verifies SHA-256 when published, offers an optional database backup, and keeps a temporary rollback copy until the restarted service is confirmed active.
+
+Current provider endpoints:
+
+```text
+UTSA:  https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4
+Hazen: https://server-9.hazennetworksolutions.com/gnoland-sapphire/index.json
+```
+
+The Hazen manifest must report `sapphire-1`. Config and node secrets are not replaced. Never apply a Topaz snapshot archive to Sapphire.
+
+See [Snapshot Guide](snapshots.md) for the full restore behavior and current endpoints.
+
 ## Register the valoper candidate
 
 After sync, get the new consensus key:

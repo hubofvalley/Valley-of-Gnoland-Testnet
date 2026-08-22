@@ -22,7 +22,7 @@ EXPECTED_ASSEMBLED_SHA256="1e0c93edd77c10baad3e7340ad1aa2a71a39a4c605593dfac9587
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
 LOCAL_PART_DIR="$SCRIPT_DIR/node-doctor"
-readonly DEFAULT_NODE_DOCTOR_REF="1bd99d42148e8a32f3e993c879d81dff9502723e"
+readonly DEFAULT_NODE_DOCTOR_REF="3dfbf39aa0eb234c4096a5e4b4fab5c7bcd7e9bf"
 NODE_DOCTOR_REF=${GNOLAND_NODE_DOCTOR_REF:-$DEFAULT_NODE_DOCTOR_REF}
 REMOTE_PART_BASE=${GNOLAND_NODE_DOCTOR_RAW_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$NODE_DOCTOR_REF/resources/node-doctor}
 TEMP_DIR=$(mktemp -d)

@@ -21,6 +21,7 @@ NODE_DOCTOR_PARTS=(
 EXPECTED_ASSEMBLED_SHA256="1e0c93edd77c10baad3e7340ad1aa2a71a39a4c605593dfac95877651e36b2eb"
 KNOWN_ISSUES_FILE="node-doctor-known-issues.bash"
 KNOWN_ISSUES_SHA256="94e5ac0d5b6ce73b3c07d58cbed20b4e52b80484c1d056cbfbac9907b3bf21cc"
+readonly KNOWN_ISSUES_REF="c271583e1ce1ccdb61c8e6895992731193e8d141"
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
 LOCAL_PART_DIR="$SCRIPT_DIR/node-doctor"
@@ -28,7 +29,7 @@ LOCAL_KNOWN_ISSUES="$SCRIPT_DIR/$KNOWN_ISSUES_FILE"
 readonly DEFAULT_NODE_DOCTOR_REF="3dfbf39aa0eb234c4096a5e4b4fab5c7bcd7e9bf"
 NODE_DOCTOR_REF=${GNOLAND_NODE_DOCTOR_REF:-$DEFAULT_NODE_DOCTOR_REF}
 REMOTE_PART_BASE=${GNOLAND_NODE_DOCTOR_RAW_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$NODE_DOCTOR_REF/resources/node-doctor}
-REMOTE_RESOURCE_BASE=${GNOLAND_NODE_DOCTOR_RESOURCE_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$NODE_DOCTOR_REF/resources}
+REMOTE_RESOURCE_BASE=${GNOLAND_NODE_DOCTOR_RESOURCE_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$KNOWN_ISSUES_REF/resources}
 TEMP_DIR=$(mktemp -d)
 ASSEMBLED_SCRIPT="$TEMP_DIR/gnoland_node_doctor_assembled.sh"
 PATCHED_SCRIPT="$TEMP_DIR/gnoland_node_doctor_with_known_issues.sh"

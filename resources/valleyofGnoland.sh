@@ -10,7 +10,7 @@ RESET='\033[0m'
 
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
-readonly VALLEY_RUNTIME_REF="3dfbf39aa0eb234c4096a5e4b4fab5c7bcd7e9bf"
+readonly VALLEY_RUNTIME_REF="3692444c95e7ac37702a660dd07e76090f9f6587"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -587,18 +587,18 @@ function register_valoper_candidate() {
 
     echo -e "\n${YELLOW}Transaction preview:${RESET}"
     cat <<EOF
-gnokey maketx call \\
-  --pkgpath gno.land/r/gnops/valopers \\
-  --func Register \\
-  --args "$MONIKER" \\
-  --args "$DESCRIPTION" \\
-  --args "$INFRA_TYPE" \\
-  --args "$OPERATOR_ADDR" \\
-  --args "$CONSENSUS_PUBKEY" \\
-  --gas-fee 1000000ugnot --gas-wanted $VALOPER_GAS_WANTED \\
-  --chainid sapphire-1 \\
-  --remote $GNOLAND_PUBLIC_REMOTE \\
-  --broadcast \\
+gnokey maketx call \
+  --pkgpath gno.land/r/gnops/valopers \
+  --func Register \
+  --args "$MONIKER" \
+  --args "$DESCRIPTION" \
+  --args "$INFRA_TYPE" \
+  --args "$OPERATOR_ADDR" \
+  --args "$CONSENSUS_PUBKEY" \
+  --gas-fee 1000000ugnot --gas-wanted $VALOPER_GAS_WANTED \
+  --chainid sapphire-1 \
+  --remote $GNOLAND_PUBLIC_REMOTE \
+  --broadcast \
   $KEY_NAME
 EOF
     read -r -p $'\n\e[33mBroadcast registration transaction? (yes/no): \e[0m' confirm

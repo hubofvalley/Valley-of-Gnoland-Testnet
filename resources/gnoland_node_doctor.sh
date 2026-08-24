@@ -19,14 +19,21 @@ NODE_DOCTOR_PARTS=(
     "part-13.bash:ec0347833ef60cddadf43dfeb7fb5a514eecf4a64fe1598501b6540dccd94aee"
 )
 EXPECTED_ASSEMBLED_SHA256="1e0c93edd77c10baad3e7340ad1aa2a71a39a4c605593dfac95877651e36b2eb"
+KNOWN_ISSUES_FILE="node-doctor-known-issues.bash"
+KNOWN_ISSUES_SHA256="12c17499d1866754615e0c8da43ccde3c07a0c383124b13df57427b52d2e1204"
+readonly KNOWN_ISSUES_REF="c271583e1ce1ccdb61c8e6895992731193e8d141"
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
 LOCAL_PART_DIR="$SCRIPT_DIR/node-doctor"
-readonly DEFAULT_NODE_DOCTOR_REF="3dfbf39aa0eb234c4096a5e4b4fab5c7bcd7e9bf"
+LOCAL_KNOWN_ISSUES="$SCRIPT_DIR/$KNOWN_ISSUES_FILE"
+readonly DEFAULT_NODE_DOCTOR_REF="3692444c95e7ac37702a660dd07e76090f9f6587"
 NODE_DOCTOR_REF=${GNOLAND_NODE_DOCTOR_REF:-$DEFAULT_NODE_DOCTOR_REF}
 REMOTE_PART_BASE=${GNOLAND_NODE_DOCTOR_RAW_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$NODE_DOCTOR_REF/resources/node-doctor}
+REMOTE_RESOURCE_BASE=${GNOLAND_NODE_DOCTOR_RESOURCE_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$KNOWN_ISSUES_REF/resources}
 TEMP_DIR=$(mktemp -d)
 ASSEMBLED_SCRIPT="$TEMP_DIR/gnoland_node_doctor_assembled.sh"
+PATCHED_SCRIPT="$TEMP_DIR/gnoland_node_doctor_with_known_issues.sh"
+KNOWN_ISSUES_PATH="$LOCAL_KNOWN_ISSUES"
 
 cleanup_node_doctor_loader() {
     rm -rf "$TEMP_DIR"
@@ -74,5 +81,35 @@ if [ "$assembled_sha" != "$EXPECTED_ASSEMBLED_SHA256" ]; then
     node_doctor_loader_error "assembled script checksum mismatch (observed $assembled_sha)."
 fi
 
+if [ ! -f "$KNOWN_ISSUES_PATH" ]; then
+    if ! command -v curl >/dev/null 2>&1; then
+        node_doctor_loader_error "curl is required to download $KNOWN_ISSUES_FILE."
+    fi
+    KNOWN_ISSUES_PATH="$TEMP_DIR/$KNOWN_ISSUES_FILE"
+    if ! curl -fsSL "$REMOTE_RESOURCE_BASE/$KNOWN_ISSUES_FILE" -o "$KNOWN_ISSUES_PATH"; then
+        node_doctor_loader_error "could not download $KNOWN_ISSUES_FILE from $REMOTE_RESOURCE_BASE."
+    fi
+fi
+
+known_issues_sha=$(sha256sum -- "$KNOWN_ISSUES_PATH" | awk '{print $1}')
+if [ "$known_issues_sha" != "$KNOWN_ISSUES_SHA256" ]; then
+    node_doctor_loader_error "$KNOWN_ISSUES_FILE checksum mismatch (observed $known_issues_sha, expected $KNOWN_ISSUES_SHA256)."
+fi
+
+# Preserve the verified base Node Doctor exactly, then inject one reviewed,
+# checksummed read-only advisory hook immediately before report emission.
+awk -v helper="$KNOWN_ISSUES_PATH" '
+    $0 == "if $JSON_MODE; then" && !inserted {
+        while ((getline line < helper) > 0) print line
+        close(helper)
+        print "check_known_issues"
+        inserted=1
+    }
+    { print }
+    END {
+        if (!inserted) exit 42
+    }
+' "$ASSEMBLED_SCRIPT" > "$PATCHED_SCRIPT" || node_doctor_loader_error "could not inject the known-issue radar hook."
+
 # shellcheck source=/dev/null
-source "$ASSEMBLED_SCRIPT"
+source "$PATCHED_SCRIPT"

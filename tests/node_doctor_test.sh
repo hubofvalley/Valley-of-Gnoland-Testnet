@@ -44,4 +44,7 @@ done
 assembled_sha=$(sha256sum -- "$ASSEMBLED_TEST" | awk '{print $1}')
 [ "$assembled_sha" = "$EXPECTED_ASSEMBLED_SHA256" ] || test_loader_error "assembled test checksum mismatch"
 
-bash "$ASSEMBLED_TEST"
+# Keep the existing fixture expectations stable; the dedicated radar test below
+# covers the new warning independently.
+GNOLAND_DOCTOR_SKIP_KNOWN_ISSUES=1 bash "$ASSEMBLED_TEST"
+bash "$SCRIPT_DIR/known_issue_radar_test.sh"

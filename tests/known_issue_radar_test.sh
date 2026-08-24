@@ -32,6 +32,9 @@ add_result() {
 # shellcheck source=/dev/null
 source "$HELPER"
 
+# SOURCE_COMMIT and GNOLAND_DOCTOR_SKIP_KNOWN_ISSUES are consumed by the
+# sourced helper. ShellCheck cannot infer that data flow across a dynamic source.
+# shellcheck disable=SC2034
 SOURCE_COMMIT="$EXPECTED_RELEASE_COMMIT"
 unset GNOLAND_DOCTOR_SKIP_KNOWN_ISSUES || true
 check_known_issues
@@ -47,30 +50,22 @@ check_known_issues
 
 # A different source commit must not inherit an advisory scoped to the managed release.
 RESULT_COUNT=0
+# shellcheck disable=SC2034
 SOURCE_COMMIT="131371844c4db8554d519c13a2430b5fbfbec4a8"
 check_known_issues
 [ "$RESULT_COUNT" -eq 0 ] || fail "non-managed source commit should not emit the Sapphire advisory"
 
 # The skip flag is test/support-only and must suppress the advisory deterministically.
 RESULT_COUNT=0
+# shellcheck disable=SC2034
 SOURCE_COMMIT="$EXPECTED_RELEASE_COMMIT"
+# shellcheck disable=SC2034
 GNOLAND_DOCTOR_SKIP_KNOWN_ISSUES=1
 check_known_issues
 [ "$RESULT_COUNT" -eq 0 ] || fail "skip flag did not suppress known-issue advisory"
 
-# Core Node Doctor semantics already treat WARN as exit 0 normally and exit 1
-# under --strict. Assert the new rule continues to use that WARN contract.
-warning_exit_code() {
-    local strict=$1 status=$2
-    if [ "$status" != "WARN" ]; then
-        echo 1
-    elif [ "$strict" = "true" ]; then
-        echo 1
-    else
-        echo 0
-    fi
-}
-[ "$(warning_exit_code false WARN)" -eq 0 ] || fail "WARN should remain non-fatal without --strict"
-[ "$(warning_exit_code true WARN)" -eq 1 ] || fail "WARN should be fatal under --strict"
+# The helper must remain advisory-only. Core Node Doctor owns the normal/strict
+# exit-code policy for WARN findings; this test intentionally does not duplicate it.
+[ "$RESULT_STATUS" = "WARN" ] || fail "known-issue helper changed from advisory severity"
 
 echo "KNOWN_ISSUE_RADAR_TEST_OK"

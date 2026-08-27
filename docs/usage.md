@@ -1,97 +1,70 @@
 # Valley of Gnoland - Usage Guide
 
+Valley of Gnoland now targets the Gno.land **Pearl** testnet (`pearl-1`).
+
 ## Run
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh)
 ```
 
-## Node Doctor command mode
-
-Run the read-only health and configuration-drift inspection without opening the interactive menu:
+Read-only Pearl Node Doctor:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor
-```
-
-JSON output for monitoring or AGVI/OpenClaw parsing:
-
-```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor --json
 ```
 
-The doctor reports PASS, WARN, and FAIL results. It does not edit `config.toml`, change firewall rules, restart services, or modify keys. See [Node Doctor](node-doctor.md) for checks, thresholds, JSON fields, and exit codes.
+## Sapphire to Pearl migration
 
-## Topaz to Sapphire migration
+Pearl is a fresh chain, not a Sapphire hardfork. Valley keeps the established paths (`~/gno`, `~/gno/gnoland-data`, `~/.config/gno`, per-user binaries, and the selected service name), but it does **not** reuse Sapphire db/wal or consensus state.
 
-Sapphire uses the same Valley of Gnoland paths as before:
+Menu option `1a` is the migration/fresh-install path. It:
 
-- `~/gno`
-- `~/gno/gnoland-data`
-- `~/gno/genesis.json`
-- `~/.config/gno`
-- a user-selected service name, default `gnoland.service`
-- `gnoland` and `gnokey` under the current user's `~/go/bin`
+1. verifies the service belongs to the selected OS-user instance;
+2. backs up Sapphire node secrets and the operator keyring;
+3. requires `MIGRATE-TO-PEARL` before destructive cleanup;
+4. removes old chain data while preserving the keyring;
+5. pins source and binaries to the official Pearl release;
+6. verifies the Pearl genesis and binary checksums;
+7. creates fresh Pearl node/consensus secrets;
+8. applies the official Pearl peers and validator-guide tuning;
+9. starts with `--chainid pearl-1 --skip-genesis-sig-verification`;
+10. reports success only after local RPC reports `pearl-1` and configured ports match.
 
-Within one OS user, migration is an in-place clean deployment. For side-by-side instances, use separate OS users, separate service names, and separate port prefixes. Each user's `$HOME`, source, data, keyring, and binaries remain isolated.
-
-Run VOG directly as the node OS user. Do not use `sudo bash ...`; VOG requests `sudo` internally only for packages, firewall, and systemd.
-
-During option `1a`, choose one operator-key path:
-
-1. **Reuse local Topaz key** — recommended for an existing validator. The installer lists local keys and requires a key name.
-2. **Recover Topaz key** — enter the existing mnemonic into `gnokey`; an existing key name will not be overwritten.
-3. **Create new key** — intended for a new operator; an existing key name will not be overwritten.
-
-Before deleting Topaz node data, the installer:
-
-- archives `~/gno/gnoland-data/secrets` when present;
-- archives `~/.config/gno` when non-empty;
-- saves both under `~/gnoland-migration-backups/<timestamp>/` with mode `600`;
-- never deletes the operator keyring.
-
-A fresh Sapphire consensus/node key is generated. Existing validators must use the same Topaz operator `g1...` address when registering their Sapphire valoper profile.
-
-Invalid moniker, port, key-menu, or existing-key input is prompted again. A real installation failure stops safely and prints its stage, line, failed command, and exit code; Valley of Gnoland then returns to the main menu instead of disappearing silently.
+Reusing/recovering a Sapphire operator key is optional **operator-address continuity only**. It does not migrate validator status.
 
 ## Menu options
 
 | Option | Behaviour |
 |---|---|
-| `1a` | Clean-deploys Sapphire in the current user's directories, with backup and operator-key selection. It configures the official Sapphire persistent peers, validates the service owner, and rejects occupied ports before cleanup. The chosen prefix must be `01`–`64` and applies to local ABCI (`prefix658`), P2P (`prefix656`), and RPC (`prefix657`) listeners. Success requires those config ports plus RPC network `sapphire-1`; failures print diagnostics. |
-| `1b` | Updates the source and binaries to the pinned Sapphire release after checksum verification. |
-| `1c` | Opens the UTSA/Hazen snapshot provider menu and shows available date, height, size, and verification metadata. It downloads and validates the archive before downtime, optionally backs up `db` and `wal`, restarts the selected service, and automatically restores the previous database if activation fails. |
-| `1d` | Adds persistent peers manually or restores the official Sapphire persistent peers. |
-| `1e` | Shows local/network heights, sync state, peers, disk, and validator address. |
-| `1f` | Follows the current user's selected Gnoland service logs. |
-| `1g` | Runs the read-only Node Doctor and Sapphire configuration-drift guard. |
+| `1a` | Fresh-installs Pearl or migrates a Sapphire installation to Pearl with backups and explicit confirmation. |
+| `1b` | Updates only an already-Pearl service to the pinned Pearl binaries; refuses Sapphire services. |
+| `1c` | Fails closed until a Pearl-specific snapshot provider is reviewed and pinned. |
+| `1d` | Adds peers manually or resets to the official Pearl persistent peers. |
+| `1e` | Shows local Pearl chain ID, height, sync state, and peer count. |
+| `1f` | Follows the selected Gnoland service logs. |
+| `1g` | Runs the read-only Pearl Node Doctor. |
 | `2a` | Lists/reuses, recovers, or creates an operator key without overwriting an existing name. |
-| `2b` | Shows the fresh Sapphire consensus `gpub1...` key. |
-| `2c` | Previews and optionally broadcasts Sapphire valoper registration. |
-| `2d` | Queries a path or shows Sapphire candidate and active-validator realms. |
-| `3a`–`3d` | Restart, stop, delete node data, or back up node secrets. |
+| `2b` | Shows the fresh Pearl consensus `gpub1...` key. |
+| `2c` | Broadcasts Pearl valoper candidate registration after confirmation. |
+| `2d` | Queries a path or shows Pearl candidate/active-validator realms. |
+| `3a`–`3d` | Restart, stop, delete Pearl node data, or back up Pearl node secrets. |
 
-## Recommended flow
+## Recommended validator flow
 
-1. Record the Topaz operator `g1...` address and ensure its mnemonic is backed up offline.
-2. Run `1a`, select reuse/recovery, and verify the listed address matches Topaz.
-3. Optionally use `1c` to speed up Sapphire sync with the UTSA or Hazen snapshot.
-4. Let `1e` show the Sapphire node is synced.
-5. Fund the same operator address from https://sapphire.testnets.gno.land/faucet.
-6. Use `2b` to obtain the new Sapphire consensus public key.
-7. Use `2c` to register with the same Topaz operator address.
-8. Wait for GovDAO admission through `r/sys/validators/v3`.
+1. Back up the Sapphire operator mnemonic offline if you intend to reuse that address.
+2. Run `1a` and complete `MIGRATE-TO-PEARL`.
+3. Let `1e` show the node is on `pearl-1` and synced.
+4. Fund the chosen operator address at https://pearl.testnets.gno.land/faucet.
+5. Use `2b` to read the new Pearl consensus public key.
+6. Use `2c` to register a Pearl valoper candidate.
+7. Wait for the separate GovDAO proposal/admission step through `r/sys/validators/v3`.
 
 ## Safety
 
-- Use only Sapphire snapshot providers documented in `docs/snapshots.md`; never apply a Topaz archive to Sapphire.
-- Hazen metadata must report chain ID `sapphire-1` before its archive is accepted.
-- Snapshot archive validation permits only `db` and `wal`; config and node secrets remain in place.
+- Never copy Sapphire db/wal or a Sapphire snapshot into Pearl.
+- Run VOG as the node OS user, not with `sudo bash ...`; VOG requests sudo only where system access is needed.
+- Use one OS user/service name/port prefix per instance.
 - Never share mnemonics or node secrets.
-- Inspect backup archives and copy them offline before relying on them.
-- Use one OS user, service name, and port prefix per instance.
-- VOG never creates or removes global `/usr/local/bin/gnoland` or `/usr/local/bin/gnokey` links.
-- Registration creates a candidate profile only; it does not guarantee active-set admission.
-- Treat Node Doctor remediation as guidance only. Review and test changes on a non-validator or non-production node before applying them to an active validator.
-
-last updated by: John
+- Candidate registration is not active-validator admission.

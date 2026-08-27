@@ -28,7 +28,11 @@ done
 grep -Fq 'MIGRATE-TO-PEARL' "$INSTALLER" || fail "Pearl migration confirmation missing"
 grep -Fq 'sapphire-node-secrets.tar.gz' "$INSTALLER" || fail "Sapphire source backup naming missing"
 grep -Fq -- '--chainid $CHAIN_ID --genesis genesis.json --skip-genesis-sig-verification' "$INSTALLER" || fail "Pearl service startup contract missing"
-grep -Fq 'VALOPER_GAS_WANTED=50000000' "$MAIN" || fail "Pearl valoper gas wanted drifted"
+
+grep -Fq 'VALOPER_GAS_WANTED=70000000' "$MAIN" || fail "Pearl valoper base gas wanted is not the reviewed 70M floor"
+grep -Fq "suggested gas-wanted (gas used + 5%)" "$MAIN" || fail "Pearl valoper adaptive gas parser missing"
+grep -Fq 'Retry the same registration with suggested gas-wanted' "$MAIN" || fail "Pearl valoper adaptive retry prompt missing"
+grep -Fq -- '-gas-wanted "$suggested_gas"' "$MAIN" || fail "Pearl valoper retry does not use gnokey suggested gas"
 
 [ "$(jq -r '.chain_id' "$VERSIONS")" = 'pearl-1' ] || fail "VERSIONS chain_id is not pearl-1"
 [ "$(jq -r '.migration.from' "$VERSIONS")" = 'Gno.land Sapphire' ] || fail "migration source is not Sapphire"

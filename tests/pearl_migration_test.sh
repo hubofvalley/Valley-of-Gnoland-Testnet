@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 INSTALLER="$ROOT/resources/gnoland_node_install_testnet.sh"
 MAIN="$ROOT/resources/valleyofGnoland.sh"
+UPDATER="$ROOT/resources/gnoland_update.sh"
+SNAPSHOT="$ROOT/resources/apply_snapshot.sh"
+DOCTOR="$ROOT/resources/gnoland_node_doctor.sh"
 VERSIONS="$ROOT/VERSIONS.json"
 
 fail() { echo "PEARL_MIGRATION_TEST_FAIL: $*" >&2; exit 1; }
@@ -32,7 +35,8 @@ grep -Fq 'VALOPER_GAS_WANTED=50000000' "$MAIN" || fail "Pearl valoper gas wanted
 [ "$(jq -r '.migration.to' "$VERSIONS")" = 'Gno.land Pearl' ] || fail "migration target is not Pearl"
 [ "$(jq -r '.migration.state_reuse' "$VERSIONS")" = 'false' ] || fail "state reuse must be false"
 
-if grep -REn 'MIGRATE-TO-SAPPHIRE|rpc\.sapphire\.testnets\.gno\.land|chain/sapphire/(gnoland|gnokey|genesis)' "$ROOT/resources"; then
+active_runtime=("$INSTALLER" "$MAIN" "$UPDATER" "$SNAPSHOT" "$DOCTOR")
+if grep -En 'MIGRATE-TO-SAPPHIRE|rpc\.sapphire\.testnets\.gno\.land|chain/sapphire/(gnoland|gnokey|genesis)' "${active_runtime[@]}"; then
     fail "active Sapphire runtime endpoint or old migration token remains"
 fi
 

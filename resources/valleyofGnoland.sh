@@ -11,7 +11,7 @@ ORANGE='\033[38;5;214m'
 RESET='\033[0m'
 
 # Runtime-downloaded executable helpers are pinned to an immutable reviewed commit.
-readonly VALLEY_RUNTIME_REF="3988d923ab35e8ed7fd1acc0d006c77b8b138240"
+readonly VALLEY_RUNTIME_REF="a76a74e9b128d83160330d148e3d3e3207dc2ee4"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {

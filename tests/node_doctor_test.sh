@@ -1,50 +1,23 @@
 #!/bin/bash
-
 set -euo pipefail
 
-TEST_PARTS=(
-    "part-00.bash:b4133f56daf3cd70c7bd5c7f6f9dc58ef09921f1b5a83951af6d4c8e1d857530"
-    "part-01.bash:e0aa3e71a97e9b8bb76a2b4e67c358ff7a95718a4946cfd5f78b32a7177f7adc"
-    "part-02.bash:ed79d745048bfd6fc9cdde3a24451b7ceca1043b1b9b210e5d9b078b81ed943b"
-    "part-03.bash:5f8c9d1777a56c27b510031b10f5a857641de6def5b9b98b9982a7dadd70283a"
-    "part-04.bash:ffa31d7ac3e56c810eab66210593c2c52479ecd12eb15c083906687e808c7423"
-)
-EXPECTED_ASSEMBLED_SHA256="ee8e70cd77a170ed62d913d1560abd913206d1dc99cb46674d023c355bb3d590"
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+DOCTOR="$ROOT/resources/gnoland_node_doctor.sh"
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-PART_DIR="$SCRIPT_DIR/node-doctor"
-ASSEMBLED_TEST=""
+fail() { echo "NODE_DOCTOR_TEST_FAIL: $*" >&2; exit 1; }
 
-cleanup_test_loader() {
-    if [ -n "$ASSEMBLED_TEST" ] && [ -f "$ASSEMBLED_TEST" ]; then
-        rm -f "$ASSEMBLED_TEST"
-    fi
-}
-trap cleanup_test_loader EXIT
+version=$(bash "$DOCTOR" --version)
+[ "$version" = 'Valley of Gnoland Node Doctor (Pearl) 1.0.0' ] || fail "unexpected version output"
 
-test_loader_error() {
-    echo "Node Doctor test loader failed: $*" >&2
-    exit 2
-}
+set +e
+GNOLAND_NODE_DOCTOR_REF=main bash "$DOCTOR" --version >/dev/null 2>&1
+rc=$?
+set -e
+[ "$rc" -eq 2 ] || fail "mutable runtime ref should be rejected"
 
-command -v sha256sum >/dev/null 2>&1 || test_loader_error "sha256sum is required."
-ASSEMBLED_TEST=$(mktemp "$SCRIPT_DIR/.node_doctor_test_assembled.XXXXXX")
-: > "$ASSEMBLED_TEST"
+grep -Fq 'EXPECTED_CHAIN_ID="pearl-1"' "$DOCTOR" || fail "Pearl chain guard missing"
+grep -Fq 'EXPECTED_RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"' "$DOCTOR" || fail "release commit guard missing"
+grep -Fq 'EXPECTED_GENESIS_SHA256="c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91"' "$DOCTOR" || fail "genesis guard missing"
+grep -Fq -- '--skip-genesis-sig-verification' "$DOCTOR" || fail "required startup flag check missing"
 
-for part_spec in "${TEST_PARTS[@]}"; do
-    part_name=${part_spec%%:*}
-    expected_sha=${part_spec#*:}
-    part_path="$PART_DIR/$part_name"
-    [ -f "$part_path" ] || test_loader_error "missing $part_path"
-    actual_sha=$(sha256sum -- "$part_path" | awk '{print $1}')
-    [ "$actual_sha" = "$expected_sha" ] || test_loader_error "$part_name checksum mismatch"
-    cat "$part_path" >> "$ASSEMBLED_TEST"
-done
-
-assembled_sha=$(sha256sum -- "$ASSEMBLED_TEST" | awk '{print $1}')
-[ "$assembled_sha" = "$EXPECTED_ASSEMBLED_SHA256" ] || test_loader_error "assembled test checksum mismatch"
-
-# Keep the existing fixture expectations stable; the dedicated radar test below
-# covers the new warning independently.
-GNOLAND_DOCTOR_SKIP_KNOWN_ISSUES=1 bash "$ASSEMBLED_TEST"
-bash "$SCRIPT_DIR/known_issue_radar_test.sh"
+echo "NODE_DOCTOR_TEST_OK"

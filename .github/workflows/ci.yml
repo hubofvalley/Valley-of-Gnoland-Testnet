@@ -38,13 +38,16 @@ jobs:
       - name: Validate JSON
         run: git ls-files -z '*.json' | xargs -0 -r -n1 jq empty
 
-      - name: Run multi-instance regression test
+      - name: Run Pearl migration contract test
+        run: bash tests/pearl_migration_test.sh
+
+      - name: Run multi-instance guard regression test
         run: bash tests/multi_instance_test.sh
 
-      - name: Run Node Doctor regression test
+      - name: Run Pearl Node Doctor regression test
         run: bash tests/node_doctor_test.sh
 
-      - name: Run snapshot regression test
+      - name: Run snapshot fail-closed regression test
         run: bash tests/apply_snapshot_test.sh
 
       - name: Run immutable runtime pin regression test

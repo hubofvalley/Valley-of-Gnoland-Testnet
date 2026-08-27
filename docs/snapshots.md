@@ -1,79 +1,28 @@
-# Sapphire Snapshot Guide
+# Pearl Snapshot Safety
 
-Speed up Gno.land Sapphire node synchronisation using a community snapshot.
+Snapshot application is currently **disabled** for Gno.land Pearl.
 
-## Providers
+Pearl is a fresh chain. The snapshot sources previously integrated into Valley of Gnoland were Sapphire-specific, so those archives must not be applied to `pearl-1`.
 
-Grand Valley extends its gratitude to these snapshot providers:
+## Current behavior
 
-- **UTSA** — `https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4`
-- **Hazen Network Solutions** — `https://server-9.hazennetworksolutions.com/gnoland-sapphire/index.json`
+Valley menu option `1c. Apply Snapshot` remains visible for UX continuity, but `resources/apply_snapshot.sh` exits without stopping the service, downloading an archive, or touching node data.
 
-Provider availability and current snapshot statistics are checked when you select a provider. Hazen publishes creation time, block height, size, SHA-256, and AppHash-verification metadata through its Sapphire manifest. UTSA exposes the metadata available through HTTP headers; unavailable fields are shown as `Not provided by provider` and are never guessed.
+This is intentional fail-closed behavior.
 
-## How to Apply a Snapshot
+## Why the Sapphire providers are disabled
 
-Run Valley of Gnoland:
+The previous UTSA/Hazen integration was built for Sapphire. A working URL or archive format is not enough evidence that state belongs to Pearl. Reusing Sapphire db/wal would violate Pearl's fresh-chain model.
 
-```bash
-bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh)
-```
+## Re-enable criteria
 
-Then select:
+A Pearl snapshot provider can be integrated only after all of the following are reviewed:
 
-```text
-1c. Apply Snapshot
-```
+1. provider explicitly identifies the snapshot as `pearl-1`;
+2. archive layout is validated and restricted to the intended database state;
+3. chain/height metadata can be checked before activation;
+4. trustworthy checksum or verification metadata is available;
+5. rollback behavior is regression-tested;
+6. no Sapphire endpoint or chain identifier is accepted by the Pearl path.
 
-Choose a provider, review its live statistics, then type `yes` to continue. You can optionally archive the current `db` and `wal` before they are replaced.
-
-## What the Snapshot Script Does
-
-1. Fetches the selected provider's availability and metadata.
-2. Shows the snapshot date, height, size, and AppHash-verification status when supplied by the provider.
-3. For Hazen, requires the provider manifest to report chain ID `sapphire-1`.
-4. Downloads the archive before stopping Gnoland.
-5. Verifies the SHA-256 checksum when the provider publishes one.
-6. Validates that the archive contains only `db` and `wal` paths.
-7. Optionally archives the current database to `$HOME/gnoland-db-wal-backup-<timestamp>.tar.gz`.
-8. Stops the selected Gnoland service and keeps the previous `db` and `wal` in a temporary rollback directory.
-9. Extracts the snapshot and restarts the service.
-10. Restores the previous database automatically if extraction or service activation fails.
-11. Removes the rollback directory after the service is confirmed active, then shows live logs.
-
-Config and node secrets are kept.
-
-## Current Provider Endpoints
-
-UTSA snapshot:
-
-```text
-https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4
-```
-
-Hazen Sapphire manifest:
-
-```text
-https://server-9.hazennetworksolutions.com/gnoland-sapphire/index.json
-```
-
-Hazen stable Sapphire archive:
-
-```text
-https://server-9.hazennetworksolutions.com/gnoland-db-snapshot.tar.lz4
-```
-
-## Before Applying
-
-- Confirm the selected node is on `sapphire-1`.
-- Ensure enough free disk space is available for the downloaded snapshot, current database, and optional backup.
-- Use the backup prompt if you need a retained copy after a successful restore. The automatic rollback copy is temporary.
-- The menu installs missing `curl`, `lz4`, `tar`, and `python3` packages with `apt`.
-- A provider without a published checksum is clearly marked; decide whether that trust level is acceptable before continuing.
-- Never use a Topaz snapshot on Sapphire.
-
-## After Applying
-
-Watch logs until the node catches up, then check progress with menu option `1e. Show Node Status`.
-
-last updated by: John
+Until then, sync through normal P2P using the official Pearl persistent peers.

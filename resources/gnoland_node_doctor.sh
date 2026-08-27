@@ -2,114 +2,173 @@
 
 set -u -o pipefail
 
-NODE_DOCTOR_PARTS=(
-    "part-00.bash:785578f7841238cd2924ad344138af6a6610b3863e9d9a3b33f54690d2a053ec"
-    "part-01.bash:4cef87d8f71f94abf04d4e71a0fb52154ab5593392d0d7a7da8d35a94f129850"
-    "part-02.bash:53d42d1f181f8f178281b6f092cf3268328d0ce7901f74416aa4b76114900f54"
-    "part-03.bash:4fa42463f6f9f5758565ca8aa78c5dd940221d130db23a1ba6985b40f76fc23f"
-    "part-04.bash:576f70d9c9c2c80ddad0336143d2b0c0f1852390bd95abdfff703b5791e8e5d8"
-    "part-05.bash:822d4ba20ed5cbe2d323ecb0c19c2e22479ce7cde512d5692b37f73ddd3dbd8a"
-    "part-06.bash:ef726f737827e11c7faa10a55a0ab4df3c9bdeb660f05975e1734c6b77c7646b"
-    "part-07.bash:af2feef031c146d84e72655ffbd930f16490ea2cf30f6a0df91751027d0967c1"
-    "part-08.bash:7241e86a3c5d8932507acc0ce1025ca03ad6dd746c5ea6d021ed0d20594dac62"
-    "part-09.bash:a234e9c77e2fe5cb7ac1421077ce0e20c93ab30b7a8d80774add4c72fdfe5ed0"
-    "part-10.bash:4a1a62a60dc7c5cac946e4b30dbc09a8e6877d15ea06af31ffe6d2dc58ef2cc7"
-    "part-11.bash:5a0d52e645b8a308ad5e8d62ccb338cc653138c1d2fde97996d62551dde7c53e"
-    "part-12.bash:9a62aacdeb5b43808366c22f9d21f04a8a5783b08ee962249a6891fcc7160c12"
-    "part-13.bash:ec0347833ef60cddadf43dfeb7fb5a514eecf4a64fe1598501b6540dccd94aee"
-)
-EXPECTED_ASSEMBLED_SHA256="1e0c93edd77c10baad3e7340ad1aa2a71a39a4c605593dfac95877651e36b2eb"
-KNOWN_ISSUES_FILE="node-doctor-known-issues.bash"
-KNOWN_ISSUES_SHA256="12c17499d1866754615e0c8da43ccde3c07a0c383124b13df57427b52d2e1204"
-readonly KNOWN_ISSUES_REF="c271583e1ce1ccdb61c8e6895992731193e8d141"
+readonly DEFAULT_NODE_DOCTOR_REF="3988d923ab35e8ed7fd1acc0d006c77b8b138240"
+readonly EXPECTED_CHAIN_ID="pearl-1"
+readonly EXPECTED_RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
+readonly EXPECTED_GENESIS_SHA256="c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91"
+readonly EXPECTED_PEERS="g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
+readonly PUBLIC_RPC="https://rpc.pearl.testnets.gno.land"
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || true)
-LOCAL_PART_DIR="$SCRIPT_DIR/node-doctor"
-LOCAL_KNOWN_ISSUES="$SCRIPT_DIR/$KNOWN_ISSUES_FILE"
-readonly DEFAULT_NODE_DOCTOR_REF="3692444c95e7ac37702a660dd07e76090f9f6587"
 NODE_DOCTOR_REF=${GNOLAND_NODE_DOCTOR_REF:-$DEFAULT_NODE_DOCTOR_REF}
-REMOTE_PART_BASE=${GNOLAND_NODE_DOCTOR_RAW_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$NODE_DOCTOR_REF/resources/node-doctor}
-REMOTE_RESOURCE_BASE=${GNOLAND_NODE_DOCTOR_RESOURCE_BASE:-https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/$KNOWN_ISSUES_REF/resources}
-TEMP_DIR=$(mktemp -d)
-ASSEMBLED_SCRIPT="$TEMP_DIR/gnoland_node_doctor_assembled.sh"
-PATCHED_SCRIPT="$TEMP_DIR/gnoland_node_doctor_with_known_issues.sh"
-KNOWN_ISSUES_PATH="$LOCAL_KNOWN_ISSUES"
-
-cleanup_node_doctor_loader() {
-    rm -rf "$TEMP_DIR"
-}
-trap cleanup_node_doctor_loader EXIT
-
-node_doctor_loader_error() {
-    echo "Node Doctor loader failed: $*" >&2
+if [[ ! "$NODE_DOCTOR_REF" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Node Doctor loader failed: GNOLAND_NODE_DOCTOR_REF must be a full 40-character Git commit SHA." >&2
     exit 2
-}
-
-if [ -z "${GNOLAND_NODE_DOCTOR_RAW_BASE:-}" ] && [[ ! "$NODE_DOCTOR_REF" =~ ^[0-9a-f]{40}$ ]]; then
-    node_doctor_loader_error "GNOLAND_NODE_DOCTOR_REF must be a full 40-character Git commit SHA."
 fi
 
-if ! command -v sha256sum >/dev/null 2>&1; then
-    node_doctor_loader_error "sha256sum is required to verify Node Doctor parts."
+if [ "${1:-}" = "--version" ]; then
+    echo "Valley of Gnoland Node Doctor (Pearl) 1.0.0"
+    exit 0
 fi
 
-: > "$ASSEMBLED_SCRIPT"
-for part_spec in "${NODE_DOCTOR_PARTS[@]}"; do
-    part_name=${part_spec%:*}
-    expected_sha=${part_spec#*:}
-    part_path="$LOCAL_PART_DIR/$part_name"
-
-    if [ ! -f "$part_path" ]; then
-        if ! command -v curl >/dev/null 2>&1; then
-            node_doctor_loader_error "curl is required to download missing part $part_name."
-        fi
-        part_path="$TEMP_DIR/$part_name"
-        if ! curl -fsSL "$REMOTE_PART_BASE/$part_name" -o "$part_path"; then
-            node_doctor_loader_error "could not download $part_name from $REMOTE_PART_BASE."
-        fi
-    fi
-
-    actual_sha=$(sha256sum -- "$part_path" | awk '{print $1}')
-    if [ "$actual_sha" != "$expected_sha" ]; then
-        node_doctor_loader_error "$part_name checksum mismatch (observed $actual_sha, expected $expected_sha)."
-    fi
-    cat "$part_path" >> "$ASSEMBLED_SCRIPT"
+JSON_MODE=false
+STRICT_MODE=false
+for arg in "$@"; do
+    case "$arg" in
+        --json) JSON_MODE=true ;;
+        --strict) STRICT_MODE=true ;;
+        *) echo "Unknown option: $arg" >&2; exit 2 ;;
+    esac
 done
 
-assembled_sha=$(sha256sum -- "$ASSEMBLED_SCRIPT" | awk '{print $1}')
-if [ "$assembled_sha" != "$EXPECTED_ASSEMBLED_SHA256" ]; then
-    node_doctor_loader_error "assembled script checksum mismatch (observed $assembled_sha)."
-fi
-
-if [ ! -f "$KNOWN_ISSUES_PATH" ]; then
-    if ! command -v curl >/dev/null 2>&1; then
-        node_doctor_loader_error "curl is required to download $KNOWN_ISSUES_FILE."
+profile_value() {
+    local name=$1 default=$2 value=""
+    if [ -f "$HOME/.bash_profile" ]; then
+        value=$(sed -n "s/^export ${name}=\"\(.*\)\"$/\1/p" "$HOME/.bash_profile" | tail -n 1)
     fi
-    KNOWN_ISSUES_PATH="$TEMP_DIR/$KNOWN_ISSUES_FILE"
-    if ! curl -fsSL "$REMOTE_RESOURCE_BASE/$KNOWN_ISSUES_FILE" -o "$KNOWN_ISSUES_PATH"; then
-        node_doctor_loader_error "could not download $KNOWN_ISSUES_FILE from $REMOTE_RESOURCE_BASE."
+    printf '%s\n' "${value:-$default}"
+}
+
+GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$(profile_value GNO_SOURCE_DIR "$HOME/gno")}
+GNOLAND_HOME=${GNOLAND_HOME:-$(profile_value GNOLAND_HOME "$GNO_SOURCE_DIR/gnoland-data")}
+GNOLAND_GENESIS=${GNOLAND_GENESIS:-$(profile_value GNOLAND_GENESIS "$GNO_SOURCE_DIR/genesis.json")}
+GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-$(profile_value GNOLAND_SERVICE_NAME "gnoland")}
+GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME%.service}
+GNOLAND_REMOTE=${GNOLAND_REMOTE:-$(profile_value GNOLAND_REMOTE "http://127.0.0.1:26657")}
+GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
+GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
+CONFIG_FILE="$GNOLAND_HOME/config/config.toml"
+
+PASS_COUNT=0
+WARN_COUNT=0
+FAIL_COUNT=0
+RESULTS=()
+
+record() {
+    local level=$1 code=$2 message=$3
+    RESULTS+=("$level|$code|$message")
+    case "$level" in
+        PASS) PASS_COUNT=$((PASS_COUNT + 1)) ;;
+        WARN) WARN_COUNT=$((WARN_COUNT + 1)) ;;
+        FAIL) FAIL_COUNT=$((FAIL_COUNT + 1)) ;;
+    esac
+}
+
+if [ -x "$GNOLAND_BIN" ] && [ -x "$GNOKEY_BIN" ]; then
+    record PASS binaries "gnoland and gnokey are executable under $HOME/go/bin"
+else
+    record FAIL binaries "Pearl binaries are missing or not executable under $HOME/go/bin"
+fi
+
+if [ -d "$GNO_SOURCE_DIR/.git" ]; then
+    source_commit=$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD 2>/dev/null || true)
+    if [ "$source_commit" = "$EXPECTED_RELEASE_COMMIT" ]; then
+        record PASS source_commit "source checkout matches pinned Pearl commit"
+    else
+        record FAIL source_commit "source checkout is ${source_commit:-unreadable}; expected $EXPECTED_RELEASE_COMMIT"
+    fi
+else
+    record FAIL source_commit "Gno source checkout is missing at $GNO_SOURCE_DIR"
+fi
+
+if [ -f "$GNOLAND_GENESIS" ]; then
+    genesis_sha=$(sha256sum "$GNOLAND_GENESIS" 2>/dev/null | awk '{print $1}')
+    if [ "$genesis_sha" = "$EXPECTED_GENESIS_SHA256" ]; then
+        record PASS genesis "Pearl genesis checksum matches the pinned release"
+    else
+        record FAIL genesis "genesis checksum mismatch: ${genesis_sha:-unreadable}"
+    fi
+else
+    record FAIL genesis "genesis file is missing at $GNOLAND_GENESIS"
+fi
+
+if [ -f "$CONFIG_FILE" ]; then
+    if grep -Fq "persistent_peers = \"$EXPECTED_PEERS\"" "$CONFIG_FILE"; then
+        record PASS peers "official Pearl persistent peers are configured"
+    else
+        record WARN peers "persistent peers differ from the pinned Pearl defaults"
+    fi
+    grep -Fq 'prune_strategy = "syncable"' "$CONFIG_FILE" && record PASS prune "prune_strategy is syncable" || record FAIL prune "application.prune_strategy is not syncable"
+    grep -Fq 'timeout_commit = "3s"' "$CONFIG_FILE" && record PASS timeout_commit "consensus timeout_commit is 3s" || record FAIL timeout_commit "consensus.timeout_commit is not 3s"
+    grep -Fq 'peer_gossip_sleep_duration = "10ms"' "$CONFIG_FILE" && record PASS gossip "peer gossip sleep is 10ms" || record FAIL gossip "consensus.peer_gossip_sleep_duration is not 10ms"
+    grep -Fq 'flush_throttle_timeout = "10ms"' "$CONFIG_FILE" && record PASS flush "P2P flush throttle is 10ms" || record FAIL flush "p2p.flush_throttle_timeout is not 10ms"
+    grep -Fq 'pex = true' "$CONFIG_FILE" && record PASS pex "P2P exchange is enabled" || record WARN pex "p2p.pex is not enabled"
+else
+    record FAIL config "config.toml is missing at $CONFIG_FILE"
+fi
+
+service_file=$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
+if [ -n "$service_file" ] && [ -f "$service_file" ]; then
+    grep -Fq -- '--chainid pearl-1' "$service_file" && record PASS service_chain "systemd starts pearl-1" || record FAIL service_chain "systemd does not start pearl-1"
+    grep -Fq -- '--skip-genesis-sig-verification' "$service_file" && record PASS genesis_flag "required Pearl genesis signature-skip flag is present" || record FAIL genesis_flag "required --skip-genesis-sig-verification flag is missing"
+else
+    record FAIL service "systemd unit for ${GNOLAND_SERVICE_NAME}.service was not found"
+fi
+
+local_status=$(curl -m 5 -fsS "${GNOLAND_REMOTE%/}/status" 2>/dev/null || true)
+local_network=$(printf '%s' "$local_status" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+if [ "$local_network" = "$EXPECTED_CHAIN_ID" ]; then
+    record PASS local_rpc "local RPC reports $EXPECTED_CHAIN_ID"
+elif [ -n "$local_network" ]; then
+    record FAIL local_rpc "local RPC reports $local_network, expected $EXPECTED_CHAIN_ID"
+else
+    record WARN local_rpc "local RPC is not reachable at $GNOLAND_REMOTE"
+fi
+
+public_status=$(curl -m 5 -fsS "$PUBLIC_RPC/status" 2>/dev/null || true)
+public_network=$(printf '%s' "$public_status" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+if [ "$public_network" = "$EXPECTED_CHAIN_ID" ]; then
+    record PASS public_rpc "official Pearl RPC reports $EXPECTED_CHAIN_ID"
+else
+    record WARN public_rpc "official Pearl RPC was unavailable or reported an unexpected network"
+fi
+
+if command -v timedatectl >/dev/null 2>&1; then
+    ntp_state=$(timedatectl show -p NTPSynchronized --value 2>/dev/null || true)
+    [ "$ntp_state" = "yes" ] && record PASS time_sync "system clock reports NTP synchronized" || record WARN time_sync "NTP synchronization could not be confirmed"
+fi
+
+if [ -d "$GNOLAND_HOME" ]; then
+    free_kb=$(df -Pk "$GNOLAND_HOME" 2>/dev/null | awk 'NR==2 {print $4}')
+    if [[ "$free_kb" =~ ^[0-9]+$ ]] && [ "$free_kb" -lt 20971520 ]; then
+        record WARN disk "less than 20 GiB free on the node filesystem"
+    else
+        record PASS disk "node filesystem has at least 20 GiB free or capacity was not constrained"
     fi
 fi
 
-known_issues_sha=$(sha256sum -- "$KNOWN_ISSUES_PATH" | awk '{print $1}')
-if [ "$known_issues_sha" != "$KNOWN_ISSUES_SHA256" ]; then
-    node_doctor_loader_error "$KNOWN_ISSUES_FILE checksum mismatch (observed $known_issues_sha, expected $KNOWN_ISSUES_SHA256)."
+if $JSON_MODE; then
+    printf '{"network":"%s","runtime_ref":"%s","pass":%d,"warn":%d,"fail":%d,"results":[' "$EXPECTED_CHAIN_ID" "$NODE_DOCTOR_REF" "$PASS_COUNT" "$WARN_COUNT" "$FAIL_COUNT"
+    first=true
+    for row in "${RESULTS[@]}"; do
+        IFS='|' read -r level code message <<<"$row"
+        $first || printf ','
+        first=false
+        jq -cn --arg level "$level" --arg code "$code" --arg message "$message" '{level:$level,code:$code,message:$message}'
+    done
+    printf ']}\n'
+else
+    echo "Valley of Gnoland Node Doctor - Pearl"
+    echo "Expected chain: $EXPECTED_CHAIN_ID"
+    echo "Pinned release: $EXPECTED_RELEASE_COMMIT"
+    echo
+    for row in "${RESULTS[@]}"; do
+        IFS='|' read -r level code message <<<"$row"
+        printf '[%s] %-16s %s\n' "$level" "$code" "$message"
+    done
+    echo
+    echo "Summary: PASS=$PASS_COUNT WARN=$WARN_COUNT FAIL=$FAIL_COUNT"
 fi
 
-# Preserve the verified base Node Doctor exactly, then inject one reviewed,
-# checksummed read-only advisory hook immediately before report emission.
-awk -v helper="$KNOWN_ISSUES_PATH" '
-    $0 == "if $JSON_MODE; then" && !inserted {
-        while ((getline line < helper) > 0) print line
-        close(helper)
-        print "check_known_issues"
-        inserted=1
-    }
-    { print }
-    END {
-        if (!inserted) exit 42
-    }
-' "$ASSEMBLED_SCRIPT" > "$PATCHED_SCRIPT" || node_doctor_loader_error "could not inject the known-issue radar hook."
-
-# shellcheck source=/dev/null
-source "$PATCHED_SCRIPT"
+if [ "$FAIL_COUNT" -gt 0 ]; then exit 1; fi
+if $STRICT_MODE && [ "$WARN_COUNT" -gt 0 ]; then exit 1; fi
+exit 0

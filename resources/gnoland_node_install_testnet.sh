@@ -14,7 +14,7 @@ on_error() {
     local line_number=${1:-unknown}
     local failed_command=${2:-unknown}
     trap - ERR
-    echo -e "${RED}Sapphire installation failed.${RESET}" >&2
+    echo -e "${RED}Pearl installation/migration failed.${RESET}" >&2
     echo "Stage: $CURRENT_STAGE" >&2
     echo "Line: $line_number" >&2
     echo "Command: $failed_command" >&2
@@ -22,24 +22,22 @@ on_error() {
     echo "No success status was reported. Review the error above before retrying." >&2
     exit "$exit_code"
 }
-
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
-CHAIN_ID="sapphire-1"
-RELEASE_TAG="chain/sapphire"
-RELEASE_COMMIT="9ab5198acac68016341655c82290ecaff5591edb"
-GENESIS_URL="https://github.com/gnolang/gno/releases/download/chain/sapphire/genesis.json"
-GENESIS_SHA256="d511e0e5b767d4e53f5c1afeeea1bc61d2c7b2118146c820f1f3e4296f67498e"
-GNOLAND_SHA256="b77b033df80a10bd97d836a2c3eb2b4257279cd7240f21ed6e06b67c7306a434"
-GNOKEY_SHA256="f27c7ad0430bdc4a7855af6a6762d202b7d609161f80a8fa223f85882bef486d"
-OFFICIAL_SAPPHIRE_PEERS="g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656"
-PERSISTENT_PEERS="${OFFICIAL_SAPPHIRE_PEERS}"
-PUBLIC_RPC="https://rpc.sapphire.testnets.gno.land"
+readonly CHAIN_ID="pearl-1"
+readonly RELEASE_TAG="chain/pearl"
+readonly RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
+readonly GENESIS_URL="https://github.com/gnolang/gno/releases/download/chain/pearl/genesis.json"
+readonly GENESIS_SHA256="c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91"
+readonly GNOLAND_SHA256="055b24001a31de7054649a049c9f9db5282965713814b84f7f864e8e6efa237d"
+readonly GNOKEY_SHA256="a69017c6e9ce9d77d3bd2f1e811731f6353e0deba5da4f620672d58e5fcec804"
+readonly OFFICIAL_PEARL_PEERS="g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
+readonly PUBLIC_RPC="https://rpc.pearl.testnets.gno.land"
 
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOLAND_HOME=${GNOLAND_HOME:-$GNO_SOURCE_DIR/gnoland-data}
 GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
-GENESIS_FILE="$GNO_SOURCE_DIR/genesis.json"
+GENESIS_FILE=${GNOLAND_GENESIS:-$GNO_SOURCE_DIR/genesis.json}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
 GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
@@ -68,15 +66,15 @@ for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_HOME" "$GNOKEY_HOME" "$GNOLAND_
     fi
 done
 
-echo -e "\n--- Gno.land Sapphire Node Setup ---"
-echo -e "${YELLOW}Migration layout remains compatible with previous Valley of Gnoland installs:${RESET}"
+echo -e "\n--- Gno.land Pearl Node Setup ---"
+echo -e "${YELLOW}Pearl is a fresh chain. Sapphire chain data is not reusable.${RESET}"
+echo "Valley of Gnoland keeps the existing layout so an in-place Sapphire -> Pearl migration is predictable:"
 echo "  Source / GNOROOT: $GNO_SOURCE_DIR"
 echo "  Node data:        $GNOLAND_HOME"
 echo "  Operator keyring: $GNOKEY_HOME"
 echo "  Service:          gnoland.service (default)"
-echo
-echo -e "${RED}Sapphire is a new chain. Existing Topaz chain data cannot be reused.${RESET}"
-echo -e "${GREEN}The installer preserves the operator keyring and backs it up before cleanup.${RESET}"
+echo -e "${GREEN}The operator keyring is preserved and backed up before cleanup.${RESET}"
+echo "Reusing a Sapphire operator key is optional continuity; it does not carry validator status into Pearl."
 
 while :; do
     read -r -p "Enter your GNOLAND_MONIKER: " GNOLAND_MONIKER
@@ -87,9 +85,7 @@ done
 while :; do
     read -r -p "Enter preferred port prefix (leave empty for default 26): " GNOLAND_PORT
     GNOLAND_PORT=${GNOLAND_PORT:-26}
-    if [[ "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]] &&
-       [ "$((10#$GNOLAND_PORT))" -ge 1 ] &&
-       [ "$((10#$GNOLAND_PORT))" -le 64 ]; then
+    if [[ "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]] && [ "$((10#$GNOLAND_PORT))" -ge 1 ] && [ "$((10#$GNOLAND_PORT))" -le 64 ]; then
         break
     fi
     echo -e "${RED}Port prefix must be two digits from 01 through 64, for example 26 or 36.${RESET}"
@@ -107,15 +103,12 @@ while :; do
         GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
     fi
     GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME%.service}
-    if [[ "$GNOLAND_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then
-        break
-    fi
+    if [[ "$GNOLAND_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then break; fi
     echo -e "${RED}Service name must start with a letter or number and may contain _, ., @, and -.${RESET}"
     GNOLAND_SERVICE_NAME=""
 done
 
 SERVICE_FILE="/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
-
 GNOLAND_RPC_PORT="${GNOLAND_PORT}657"
 GNOLAND_P2P_PORT="${GNOLAND_PORT}656"
 GNOLAND_ABCI_PORT="${GNOLAND_PORT}658"
@@ -127,10 +120,7 @@ service_belongs_to_instance() {
     local unit_user unit_workdir resolved_service_file
     resolved_service_file=$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
     [ -n "$resolved_service_file" ] || return 0
-    if [ ! -f "$resolved_service_file" ]; then
-        echo -e "${RED}Cannot inspect existing service: $resolved_service_file${RESET}" >&2
-        return 1
-    fi
+    if [ ! -f "$resolved_service_file" ]; then echo -e "${RED}Cannot inspect existing service: $resolved_service_file${RESET}" >&2; return 1; fi
     unit_user=$(sed -n 's/^User=//p' "$resolved_service_file" | tail -n 1)
     unit_workdir=$(sed -n 's/^WorkingDirectory=//p' "$resolved_service_file" | tail -n 1)
     if [ "$unit_user" != "$OS_USER" ] || [ "$unit_workdir" != "$GNO_SOURCE_DIR" ]; then
@@ -146,22 +136,14 @@ port_is_free() {
     ! ss -H -ltn "sport = :$port" 2>/dev/null | grep -q .
 }
 
-if ! command -v ss >/dev/null 2>&1; then
-    echo -e "${RED}Required port-inspection command 'ss' is unavailable.${RESET}" >&2
-    false
-fi
-
+if ! command -v ss >/dev/null 2>&1; then echo -e "${RED}Required port-inspection command 'ss' is unavailable.${RESET}" >&2; false; fi
 service_belongs_to_instance
 
 if [ -z "$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)" ]; then
-    while ! port_is_free "$GNOLAND_P2P_PORT" ||
-          ! port_is_free "$GNOLAND_RPC_PORT" ||
-          ! port_is_free "$GNOLAND_ABCI_PORT"; do
+    while ! port_is_free "$GNOLAND_P2P_PORT" || ! port_is_free "$GNOLAND_RPC_PORT" || ! port_is_free "$GNOLAND_ABCI_PORT"; do
         echo -e "${RED}Port prefix $GNOLAND_PORT conflicts with a running listener.${RESET}"
         read -r -p "Enter another two-digit port prefix: " GNOLAND_PORT
-        if [[ ! "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]] ||
-           [ "$((10#$GNOLAND_PORT))" -lt 1 ] ||
-           [ "$((10#$GNOLAND_PORT))" -gt 64 ]; then
+        if [[ ! "$GNOLAND_PORT" =~ ^[0-9]{2}$ ]] || [ "$((10#$GNOLAND_PORT))" -lt 1 ] || [ "$((10#$GNOLAND_PORT))" -gt 64 ]; then
             echo -e "${RED}Port prefix must be two digits from 01 through 64, for example 26 or 36.${RESET}"
             continue
         fi
@@ -173,8 +155,8 @@ fi
 
 echo
 echo -e "${YELLOW}Operator key choice:${RESET}"
-echo "1. Reuse an existing local Topaz operator key (recommended for existing validators)"
-echo "2. Recover an existing Topaz operator key from its mnemonic"
+echo "1. Reuse an existing local Sapphire operator key (recommended only if you want address continuity)"
+echo "2. Recover an existing Sapphire operator key from its mnemonic"
 echo "3. Create a new operator key"
 while :; do
     read -r -p "Choose 1, 2, or 3: " OPERATOR_KEY_ACTION
@@ -183,7 +165,9 @@ while :; do
 done
 
 echo
-echo -e "${YELLOW}Installation preview:${RESET}"
+echo -e "${YELLOW}Migration preview:${RESET}"
+echo "  Source network:   Sapphire (if an existing node is present)"
+echo "  Target network:   Pearl ($CHAIN_ID)"
 echo "  OS user:          $OS_USER"
 echo "  Service:          ${GNOLAND_SERVICE_NAME}.service"
 echo "  Binary:           $GNOLAND_BIN"
@@ -192,21 +176,18 @@ echo "  Node data:        $GNOLAND_HOME"
 echo "  Operator keyring: $GNOKEY_HOME"
 echo "  P2P/RPC/ABCI:     $GNOLAND_P2P_PORT / $GNOLAND_RPC_PORT / $GNOLAND_ABCI_PORT"
 echo
-echo -e "${YELLOW}This will replace the chain data under $GNOLAND_HOME with a clean Sapphire state.${RESET}"
-echo "The old source checkout and genesis in $GNO_SOURCE_DIR will also be replaced."
-echo "The operator keyring at $GNOKEY_HOME will not be deleted."
-read -r -p "Type MIGRATE-TO-SAPPHIRE to continue: " CONFIRM
-if [ "$CONFIRM" != "MIGRATE-TO-SAPPHIRE" ]; then
-    echo "Installation cancelled."
-    exit 0
-fi
+echo -e "${YELLOW}This replaces chain data under $GNOLAND_HOME with a clean Pearl state.${RESET}"
+echo "The old source checkout and genesis in $GNO_SOURCE_DIR are replaced."
+echo "The operator keyring at $GNOKEY_HOME is not deleted."
+read -r -p "Type MIGRATE-TO-PEARL to continue: " CONFIRM
+if [ "$CONFIRM" != "MIGRATE-TO-PEARL" ]; then echo "Installation cancelled."; exit 0; fi
 
 mkdir -p "$BACKUP_DIR"
-CURRENT_STAGE="backup existing keys and node secrets"
+CURRENT_STAGE="backup existing Sapphire keys and node secrets"
 if [ -d "$GNOLAND_HOME/secrets" ]; then
-    tar -czf "$BACKUP_DIR/topaz-node-secrets.tar.gz" -C "$GNOLAND_HOME" secrets
-    chmod 600 "$BACKUP_DIR/topaz-node-secrets.tar.gz"
-    echo -e "${GREEN}Backed up existing node secrets to $BACKUP_DIR/topaz-node-secrets.tar.gz${RESET}"
+    tar -czf "$BACKUP_DIR/sapphire-node-secrets.tar.gz" -C "$GNOLAND_HOME" secrets
+    chmod 600 "$BACKUP_DIR/sapphire-node-secrets.tar.gz"
+    echo -e "${GREEN}Backed up existing node secrets to $BACKUP_DIR/sapphire-node-secrets.tar.gz${RESET}"
 fi
 if [ -d "$GNOKEY_HOME" ] && [ -n "$(find "$GNOKEY_HOME" -mindepth 1 -print -quit 2>/dev/null)" ]; then
     tar -czf "$BACKUP_DIR/operator-keyring.tar.gz" -C "$(dirname "$GNOKEY_HOME")" "$(basename "$GNOKEY_HOME")"
@@ -215,18 +196,17 @@ if [ -d "$GNOKEY_HOME" ] && [ -n "$(find "$GNOKEY_HOME" -mindepth 1 -print -quit
 fi
 
 sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
-if ! port_is_free "$GNOLAND_P2P_PORT" ||
-   ! port_is_free "$GNOLAND_RPC_PORT" ||
-   ! port_is_free "$GNOLAND_ABCI_PORT"; then
+if ! port_is_free "$GNOLAND_P2P_PORT" || ! port_is_free "$GNOLAND_RPC_PORT" || ! port_is_free "$GNOLAND_ABCI_PORT"; then
     echo -e "${RED}Selected ports remain occupied after stopping ${GNOLAND_SERVICE_NAME}.service.${RESET}" >&2
     false
 fi
 sudo systemctl disable "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
-sudo rm -f "/etc/systemd/system/${GNOLAND_SERVICE_NAME}.service"
+sudo rm -f "$SERVICE_FILE"
 rm -rf "$GNOLAND_HOME"
 rm -f "$GENESIS_FILE"
 sed -i '/GNOLAND_/d;/GNOKEY_/d;/GNO_SOURCE_DIR/d;/GNOROOT/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 
+CURRENT_STAGE="install prerequisites"
 sudo apt update -y
 sudo apt install -y curl git jq build-essential make gcc wget ca-certificates
 mkdir -p "$HOME/go/bin"
@@ -234,13 +214,9 @@ mkdir -p "$HOME/go/bin"
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-echo -e "${CYAN}Preparing the pinned Gno Sapphire source tree and stdlibs.${RESET}"
-CURRENT_STAGE="prepare pinned Sapphire source"
-if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
-    rm -rf "$GNO_SOURCE_DIR"
-    mkdir -p "$GNO_SOURCE_DIR"
-    git -C "$GNO_SOURCE_DIR" init
-fi
+CURRENT_STAGE="prepare pinned Pearl source"
+echo -e "${CYAN}Preparing pinned Gno Pearl source at ${RELEASE_COMMIT}.${RESET}"
+if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then rm -rf "$GNO_SOURCE_DIR"; mkdir -p "$GNO_SOURCE_DIR"; git -C "$GNO_SOURCE_DIR" init; fi
 if git -C "$GNO_SOURCE_DIR" remote get-url origin >/dev/null 2>&1; then
     git -C "$GNO_SOURCE_DIR" remote set-url origin https://github.com/gnolang/gno.git
 else
@@ -248,26 +224,19 @@ else
 fi
 git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"
 git -C "$GNO_SOURCE_DIR" checkout --detach --force FETCH_HEAD
-if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
-    echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}" >&2
-    false
-fi
-if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
-    echo -e "${RED}Missing Sapphire stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2
-    false
-fi
+if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}" >&2; false; fi
+if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then echo -e "${RED}Missing Pearl stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2; false; fi
 
-CURRENT_STAGE="install verified Sapphire binaries"
+CURRENT_STAGE="install verified Pearl binaries"
 if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
+    if ! command -v go >/dev/null 2>&1; then echo -e "${RED}Go is required for source builds. Install Go or rerun with prebuilt binaries.${RESET}" >&2; false; fi
     echo -e "${CYAN}Building gnoland and gnokey from ${RELEASE_TAG}.${RESET}"
-    (
-        cd "$GNO_SOURCE_DIR"
-        make -C gno.land install.gnoland install.gnokey
-    )
+    (cd "$GNO_SOURCE_DIR" && make -C gno.land install.gnoland install.gnokey)
 else
-    echo -e "${CYAN}Downloading official Sapphire release binaries.${RESET}"
-    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/sapphire/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/sapphire/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+    if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then echo -e "${RED}The prebuilt path currently supports Linux amd64 only. Use source build on this host.${RESET}" >&2; false; fi
+    echo -e "${CYAN}Downloading official Pearl release binaries.${RESET}"
+    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnokey_linux_amd64" -o "$tmpdir/gnokey"
     echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
     echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
     chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
@@ -275,27 +244,17 @@ else
     install "$tmpdir/gnokey" "$GNOKEY_BIN"
 fi
 
-if [ ! -x "$GNOLAND_BIN" ] || [ ! -x "$GNOKEY_BIN" ]; then
-    echo -e "${RED}Per-user Gnoland binaries are missing or not executable.${RESET}" >&2
-    false
-fi
-
+if [ ! -x "$GNOLAND_BIN" ] || [ ! -x "$GNOKEY_BIN" ]; then echo -e "${RED}Per-user Gnoland binaries are missing or not executable.${RESET}" >&2; false; fi
 export GNOROOT
 export PATH="$HOME/go/bin:$PATH"
 hash -r
-if [ "$(command -v gnoland)" != "$GNOLAND_BIN" ] ||
-   [ "$(command -v gnokey)" != "$GNOKEY_BIN" ]; then
-    echo -e "${RED}Per-user commands do not resolve to $HOME/go/bin.${RESET}" >&2
-    false
-fi
+if [ "$(command -v gnoland)" != "$GNOLAND_BIN" ] || [ "$(command -v gnokey)" != "$GNOKEY_BIN" ]; then echo -e "${RED}Per-user commands do not resolve to $HOME/go/bin.${RESET}" >&2; false; fi
 mkdir -p "$GNOKEY_HOME"
 
 operator_key_exists() {
-    "$GNOKEY_BIN" -home "$GNOKEY_HOME" list 2>/dev/null |
-        awk -v key="$1" '$2 == key { found=1 } END { exit !found }'
+    "$GNOKEY_BIN" -home "$GNOKEY_HOME" list 2>/dev/null | awk -v key="$1" '$2 == key { found=1 } END { exit !found }'
 }
 
-echo
 CURRENT_STAGE="select or recover operator key"
 case "$OPERATOR_KEY_ACTION" in
     1)
@@ -303,19 +262,13 @@ case "$OPERATOR_KEY_ACTION" in
         LOCAL_KEYS=$("$GNOKEY_BIN" -home "$GNOKEY_HOME" list || true)
         if [ -z "$LOCAL_KEYS" ]; then
             echo -e "${RED}No readable local key found. Choose recovery or new-key installation.${RESET}"
-            while :; do
-                read -r -p "Choose 2 to recover or 3 for a new key: " OPERATOR_KEY_ACTION
-                [[ "$OPERATOR_KEY_ACTION" =~ ^[23]$ ]] && break
-                echo -e "${RED}Invalid choice. Please enter 2 or 3.${RESET}"
-            done
+            while :; do read -r -p "Choose 2 to recover or 3 for a new key: " OPERATOR_KEY_ACTION; [[ "$OPERATOR_KEY_ACTION" =~ ^[23]$ ]] && break; echo -e "${RED}Invalid choice. Please enter 2 or 3.${RESET}"; done
         else
             echo "$LOCAL_KEYS"
-            echo -e "${YELLOW}Confirm that the selected g1... address is the same operator address used on Topaz.${RESET}"
+            echo -e "${YELLOW}If you want operator-address continuity from Sapphire, select that existing key.${RESET}"
             while :; do
                 read -r -p "Type the existing key name to reuse: " OPERATOR_KEY_NAME
-                if [ -n "$OPERATOR_KEY_NAME" ] && operator_key_exists "$OPERATOR_KEY_NAME"; then
-                    break
-                fi
+                if [ -n "$OPERATOR_KEY_NAME" ] && operator_key_exists "$OPERATOR_KEY_NAME"; then break; fi
                 echo -e "${RED}That key was not found. Please enter an existing key name.${RESET}"
             done
         fi
@@ -324,23 +277,14 @@ esac
 
 case "$OPERATOR_KEY_ACTION" in
     2)
-        read -r -p "Enter key name for the recovered Topaz operator (default 'operator'): " OPERATOR_KEY_NAME
+        read -r -p "Enter key name for the recovered Sapphire operator (default 'operator'): " OPERATOR_KEY_NAME
         OPERATOR_KEY_NAME=${OPERATOR_KEY_NAME:-operator}
-        if operator_key_exists "$OPERATOR_KEY_NAME"; then
-            echo -e "${YELLOW}Key '$OPERATOR_KEY_NAME' already exists; reusing it without overwrite.${RESET}"
-        else
-            "$GNOKEY_BIN" -home "$GNOKEY_HOME" add -recover "$OPERATOR_KEY_NAME"
-        fi
+        if operator_key_exists "$OPERATOR_KEY_NAME"; then echo -e "${YELLOW}Key '$OPERATOR_KEY_NAME' already exists; reusing it without overwrite.${RESET}"; else "$GNOKEY_BIN" -home "$GNOKEY_HOME" add -recover "$OPERATOR_KEY_NAME"; fi
         ;;
     3)
         read -r -p "Enter new key name (default 'operator'): " OPERATOR_KEY_NAME
         OPERATOR_KEY_NAME=${OPERATOR_KEY_NAME:-operator}
-        if operator_key_exists "$OPERATOR_KEY_NAME"; then
-            echo -e "${YELLOW}Key '$OPERATOR_KEY_NAME' already exists; reusing it without overwrite.${RESET}"
-        else
-            "$GNOKEY_BIN" -home "$GNOKEY_HOME" add "$OPERATOR_KEY_NAME"
-            echo -e "${RED}Store the new mnemonic offline. It will not be shown again.${RESET}"
-        fi
+        if operator_key_exists "$OPERATOR_KEY_NAME"; then echo -e "${YELLOW}Key '$OPERATOR_KEY_NAME' already exists; reusing it without overwrite.${RESET}"; else "$GNOKEY_BIN" -home "$GNOKEY_HOME" add "$OPERATOR_KEY_NAME"; echo -e "${RED}Store the new mnemonic offline. It will not be shown again.${RESET}"; fi
         ;;
 esac
 
@@ -348,21 +292,22 @@ echo -e "${GREEN}Operator key selected: $OPERATOR_KEY_NAME${RESET}"
 "$GNOKEY_BIN" -home "$GNOKEY_HOME" list
 
 cd "$GNO_SOURCE_DIR"
-CURRENT_STAGE="initialise Sapphire config and node secrets"
+CURRENT_STAGE="initialise Pearl config and node secrets"
 "$GNOLAND_BIN" config init -force
 "$GNOLAND_BIN" secrets init -force
-echo -e "${YELLOW}A fresh Sapphire consensus/node identity was generated. This does not change the reused operator g1 address.${RESET}"
+echo -e "${YELLOW}A fresh Pearl consensus/node identity was generated. Reusing an operator key does not reuse Sapphire consensus state.${RESET}"
 
+CURRENT_STAGE="download and verify Pearl genesis"
 curl -fsSL "$GENESIS_URL" -o "$GENESIS_FILE"
 echo "${GENESIS_SHA256}  $GENESIS_FILE" | sha256sum -c -
 
-CURRENT_STAGE="apply official Sapphire configuration"
+CURRENT_STAGE="apply official Pearl configuration"
 "$GNOLAND_BIN" config set moniker "$GNOLAND_MONIKER"
 "$GNOLAND_BIN" config set proxy_app "tcp://127.0.0.1:${GNOLAND_ABCI_PORT}"
 "$GNOLAND_BIN" config set p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
 "$GNOLAND_BIN" config set rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
 "$GNOLAND_BIN" config set p2p.seeds ""
-"$GNOLAND_BIN" config set p2p.persistent_peers "$PERSISTENT_PEERS"
+"$GNOLAND_BIN" config set p2p.persistent_peers "$OFFICIAL_PEARL_PEERS"
 "$GNOLAND_BIN" config set application.prune_strategy "syncable"
 "$GNOLAND_BIN" config set consensus.timeout_commit "3s"
 "$GNOLAND_BIN" config set consensus.peer_gossip_sleep_duration "10ms"
@@ -370,22 +315,19 @@ CURRENT_STAGE="apply official Sapphire configuration"
 "$GNOLAND_BIN" config set p2p.pex "true"
 "$GNOLAND_BIN" config set mempool.size "10000"
 "$GNOLAND_BIN" config set p2p.max_num_outbound_peers "40"
-
-if [ -n "$GNOLAND_EXTERNAL_HOST" ]; then
-    "$GNOLAND_BIN" config set p2p.external_address "${GNOLAND_EXTERNAL_HOST}:${GNOLAND_P2P_PORT}"
-fi
+if [ -n "$GNOLAND_EXTERNAL_HOST" ]; then "$GNOLAND_BIN" config set p2p.external_address "${GNOLAND_EXTERNAL_HOST}:${GNOLAND_P2P_PORT}"; fi
 
 if [[ "$SETUP_UFW" =~ ^[Yy]$ ]]; then
     sudo apt install -y ufw
     sudo ufw allow 22/tcp comment "SSH Access"
-    sudo ufw allow "${GNOLAND_P2P_PORT}/tcp" comment "Gno.land Sapphire P2P"
+    sudo ufw allow "${GNOLAND_P2P_PORT}/tcp" comment "Gno.land Pearl P2P"
     sudo ufw --force enable
     sudo ufw status verbose
 fi
 
-sudo tee "$SERVICE_FILE" >/dev/null <<EOF
+sudo tee "$SERVICE_FILE" >/dev/null <<EOF_SERVICE
 [Unit]
-Description=Gno.land Sapphire Node (${GNOLAND_SERVICE_NAME})
+Description=Gno.land Pearl Node (${GNOLAND_SERVICE_NAME})
 After=network-online.target
 
 [Service]
@@ -403,7 +345,7 @@ LimitNPROC=65536
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOF_SERVICE
 
 {
     echo "export GNOLAND_MONIKER=\"$GNOLAND_MONIKER\""
@@ -415,7 +357,6 @@ EOF
     echo "export GNOLAND_OPERATOR_KEY=\"$OPERATOR_KEY_NAME\""
     echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
     echo "export GNOROOT=\"$GNOROOT\""
-    # shellcheck disable=SC2016
     echo 'export PATH="$HOME/go/bin:$PATH"'
     echo "export GNOLAND_SERVICE_NAME=\"$GNOLAND_SERVICE_NAME\""
     echo "export GNOLAND_REMOTE=\"http://127.0.0.1:${GNOLAND_RPC_PORT}\""
@@ -423,60 +364,35 @@ EOF
 } >> "$HOME/.bash_profile"
 
 sudo systemctl daemon-reload
-CURRENT_STAGE="start gnoland service"
+CURRENT_STAGE="start Pearl gnoland service"
 sudo systemctl enable "$GNOLAND_SERVICE_NAME"
 sudo systemctl restart "$GNOLAND_SERVICE_NAME"
 
-echo -e "${CYAN}Waiting for the Sapphire RPC startup check (up to 90 seconds).${RESET}"
+echo -e "${CYAN}Waiting for the Pearl RPC startup check (up to 90 seconds).${RESET}"
 RPC_STATUS=""
 for _ in $(seq 1 90); do
-    if ! systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then
-        break
-    fi
+    if ! systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then break; fi
     RPC_STATUS=$(curl -fsS "http://127.0.0.1:${GNOLAND_RPC_PORT}/status" 2>/dev/null || true)
-    if [ -n "$RPC_STATUS" ]; then
-        break
-    fi
+    if [ -n "$RPC_STATUS" ]; then break; fi
     sleep 1
 done
 
 RPC_NETWORK=$(printf '%s' "$RPC_STATUS" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
 CONFIG_FILE="$GNOLAND_HOME/config/config.toml"
 CONFIG_ABCI_PORT=$(sed -n 's/^proxy_app = "tcp:\/\/127\.0\.0\.1:\([0-9][0-9]*\)"$/\1/p' "$CONFIG_FILE")
-CONFIG_P2P_PORT=$(awk -F: '
-    /^[[:space:]]*\[p2p\][[:space:]]*$/ {in_p2p=1; next}
-    /^[[:space:]]*\[/ {in_p2p=0}
-    in_p2p && /^[[:space:]]*laddr = "tcp:\/\// {
-        gsub(/".*/, "", $NF)
-        print $NF
-        exit
-    }
-' "$CONFIG_FILE")
-CONFIG_RPC_PORT=$(awk -F: '
-    /^[[:space:]]*\[rpc\][[:space:]]*$/ {in_rpc=1; next}
-    /^[[:space:]]*\[/ {in_rpc=0}
-    in_rpc && /^[[:space:]]*laddr = "tcp:\/\// {
-        gsub(/".*/, "", $NF)
-        print $NF
-        exit
-    }
-' "$CONFIG_FILE")
+CONFIG_P2P_PORT=$(awk -F: '/^[[:space:]]*\[p2p\][[:space:]]*$/ {in_p2p=1; next} /^[[:space:]]*\[/ {in_p2p=0} in_p2p && /^[[:space:]]*laddr = "tcp:\/\// {gsub(/".*/, "", $NF); print $NF; exit}' "$CONFIG_FILE")
+CONFIG_RPC_PORT=$(awk -F: '/^[[:space:]]*\[rpc\][[:space:]]*$/ {in_rpc=1; next} /^[[:space:]]*\[/ {in_rpc=0} in_rpc && /^[[:space:]]*laddr = "tcp:\/\// {gsub(/".*/, "", $NF); print $NF; exit}' "$CONFIG_FILE")
 
-if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME" &&
-   [ "$RPC_NETWORK" = "$CHAIN_ID" ] &&
-   [ "$CONFIG_ABCI_PORT" = "$GNOLAND_ABCI_PORT" ] &&
-   [ "$CONFIG_P2P_PORT" = "$GNOLAND_P2P_PORT" ] &&
-   [ "$CONFIG_RPC_PORT" = "$GNOLAND_RPC_PORT" ]; then
-    echo -e "${GREEN}Sapphire Gnoland service started successfully.${RESET}"
+if systemctl is-active --quiet "$GNOLAND_SERVICE_NAME" && [ "$RPC_NETWORK" = "$CHAIN_ID" ] && [ "$CONFIG_ABCI_PORT" = "$GNOLAND_ABCI_PORT" ] && [ "$CONFIG_P2P_PORT" = "$GNOLAND_P2P_PORT" ] && [ "$CONFIG_RPC_PORT" = "$GNOLAND_RPC_PORT" ]; then
+    echo -e "${GREEN}Pearl Gnoland service started successfully.${RESET}"
     echo "Verified RPC network: $RPC_NETWORK"
     echo "Verified local ports: ABCI $CONFIG_ABCI_PORT, P2P $CONFIG_P2P_PORT, RPC $CONFIG_RPC_PORT"
     echo "Local status: curl -s http://127.0.0.1:${GNOLAND_RPC_PORT}/status | jq '.result.sync_info'"
-    echo "After sync, register the Sapphire valoper profile with '$OPERATOR_KEY_NAME'."
-    echo "Existing validators must use the same operator g1 address used on Topaz."
+    echo "After sync, register a Pearl valoper candidate profile with '$OPERATOR_KEY_NAME'."
+    echo "Candidate registration does not restore Sapphire validator status; GovDAO admission is separate."
     echo "Backups created under: $BACKUP_DIR"
-    echo "Per-user commands are available from $HOME/go/bin: gnoland and gnokey"
 else
-    echo -e "${RED}Gnoland failed the Sapphire RPC startup check.${RESET}"
+    echo -e "${RED}Gnoland failed the Pearl RPC startup check.${RESET}"
     echo "Expected RPC network: $CHAIN_ID"
     echo "Observed RPC network: ${RPC_NETWORK:-unavailable}"
     echo "Expected local ports: ABCI $GNOLAND_ABCI_PORT, P2P $GNOLAND_P2P_PORT, RPC $GNOLAND_RPC_PORT"

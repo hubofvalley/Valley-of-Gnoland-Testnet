@@ -10,7 +10,7 @@ RESET='\033[0m'
 
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
-readonly VALLEY_RUNTIME_REF="3692444c95e7ac37702a660dd07e76090f9f6587"
+readonly VALLEY_RUNTIME_REF="a76a74e9b128d83160330d148e3d3e3207dc2ee4"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -75,12 +75,12 @@ GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 export GNOROOT
 export PATH="$HOME/go/bin:$PATH"
-GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-sapphire-1}
-GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.sapphire.testnets.gno.land}
+GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-pearl-1}
+GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.pearl.testnets.gno.land}
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
-OFFICIAL_SAPPHIRE_PEERS="g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656"
-SAPPHIRE_PERSISTENT_PEERS="$OFFICIAL_SAPPHIRE_PEERS"
-VALOPER_GAS_WANTED=100000000
+OFFICIAL_PEARL_PEERS="g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
+PEARL_PERSISTENT_PEERS="$OFFICIAL_PEARL_PEERS"
+VALOPER_GAS_WANTED=50000000
 
 while :; do
     if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
@@ -142,7 +142,7 @@ LOGO="
 INTRO="
 Valley of Gnoland by ${ORANGE}Grand Valley${RESET}
 
-${GREEN}Gno.land Sapphire Node System Requirements${RESET}
+${GREEN}Gno.land Pearl Node System Requirements${RESET}
 ${YELLOW}| Category  | Requirements |
 | --------- | ------------ |
 | CPU       | 4+ vCPU      |
@@ -151,8 +151,8 @@ ${YELLOW}| Category  | Requirements |
 | Bandwidth | 100+ MBit/s  |${RESET}
 
 - service file name: ${CYAN}${GNOLAND_SERVICE_NAME}.service${RESET}
-- current network: ${CYAN}Gno.land Sapphire${RESET}
-- current chain ID: ${CYAN}sapphire-1${RESET}
+- current network: ${CYAN}Gno.land Pearl${RESET}
+- current chain ID: ${CYAN}pearl-1${RESET}
 - native denom: ${CYAN}ugnot${RESET}
 - binaries: ${CYAN}$HOME/go/bin/gnoland, $HOME/go/bin/gnokey${RESET}
 - node directory: ${CYAN}${GNOLAND_HOME}${RESET}
@@ -167,8 +167,8 @@ ${GREEN}No User Data Stored Externally${RESET}
 - This script does not store any user data externally. All operations are performed locally on your machine.
 
 ${GREEN}Candidate-only Validator Gate${RESET}
-- Sapphire registration creates a validator candidate profile only.
-- Existing Topaz validators must reuse the same operator g1 address.
+- Pearl registration creates a validator candidate profile only.
+- Existing Sapphire validators must reuse the same operator g1 address if they want operator-address continuity.
 - GovDAO approval is required before a candidate joins the active validator set.
 
 ${GREEN}Security Best Practices${RESET}
@@ -185,17 +185,17 @@ Gno.land useful links:${RESET}
 - Official Docs: ${BLUE}https://docs.gno.land/${RESET}
 - Networks: ${BLUE}https://docs.gno.land/resources/gnoland-networks/${RESET}
 - GitHub: ${BLUE}https://github.com/gnolang/gno${RESET}
-- Sapphire Release: ${BLUE}https://github.com/gnolang/gno/releases/tag/chain/sapphire${RESET}
-- Sapphire Validator Docs: ${BLUE}https://github.com/gnolang/gno/blob/chain/sapphire/misc/deployments/sapphire.gno.land/VALIDATOR.md${RESET}
-- Faucet: ${BLUE}https://sapphire.testnets.gno.land/faucet${RESET}
-- Valoper Candidates: ${BLUE}https://sapphire.testnets.gno.land/r/gnops/valopers${RESET}
-- Active Validators Realm: ${BLUE}https://sapphire.testnets.gno.land/r/sys/validators/v3${RESET}
+- Pearl Release: ${BLUE}https://github.com/gnolang/gno/releases/tag/chain/pearl${RESET}
+- Pearl Validator Docs: ${BLUE}https://github.com/gnolang/gno/blob/chain/pearl/misc/deployments/pearl.gno.land/VALIDATOR.md${RESET}
+- Faucet: ${BLUE}https://pearl.testnets.gno.land/faucet${RESET}
+- Valoper Candidates: ${BLUE}https://pearl.testnets.gno.land/r/gnops/valopers${RESET}
+- Active Validators Realm: ${BLUE}https://pearl.testnets.gno.land/r/sys/validators/v3${RESET}
 
 ${GREEN}Network facts:${RESET}
-- Chain ID: ${CYAN}sapphire-1${RESET}
-- RPC: ${CYAN}https://rpc.sapphire.testnets.gno.land${RESET}
-- Official Sapphire persistent peers: ${CYAN}${OFFICIAL_SAPPHIRE_PEERS}${RESET}
-- Genesis SHA256: ${CYAN}d511e0e5b767d4e53f5c1afeeea1bc61d2c7b2118146c820f1f3e4296f67498e${RESET}
+- Chain ID: ${CYAN}pearl-1${RESET}
+- RPC: ${CYAN}https://rpc.pearl.testnets.gno.land${RESET}
+- Official Pearl persistent peers: ${CYAN}${OFFICIAL_PEARL_PEERS}${RESET}
+- Genesis SHA256: ${CYAN}c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91${RESET}
 
 ${GREEN}Connect with Grand Valley:${RESET}
 - X: ${BLUE}https://x.com/bacvalley${RESET}
@@ -215,13 +215,13 @@ read -r
 
 sed -i '/^export GNOLAND_CHAIN_ID=/d;/^export GNOLAND_HOME=/d;/^export GNOLAND_GENESIS=/d;/^export GNOKEY_HOME=/d;/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/^export GNOLAND_PUBLIC_REMOTE=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 {
-    echo "export GNOLAND_CHAIN_ID=\"sapphire-1\""
+    echo "export GNOLAND_CHAIN_ID=\"pearl-1\""
     echo "export GNOLAND_HOME=\"$GNOLAND_HOME\""
     echo "export GNOLAND_GENESIS=\"$GNOLAND_GENESIS\""
     echo "export GNOKEY_HOME=\"$GNOKEY_HOME\""
     echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
     echo "export GNOROOT=\"$GNOROOT\""
-    echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.sapphire.testnets.gno.land\""
+    echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.pearl.testnets.gno.land\""
     # shellcheck disable=SC2016
     echo 'export PATH="$HOME/go/bin:$PATH"'
 } >> "$HOME/.bash_profile"
@@ -332,7 +332,7 @@ function deploy_gnoland_node() {
     echo -e "${RED}Migration replaces chain data only inside the current OS user's node directory.${RESET}"
     echo -e "${YELLOW}The installer backs up node secrets and the operator keyring before cleanup.${RESET}"
     echo
-    echo "This installs a Sapphire full node and does not guarantee active validator status."
+    echo "This installs a Pearl full node and does not guarantee active validator status."
     echo "GovDAO proposal approval is required after candidate registration."
     read -r -p $'\n\e[33mDo you want to proceed with installation? (yes/no): \e[0m' confirm
     if [[ "${confirm,,}" != "yes" ]]; then
@@ -345,7 +345,7 @@ function deploy_gnoland_node() {
 }
 
 function update_gnoland_binary() {
-    echo -e "${YELLOW}Update gnoland and gnokey to the pinned Sapphire release binaries.${RESET}"
+    echo -e "${YELLOW}Update gnoland and gnokey to the pinned Pearl release binaries.${RESET}"
     if ! prompt_back_or_continue; then
         return
     fi
@@ -371,7 +371,7 @@ function apply_snapshot() {
 function add_peers() {
     echo "Select an option:"
     echo "1. Add peers manually"
-    echo "2. Reset to official Sapphire persistent peers"
+    echo "2. Reset to official Pearl persistent peers"
     echo "3. Back"
     read -r -p "Enter your choice (1, 2, or 3): " choice
 
@@ -399,8 +399,8 @@ function add_peers() {
             ;;
         2)
             gnoland config set -config-path "$CFG" p2p.seeds ""
-            gnoland config set -config-path "$CFG" p2p.persistent_peers "$SAPPHIRE_PERSISTENT_PEERS"
-            echo "Official Sapphire persistent peers restored."
+            gnoland config set -config-path "$CFG" p2p.persistent_peers "$PEARL_PERSISTENT_PEERS"
+            echo "Official Pearl persistent peers restored."
             ;;
         *)
             echo "Invalid choice."
@@ -517,15 +517,15 @@ function show_logs() {
 
 function create_operator_key() {
     echo "Choose an option:"
-    echo "1. Reuse/list an existing local Topaz operator key"
-    echo "2. Recover the existing Topaz operator key from mnemonic"
+    echo "1. Reuse/list an existing local Sapphire operator key"
+    echo "2. Recover the existing Sapphire operator key from mnemonic"
     echo "3. Create a new operator key"
     echo "4. Back"
     read -r -p "Enter your choice: " choice
 
     case $choice in
         1)
-            echo -e "${YELLOW}Existing Topaz validators should use the same operator g1 address on Sapphire.${RESET}"
+            echo -e "${YELLOW}Existing Sapphire validators may reuse the same operator g1 address on Pearl for address continuity.${RESET}"
             gnokey -home "$GNOKEY_HOME" list
             ;;
         2)
@@ -555,7 +555,7 @@ function create_operator_key() {
             echo "Invalid choice."
             ;;
     esac
-    echo -e "\n${YELLOW}Fund the operator g1 address via: ${BLUE}https://sapphire.testnets.gno.land/faucet${RESET}"
+    echo -e "\n${YELLOW}Fund the operator g1 address via: ${BLUE}https://pearl.testnets.gno.land/faucet${RESET}"
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -570,7 +570,7 @@ function show_validator_pubkey() {
 }
 
 function register_valoper_candidate() {
-    echo -e "${CYAN}Register Gno.land Sapphire Valoper Candidate${RESET}"
+    echo -e "${CYAN}Register Gno.land Pearl Valoper Candidate${RESET}"
     echo -e "${YELLOW}This broadcasts a transaction. It creates a candidate profile only, not active validator status.${RESET}"
     echo -e "${YELLOW}Requirements: synced node, funded operator key, and consensus gpub1... from option 2b.${RESET}"
     if ! prompt_back_or_continue; then
@@ -596,7 +596,7 @@ gnokey maketx call \
   --args "$OPERATOR_ADDR" \
   --args "$CONSENSUS_PUBKEY" \
   --gas-fee 1000000ugnot --gas-wanted $VALOPER_GAS_WANTED \
-  --chainid sapphire-1 \
+  --chainid pearl-1 \
   --remote $GNOLAND_PUBLIC_REMOTE \
   --broadcast \
   $KEY_NAME
@@ -648,8 +648,8 @@ function query_balance_or_realm() {
             gnokey_cmd query "$path"
             ;;
         2)
-            echo "Valoper candidates: https://sapphire.testnets.gno.land/r/gnops/valopers"
-            echo "Active validators: https://sapphire.testnets.gno.land/r/sys/validators/v3"
+            echo "Valoper candidates: https://pearl.testnets.gno.land/r/gnops/valopers"
+            echo "Active validators: https://pearl.testnets.gno.land/r/sys/validators/v3"
             ;;
         3)
             menu
@@ -744,20 +744,20 @@ function show_guidelines() {
     echo -e "${CYAN}Guidelines on How to Use the Valley of Gnoland${RESET}"
     echo -e "${GREEN}Recommended flow:${RESET}"
     echo " - 1a Deploy node -> wait until 1e shows synced"
-    echo " - 2a Reuse/recover the Topaz operator key (or create a new key) -> fund via faucet"
+    echo " - 2a Reuse/recover the Sapphire operator key (or create a new key) -> fund via faucet"
     echo " - 2b Show consensus pubkey"
     echo " - 2c Register valoper candidate"
     echo " - 3d Backup node secrets"
     echo -e "${YELLOW}Candidate registration is not active validator admission. GovDAO approval is required.${RESET}"
     echo
     echo -e "${GREEN}Node Interactions:${RESET}"
-    echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Sapphire node."
-    echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Sapphire binaries."
-    echo "   c. Apply Snapshot: Applies a UTSA or Hazen Sapphire snapshot to speed up sync."
+    echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Pearl node."
+    echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Pearl binaries."
+    echo "   c. Apply Snapshot: Pearl snapshots remain disabled until a Pearl-specific provider is verified and pinned."
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."
-    echo "   g. Run Node Doctor: Read-only health and Sapphire configuration-drift inspection."
+    echo "   g. Run Node Doctor: Read-only health and Pearl configuration-drift inspection."
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -816,7 +816,7 @@ function menu() {
     echo "5. Show Guidelines"
     echo "6. Exit"
     echo
-    echo -e "Sapphire Valoper Candidates: ${BLUE}https://sapphire.testnets.gno.land/r/gnops/valopers${RESET}"
+    echo -e "Pearl Valoper Candidates: ${BLUE}https://pearl.testnets.gno.land/r/gnops/valopers${RESET}"
     echo -e "${GREEN}Let's Buidl Gnoland Together - Grand Valley${RESET}"
     if ! read -r -p "Choose an option: " choice; then
         echo

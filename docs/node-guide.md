@@ -1,27 +1,29 @@
-# Gno.land Sapphire Node - Manual Guide
+# Gno.land Pearl Node - Manual Guide
 
 Official validator source:
 
-- https://github.com/gnolang/gno/blob/chain/sapphire/misc/deployments/sapphire.gno.land/VALIDATOR.md
-- https://github.com/gnolang/gno/releases/tag/chain/sapphire
+- https://github.com/gnolang/gno/blob/chain/pearl/misc/deployments/pearl.gno.land/VALIDATOR.md
+- https://github.com/gnolang/gno/releases/tag/chain/pearl
 
 ## Network facts
 
 | Field | Value |
 |---|---|
-| Chain ID | `sapphire-1` |
-| RPC | `https://rpc.sapphire.testnets.gno.land` |
-| Faucet | `https://sapphire.testnets.gno.land/faucet` |
-| Release commit | `9ab5198acac68016341655c82290ecaff5591edb` |
-| Genesis SHA256 | `d511e0e5b767d4e53f5c1afeeea1bc61d2c7b2118146c820f1f3e4296f67498e` |
+| Chain ID | `pearl-1` |
+| RPC | `https://rpc.pearl.testnets.gno.land` |
+| Faucet | `https://pearl.testnets.gno.land/faucet` |
+| Release commit | `c4c72fdd288c757e8da0d93aae867fa479b1b15c` |
+| Genesis SHA256 | `c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91` |
 
 Official persistent peers:
 
 ```text
-g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656
+g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656
 ```
 
-## Existing directory layout
+Pearl is a fresh chain. Do not reuse Sapphire db/wal, consensus state, or Sapphire snapshots.
+
+## Existing Valley layout
 
 ```bash
 GNO_SOURCE_DIR="$HOME/gno"
@@ -31,145 +33,65 @@ GNOLAND_BIN="$HOME/go/bin/gnoland"
 GNOKEY_BIN="$HOME/go/bin/gnokey"
 ```
 
-Run installation as the OS user that owns these paths. For multiple nodes on one server, use a different OS user, service name, and port prefix for each instance. Do not create a shared `/usr/local/bin/gnoland` symlink; systemd should execute the per-user binary by absolute path.
+Valley preserves this layout during Sapphire -> Pearl migration. Back up existing node secrets and the operator keyring first; preserve `GNOKEY_HOME` if you want the same operator `g1...` address.
 
-Sapphire replaces Topaz chain data in `GNOLAND_HOME`. Back up node secrets and the operator keyring first. Preserve `GNOKEY_HOME` if reusing the Topaz operator address.
+## Install Pearl release
 
-```bash
-BACKUP_DIR="$HOME/gnoland-migration-backups/$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$BACKUP_DIR"
-tar -czf "$BACKUP_DIR/topaz-node-secrets.tar.gz" -C "$HOME/gno/gnoland-data" secrets
-tar -czf "$BACKUP_DIR/operator-keyring.tar.gz" -C "$HOME/.config" gno
-chmod 600 "$BACKUP_DIR"/*.tar.gz
+Pin source to:
+
+```text
+c4c72fdd288c757e8da0d93aae867fa479b1b15c
 ```
 
-## Install pinned binaries and source
+Official Linux amd64 binary checksums used by Valley:
 
-```bash
-git -C "$HOME/gno" remote set-url origin https://github.com/gnolang/gno.git
-git -C "$HOME/gno" fetch --depth 1 origin 9ab5198acac68016341655c82290ecaff5591edb
-git -C "$HOME/gno" checkout --detach --force FETCH_HEAD
-test "$(git -C "$HOME/gno" rev-parse HEAD)" = "9ab5198acac68016341655c82290ecaff5591edb"
-
-curl -fsSLO https://github.com/gnolang/gno/releases/download/chain/sapphire/gnoland_linux_amd64
-curl -fsSLO https://github.com/gnolang/gno/releases/download/chain/sapphire/gnokey_linux_amd64
-echo "b77b033df80a10bd97d836a2c3eb2b4257279cd7240f21ed6e06b67c7306a434  gnoland_linux_amd64" | sha256sum -c -
-echo "f27c7ad0430bdc4a7855af6a6762d202b7d609161f80a8fa223f85882bef486d  gnokey_linux_amd64" | sha256sum -c -
-install gnoland_linux_amd64 "$HOME/go/bin/gnoland"
-install gnokey_linux_amd64 "$HOME/go/bin/gnokey"
-export PATH="$HOME/go/bin:$PATH"
-hash -r
-test "$(command -v gnoland)" = "$HOME/go/bin/gnoland"
-test "$(command -v gnokey)" = "$HOME/go/bin/gnokey"
+```text
+055b24001a31de7054649a049c9f9db5282965713814b84f7f864e8e6efa237d  gnoland_linux_amd64
+a69017c6e9ce9d77d3bd2f1e811731f6353e0deba5da4f620672d58e5fcec804  gnokey_linux_amd64
 ```
 
-## Operator key
+Initialize a fresh Pearl config and fresh Pearl node secrets, then verify the official Pearl genesis checksum above.
 
-Existing validators should list and reuse the Topaz key:
+## Required/expected configuration
 
-```bash
-gnokey -home "$HOME/.config/gno" list
+Valley applies the Pearl validator-guide values:
+
+```text
+application.prune_strategy = syncable
+consensus.timeout_commit = 3s
+consensus.peer_gossip_sleep_duration = 10ms
+p2p.flush_throttle_timeout = 10ms
+p2p.pex = true
+mempool.size = 10000
+p2p.max_num_outbound_peers = 40
 ```
 
-If the keyring is unavailable, recover the same Topaz mnemonic:
+Start with:
 
 ```bash
-gnokey -home "$HOME/.config/gno" add -recover operator
-```
-
-Do not create a new operator key if the goal is migration of an existing Topaz validator.
-
-## Initialise Sapphire
-
-```bash
-export GNOROOT="$HOME/gno"
-cd "$HOME/gno"
-rm -rf "$HOME/gno/gnoland-data"
-gnoland config init -force
-gnoland secrets init -force
-curl -fsSL https://github.com/gnolang/gno/releases/download/chain/sapphire/genesis.json -o genesis.json
-echo "d511e0e5b767d4e53f5c1afeeea1bc61d2c7b2118146c820f1f3e4296f67498e  genesis.json" | sha256sum -c -
-```
-
-`gnoland secrets init` creates a fresh Sapphire consensus key. It does not alter the operator keyring.
-
-## Configure and start
-
-```bash
-PERSISTENT_PEERS="g10xll77gz6yzg43v9mdalj8360ng6sunt2vvvhf@seed-1.sapphire.testnets.gno.land:26656,g1gw2d7qsmrg06p204ty2qs8ygzd32t2c7p46te0@seed-2.sapphire.testnets.gno.land:26656"
-PORT_PREFIX="26"
-EXTERNAL_HOST="your-public-host-or-ip"
-
-gnoland config set moniker "your-moniker"
-gnoland config set proxy_app "tcp://127.0.0.1:${PORT_PREFIX}658"
-gnoland config set p2p.laddr "tcp://0.0.0.0:${PORT_PREFIX}656"
-gnoland config set rpc.laddr "tcp://127.0.0.1:${PORT_PREFIX}657"
-gnoland config set p2p.seeds ""
-gnoland config set p2p.persistent_peers "$PERSISTENT_PEERS"
-gnoland config set p2p.external_address "${EXTERNAL_HOST}:${PORT_PREFIX}656"
-gnoland config set application.prune_strategy syncable
-gnoland config set consensus.timeout_commit 3s
-gnoland config set consensus.peer_gossip_sleep_duration 10ms
-gnoland config set p2p.flush_throttle_timeout 10ms
-gnoland config set p2p.pex true
-gnoland config set mempool.size 10000
-gnoland config set p2p.max_num_outbound_peers 40
-
 gnoland start \
-  --chainid sapphire-1 \
+  --chainid pearl-1 \
   --genesis genesis.json \
   --skip-genesis-sig-verification \
   --log-level info
 ```
 
-The selected two-digit prefix must be `01`–`64` so every generated TCP port remains valid. It applies to every local Gnoland listener: ABCI `${PORT_PREFIX}658`, P2P `${PORT_PREFIX}656`, and RPC `${PORT_PREFIX}657`. The two official peer addresses remain on their published remote port `26656`.
+The `--skip-genesis-sig-verification` flag is required by the Pearl validator guide.
 
-Sapphire does not consume `p2p.seeds`; the official bootstrap nodes must be configured in `p2p.persistent_peers`. `p2p.external_address` must advertise a host or public IP that other peers can dial.
+## Operator key and validator candidate
 
-## Apply a Sapphire snapshot
+Reusing/recovering the Sapphire operator key is optional if you want operator-address continuity. It does not migrate validator status, and a fresh Pearl consensus key is still required.
 
-Grand Valley extends its gratitude to **UTSA** and **Hazen Network Solutions** for providing snapshot support.
-
-Use Valley of Gnoland option `1c. Apply Snapshot` and choose the provider. The restored flow checks provider availability and metadata, downloads the archive before stopping Gnoland, validates that the archive contains only `db` and `wal`, verifies SHA-256 when published, offers an optional database backup, and keeps a temporary rollback copy until the restarted service is confirmed active.
-
-Current provider endpoints:
-
-```text
-UTSA:  https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4
-Hazen: https://server-9.hazennetworksolutions.com/gnoland-sapphire/index.json
-```
-
-The Hazen manifest must report `sapphire-1`. Config and node secrets are not replaced. Never apply a Topaz snapshot archive to Sapphire.
-
-See [Snapshot Guide](snapshots.md) for the full restore behavior and current endpoints.
-
-## Register the valoper candidate
-
-After sync, get the new consensus key:
+After the node is synced:
 
 ```bash
-cd "$HOME/gno"
 gnoland secrets get validator_key
 ```
 
-Register using the same operator key/address used on Topaz:
+Fund the operator address using the Pearl faucet, then register a candidate on `gno.land/r/gnops/valopers` using chain `pearl-1`, Pearl RPC, `1000000ugnot` gas fee, and the Pearl guide's gas-wanted value.
 
-```bash
-gnokey -home "$HOME/.config/gno" -remote https://rpc.sapphire.testnets.gno.land maketx call \
-  -pkgpath gno.land/r/gnops/valopers \
-  -func Register \
-  -args "<moniker>" \
-  -args "<description>" \
-  -args "<cloud|on-prem|data-center>" \
-  -args "<same Topaz operator g1... address>" \
-  -args "<new Sapphire gpub1... consensus pubkey>" \
-  -gas-fee 1000000ugnot \
-  -gas-wanted 100000000 \
-  -chainid sapphire-1 \
-  -broadcast \
-  operator
-```
+Candidate registration does not directly add the node to the active validator set. A GovDAO member must separately create and pass the validator proposal through `r/sys/validators/v3`.
 
-Registration creates a candidate profile. GovDAO must pass the active-validator proposal.
+## Snapshot
 
-last updated by: John
+Valley intentionally disables snapshot application until a Pearl-specific provider and verification metadata are reviewed. Do not apply the previous Sapphire UTSA/Hazen archives to Pearl.

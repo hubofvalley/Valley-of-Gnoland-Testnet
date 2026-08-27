@@ -1,79 +1,96 @@
 # Valley of Gnoland - Testnet
 
-Interactive terminal tool by **Grand Valley** to deploy and manage a Gno.land Sapphire full node and validator-candidate workflow.
+Interactive terminal tool by **Grand Valley** to deploy, migrate, inspect, and manage a Gno.land **Pearl** full node and validator-candidate workflow.
 
 ## Network
 
-- Network: `Gno.land Sapphire`
-- Chain ID: `sapphire-1`
+- Network: `Gno.land Pearl`
+- Chain ID: `pearl-1`
 - Native denom: `ugnot`
+- Release: `chain/pearl`
+- Pinned upstream commit: `c4c72fdd288c757e8da0d93aae867fa479b1b15c`
 - Source tree / `GNOROOT`: `~/gno`
 - Node directory: `~/gno/gnoland-data`
 - Operator keyring: `~/.config/gno`
 - Genesis file: `~/gno/genesis.json`
 - Service: user-selected, default `gnoland.service`
 - Per-user binaries: `~/go/bin/gnoland`, `~/go/bin/gnokey`
-- RPC: `https://rpc.sapphire.testnets.gno.land`
-- Faucet: https://sapphire.testnets.gno.land/faucet
+- RPC: `https://rpc.pearl.testnets.gno.land`
+- Faucet: https://pearl.testnets.gno.land/faucet
 
-Sapphire is a new chain. Topaz chain data cannot be reused, but an existing Topaz validator must register on Sapphire with the **same operator `g1...` address**. The Sapphire node receives a fresh consensus key.
+Pearl is a **fresh chain**, not a Sapphire hardfork. Sapphire chain data, db/wal, consensus state, and snapshots cannot be reused. Valley of Gnoland can preserve/recover the existing operator key if you want the same `g1...` operator address, but key reuse does **not** migrate validator status. Pearl candidate registration and GovDAO admission are separate new-chain steps.
 
 ## Run
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh)
 ```
 
-Run the read-only Node Doctor and Sapphire configuration-drift guard:
+Read-only Pearl Node Doctor:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor
 ```
 
-Machine-readable JSON output for monitoring or agent workflows:
+Machine-readable output:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor --json
 ```
 
-## Safe Topaz migration
+## Safe Sapphire -> Pearl migration
 
-The installer keeps the established Valley of Gnoland layout. It does not rename the source, node, or service paths.
+The migration path intentionally keeps the established Valley of Gnoland filesystem layout while replacing only chain-specific state.
 
-1. It asks whether to reuse a local Topaz operator key, recover one from its mnemonic, or create a new key.
-2. Before replacing Topaz chain data, it backs up existing node secrets and the operator keyring under `~/gnoland-migration-backups/<timestamp>/`.
-3. It never deletes `~/.config/gno`.
-4. It creates fresh Sapphire node and consensus secrets.
-5. It shows local operator addresses so existing validators can verify they are reusing the Topaz operator address.
-6. Invalid interactive input is prompted again instead of terminating the installer.
-7. Runtime failures report the exact installation stage, line, command, and exit code before returning to the main menu.
+1. Stop only the selected Gnoland service after verifying service ownership.
+2. Back up existing Sapphire node secrets and the operator keyring under `~/gnoland-migration-backups/<timestamp>/`.
+3. Never delete `~/.config/gno` during migration.
+4. Remove old Sapphire chain data and genesis; do not copy Sapphire db/wal into Pearl.
+5. Pin the Gno source to the official Pearl release commit and verify the official Pearl binary checksums.
+6. Download and verify the Pearl genesis SHA-256.
+7. Create fresh Pearl node/consensus secrets.
+8. Apply the official Pearl persistent peers and validator-guide tuning.
+9. Start with `--chainid pearl-1 --genesis genesis.json --skip-genesis-sig-verification`.
+10. Report success only after the local RPC returns `pearl-1` and the configured local ports match.
 
-Within one OS user, migration remains in-place: the installer stops only that user's selected service and replaces only that user's `~/gno/gnoland-data`. Separate OS users, unique service names, and unique port prefixes can run isolated Gnoland instances on the same server.
+The migration prompt is deliberately explicit: `MIGRATE-TO-PEARL`.
+
+## Validator candidate flow
+
+After the node is synced:
+
+1. Reuse/recover a Sapphire operator key only if you want operator-address continuity, or create a new key.
+2. Fund that address using the Pearl faucet.
+3. Read the fresh Pearl consensus public key with `gnoland secrets get validator_key`.
+4. Register a candidate on `gno.land/r/gnops/valopers` using `pearl-1` and the Pearl RPC.
+5. A GovDAO member must separately create and pass a validator proposal before the candidate joins the active validator set.
+
+## Snapshot safety
+
+Snapshot application is currently **disabled for Pearl**. The previous UTSA/Hazen configuration was Sapphire-specific. Valley of Gnoland fails closed instead of risking a Sapphire snapshot being applied to `pearl-1`. The snapshot feature should be re-enabled only after a Pearl-specific provider and verification metadata are reviewed and pinned.
 
 ## Features
 
-- Pinned Sapphire source and official release checksums
-- Official Sapphire genesis verification
-- Official Sapphire nodes configured as persistent peers
+- Pinned Pearl source, genesis checksum, and official Linux amd64 release checksums
+- Official Pearl persistent peers and required startup flag
+- Sapphire -> Pearl fresh-chain migration with operator-key backup/preservation
 - Custom ABCI/P2P/RPC port prefix, optional UFW, and systemd service
-- Per-user binaries and custom service names for isolated multi-instance deployments
-- Service ownership and port-collision guards before destructive work
-- Safe operator-key reuse/recovery/new-key flow
-- Node status, logs, persistent-peer configuration, and transaction preview
-- Verified startup gate: success requires a live local RPC reporting `sapphire-1`
-- Valoper candidate registration on `gno.land/r/gnops/valopers`
-- Read-only Node Doctor with PASS/WARN/FAIL results and JSON output
-- Sapphire configuration-drift, RPC exposure, release artefact, hardware, time-sync, and secret-permission checks
-- UTSA and Hazen Sapphire snapshot flow with live metadata, pre-download verification, optional backup, and automatic rollback
+- Per-user binaries and service ownership guards for isolated instances
+- Node status, logs, peer management, and validator candidate registration
+- Read-only Pearl Node Doctor with human and JSON output
+- Fail-closed snapshot path until Pearl snapshots are independently verified
 
 ## Documentation
 
 - [Usage guide](docs/usage.md)
-- [Manual node guide](docs/node-guide.md)
+- [Manual Pearl node guide](docs/node-guide.md)
 - [Node Doctor guide](docs/node-doctor.md)
-- [Snapshot guide](docs/snapshots.md)
+- [Snapshot safety](docs/snapshots.md)
 
-Candidate registration does not add a node directly to the active validator set. A GovDAO member must create and pass the validator proposal.
+## Upstream sources
+
+- Pearl validator guide: https://github.com/gnolang/gno/blob/chain/pearl/misc/deployments/pearl.gno.land/VALIDATOR.md
+- Pearl release: https://github.com/gnolang/gno/releases/tag/chain/pearl
 
 ## Connect with Grand Valley
 
@@ -82,5 +99,3 @@ Candidate registration does not add a node directly to the active validator set.
 - Email: letsbuidltogether@grandvalleys.com
 
 **Let's Buidl Gnoland Together - Grand Valley**
-
-last updated by: John

@@ -80,7 +80,10 @@ GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.pearl.testnets.gno.la
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
 OFFICIAL_PEARL_PEERS="g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
 PEARL_PERSISTENT_PEERS="$OFFICIAL_PEARL_PEERS"
-VALOPER_GAS_WANTED=50000000
+# Pearl's upstream guide still shows 50M, but live simulation can exceed it.
+# 70M clears the observed 65.2M registration while the 2c flow below can
+# safely retry a simulation-only out-of-gas result using gnokey's own +5% suggestion.
+VALOPER_GAS_WANTED=70000000
 
 while :; do
     if [ -z "${GNOLAND_SERVICE_NAME:-}" ]; then
@@ -570,6 +573,8 @@ function show_validator_pubkey() {
 }
 
 function register_valoper_candidate() {
+    local tx_output tx_status suggested_gas retry_confirm
+
     echo -e "${CYAN}Register Gno.land Pearl Valoper Candidate${RESET}"
     echo -e "${YELLOW}This broadcasts a transaction. It creates a candidate profile only, not active validator status.${RESET}"
     echo -e "${YELLOW}Requirements: synced node, funded operator key, and consensus gpub1... from option 2b.${RESET}"
@@ -608,7 +613,8 @@ EOF
         return
     fi
 
-    if ! gnokey_cmd maketx call \
+    tx_output=$(mktemp)
+    gnokey_cmd maketx call \
         -pkgpath gno.land/r/gnops/valopers \
         -func Register \
         -args "$MONIKER" \
@@ -620,7 +626,37 @@ EOF
         -gas-wanted "$VALOPER_GAS_WANTED" \
         -chainid "$GNOLAND_CHAIN_ID" \
         -broadcast \
-        "$KEY_NAME"; then
+        "$KEY_NAME" 2>&1 | tee "$tx_output"
+    tx_status=${PIPESTATUS[0]}
+
+    if [ "$tx_status" -ne 0 ] && grep -Fq 'out of gas error' "$tx_output"; then
+        suggested_gas=$(sed -n 's/.*suggested gas-wanted (gas used + 5%): \([0-9][0-9]*\).*/\1/p' "$tx_output" | tail -n 1)
+        if [[ "$suggested_gas" =~ ^[0-9]+$ ]] && [ "$suggested_gas" -gt "$VALOPER_GAS_WANTED" ]; then
+            echo -e "\n${YELLOW}Pearl simulation needs more gas than the current ${VALOPER_GAS_WANTED}.${RESET}"
+            echo -e "${YELLOW}gnokey suggested gas-wanted: ${suggested_gas}.${RESET}"
+            echo "The failed attempt was simulation-only; no transaction hash was produced."
+            read -r -p "Retry the same registration with suggested gas-wanted ${suggested_gas}? (yes/no): " retry_confirm
+            if [[ "${retry_confirm,,}" == "yes" ]]; then
+                gnokey_cmd maketx call \
+                    -pkgpath gno.land/r/gnops/valopers \
+                    -func Register \
+                    -args "$MONIKER" \
+                    -args "$DESCRIPTION" \
+                    -args "$INFRA_TYPE" \
+                    -args "$OPERATOR_ADDR" \
+                    -args "$CONSENSUS_PUBKEY" \
+                    -gas-fee 1000000ugnot \
+                    -gas-wanted "$suggested_gas" \
+                    -chainid "$GNOLAND_CHAIN_ID" \
+                    -broadcast \
+                    "$KEY_NAME"
+                tx_status=$?
+            fi
+        fi
+    fi
+    rm -f "$tx_output"
+
+    if [ "$tx_status" -ne 0 ]; then
         echo -e "\n${RED}Candidate registration failed. No success status was reported.${RESET}"
         echo -e "${YELLOW}Review the transaction error above, then retry from option 2c.${RESET}"
         echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"

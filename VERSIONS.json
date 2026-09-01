@@ -13,8 +13,17 @@
     "official_persistent_peers": "g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
   },
   "snapshot": {
-    "status": "disabled_until_verified_pearl_provider",
-    "providers": {},
+    "providers": {
+      "utsa": {
+        "name": "UTSA",
+        "url": "https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4"
+      },
+      "hazen": {
+        "name": "Hazen Network Solutions",
+        "index_url": "https://server-9.hazennetworksolutions.com/gnoland-pearl/index.json",
+        "url": "https://server-9.hazennetworksolutions.com/gnoland-pearl-db-snapshot.tar.lz4"
+      }
+    },
     "script": "resources/apply_snapshot.sh"
   },
   "binaries": {

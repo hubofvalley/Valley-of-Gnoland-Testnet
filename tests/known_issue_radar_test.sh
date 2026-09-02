@@ -4,7 +4,7 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 HELPER="$REPO_ROOT/resources/node-doctor-known-issues.bash"
-EXPECTED_RELEASE_COMMIT="9ab5198acac68016341655c82290ecaff5591edb"
+EXPECTED_RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
 
 fail() {
     echo "FAIL: $*" >&2
@@ -39,7 +39,7 @@ SOURCE_COMMIT="$EXPECTED_RELEASE_COMMIT"
 unset GNOLAND_DOCTOR_SKIP_KNOWN_ISSUES || true
 check_known_issues
 
-[ "$RESULT_COUNT" -eq 1 ] || fail "managed Sapphire release should emit exactly one advisory"
+[ "$RESULT_COUNT" -eq 1 ] || fail "managed Pearl release should emit exactly one advisory"
 [ "$RESULT_CATEGORY" = "known_issues" ] || fail "unexpected advisory category: $RESULT_CATEGORY"
 [ "$RESULT_ID" = "gno_pr_6054" ] || fail "unexpected advisory id: $RESULT_ID"
 [ "$RESULT_STATUS" = "WARN" ] || fail "known issue must be WARN, got $RESULT_STATUS"
@@ -53,7 +53,7 @@ RESULT_COUNT=0
 # shellcheck disable=SC2034
 SOURCE_COMMIT="131371844c4db8554d519c13a2430b5fbfbec4a8"
 check_known_issues
-[ "$RESULT_COUNT" -eq 0 ] || fail "non-managed source commit should not emit the Sapphire advisory"
+[ "$RESULT_COUNT" -eq 0 ] || fail "non-managed source commit should not emit the Pearl advisory"
 
 # The skip flag is test/support-only and must suppress the advisory deterministically.
 RESULT_COUNT=0

@@ -17,6 +17,7 @@ if [ -z "${GNOLAND_HOME:-}" ] || [ "$GNOLAND_HOME" = "$HOME/.gnoland" ] || [ "$G
     GNOLAND_HOME="$GNO_SOURCE_DIR/gnoland-data"
 fi
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
+GNOLAND_REMOTE=${GNOLAND_REMOTE:-http://127.0.0.1:26657}
 
 UTSA_SNAPSHOT_URL="https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4"
 HAZEN_INDEX_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl/index.json"
@@ -48,6 +49,7 @@ trap cleanup EXIT
 function check_dependencies() {
     local missing_packages=()
     command -v curl >/dev/null 2>&1 || missing_packages+=(curl)
+    command -v jq >/dev/null 2>&1 || missing_packages+=(jq)
     command -v lz4 >/dev/null 2>&1 || missing_packages+=(lz4)
     command -v tar >/dev/null 2>&1 || missing_packages+=(tar)
     command -v python3 >/dev/null 2>&1 || missing_packages+=(python3)
@@ -258,7 +260,55 @@ function verify_snapshot_archive() {
     ' "$archive_listing"
 }
 
+
+function safe_stop_preflight() {
+    local rpc_base status_json network catching_up
+
+    if ! systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then
+        return 0
+    fi
+
+    rpc_base=${GNOLAND_REMOTE%/}
+    case "$rpc_base" in
+        http://127.0.0.1:*|http://localhost:*) ;;
+        *)
+            echo "Safe-stop preflight blocked: GNOLAND_REMOTE must point to a local loopback RPC endpoint." >&2
+            return 1
+            ;;
+    esac
+
+    if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+        echo "Safe-stop preflight blocked: curl and jq are required to verify node sync state." >&2
+        return 1
+    fi
+
+    status_json=$(curl -m 5 -fsS "${rpc_base}/status" 2>/dev/null || true)
+    network=$(printf '%s' "$status_json" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+    catching_up=$(printf '%s' "$status_json" | jq -r 'if .result.sync_info.catching_up == null then empty else (.result.sync_info.catching_up | tostring) end' 2>/dev/null || true)
+
+    if [ "$network" != "pearl-1" ]; then
+        echo "Safe-stop preflight blocked: local RPC did not verify pearl-1 (reported: ${network:-unavailable})." >&2
+        return 1
+    fi
+
+    case "$catching_up" in
+        false)
+            return 0
+            ;;
+        true)
+            echo "Safe-stop preflight blocked: this Pearl node reports catching_up=true." >&2
+            echo "Current Pearl predates gnolang/gno#6085; stopping while catching up can leave the local store unable to restart without recovery." >&2
+            return 1
+            ;;
+        *)
+            echo "Safe-stop preflight blocked: local RPC did not return a recognised catching_up value." >&2
+            return 1
+            ;;
+    esac
+}
+
 function stop_gnoland() {
+    safe_stop_preflight || return 1
     echo -e "${GREEN}Stopping Gnoland service...${NC}"
     sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || pkill -f "gnoland start" 2>/dev/null || true
 }

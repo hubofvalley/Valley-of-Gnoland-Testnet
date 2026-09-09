@@ -9,6 +9,7 @@ readonly RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
 readonly GNOLAND_SHA256="055b24001a31de7054649a049c9f9db5282965713814b84f7f864e8e6efa237d"
 readonly GNOKEY_SHA256="a69017c6e9ce9d77d3bd2f1e811731f6353e0deba5da4f620672d58e5fcec804"
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
+GNOLAND_REMOTE=${GNOLAND_REMOTE:-http://127.0.0.1:26657}
 GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME%.service}
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
@@ -62,6 +63,55 @@ if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then
     echo "The verified prebuilt updater currently supports Linux amd64 only." >&2
     exit 1
 fi
+
+
+function safe_stop_preflight() {
+    local rpc_base status_json network catching_up
+
+    if ! systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then
+        return 0
+    fi
+
+    rpc_base=${GNOLAND_REMOTE%/}
+    case "$rpc_base" in
+        http://127.0.0.1:*|http://localhost:*) ;;
+        *)
+            echo "Safe-stop preflight blocked: GNOLAND_REMOTE must point to a local loopback RPC endpoint." >&2
+            return 1
+            ;;
+    esac
+
+    if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+        echo "Safe-stop preflight blocked: curl and jq are required to verify node sync state." >&2
+        return 1
+    fi
+
+    status_json=$(curl -m 5 -fsS "${rpc_base}/status" 2>/dev/null || true)
+    network=$(printf '%s' "$status_json" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+    catching_up=$(printf '%s' "$status_json" | jq -r 'if .result.sync_info.catching_up == null then empty else (.result.sync_info.catching_up | tostring) end' 2>/dev/null || true)
+
+    if [ "$network" != "pearl-1" ]; then
+        echo "Safe-stop preflight blocked: local RPC did not verify pearl-1 (reported: ${network:-unavailable})." >&2
+        return 1
+    fi
+
+    case "$catching_up" in
+        false)
+            return 0
+            ;;
+        true)
+            echo "Safe-stop preflight blocked: this Pearl node reports catching_up=true." >&2
+            echo "Current Pearl predates gnolang/gno#6085; stopping while catching up can leave the local store unable to restart without recovery." >&2
+            return 1
+            ;;
+        *)
+            echo "Safe-stop preflight blocked: local RPC did not return a recognised catching_up value." >&2
+            return 1
+            ;;
+    esac
+}
+
+safe_stop_preflight
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT

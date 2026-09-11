@@ -67,7 +67,11 @@ After the node is synced:
 
 ## Snapshot safety
 
-Snapshot application is currently **disabled for Pearl**. The previous UTSA/Hazen configuration was Sapphire-specific. Valley of Gnoland fails closed instead of risking a Sapphire snapshot being applied to `pearl-1`. The snapshot feature should be re-enabled only after a Pearl-specific provider and verification metadata are reviewed and pinned.
+Snapshot application is available for Pearl through the reviewed UTSA and Hazen Network Solutions paths pinned by this repository. The helper downloads the archive before stopping Gnoland, restricts extracted paths to `db/` and `wal/`, verifies SHA-256 when the provider publishes one, and rolls back the previous database if activation or restart fails.
+
+Provider assurance differs: Hazen metadata must identify `pearl-1`; the current UTSA integration does not publish chain identity or checksum metadata through this path, so treat it as a lower-assurance source and review the displayed provider information before continuing. Sapphire snapshots remain incompatible with Pearl.
+
+Before snapshot maintenance, verify the local RPC reports `pearl-1` with `catching_up=false`. The current Pearl release predates upstream crash-safety fix gnolang/gno#6085, so an operator should not stop a catching-up Pearl node.
 
 ## Features
 
@@ -78,14 +82,14 @@ Snapshot application is currently **disabled for Pearl**. The previous UTSA/Haze
 - Per-user binaries and service ownership guards for isolated instances
 - Node status, logs, peer management, and validator candidate registration
 - Read-only Pearl Node Doctor with human and JSON output
-- Fail-closed snapshot path until Pearl snapshots are independently verified
+- Pearl UTSA/Hazen snapshot support with pre-download validation, optional checksum verification, backup, and rollback
 
 ## Documentation
 
 - [Usage guide](docs/usage.md)
 - [Manual Pearl node guide](docs/node-guide.md)
 - [Node Doctor guide](docs/node-doctor.md)
-- [Snapshot safety](docs/snapshots.md)
+- [Snapshot providers and safety](docs/snapshots.md)
 
 ## Upstream sources
 

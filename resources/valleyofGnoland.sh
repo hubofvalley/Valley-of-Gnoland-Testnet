@@ -789,7 +789,7 @@ function show_guidelines() {
     echo -e "${GREEN}Node Interactions:${RESET}"
     echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Pearl node."
     echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Pearl binaries."
-    echo "   c. Apply Snapshot: Pearl snapshots remain disabled until a Pearl-specific provider is verified and pinned."
+    echo "   c. Apply Snapshot: Uses the reviewed Pearl UTSA/Hazen paths with archive validation and rollback safeguards."
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."

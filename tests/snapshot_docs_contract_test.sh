@@ -22,6 +22,7 @@ grep -Fq 'Snapshot application is available for Pearl' "$README" || fail "README
 grep -Fq 'UTSA' "$SNAPSHOT_DOC" || fail "snapshot documentation does not describe UTSA"
 grep -Fq 'Hazen Network Solutions' "$SNAPSHOT_DOC" || fail "snapshot documentation does not describe Hazen"
 grep -Fq '`pearl-1`' "$SNAPSHOT_DOC" || fail "snapshot documentation does not pin the Pearl chain ID"
+grep -Fq '`catching_up=false`' "$SNAPSHOT_DOC" || fail "snapshot documentation does not state the Pearl safe-stop precondition"
 
 if grep -Fq 'Snapshot application is currently **disabled for Pearl**' "$README"; then
     fail "README still says Pearl snapshots are disabled"

@@ -71,6 +71,8 @@ Snapshot application is available for Pearl through the reviewed UTSA and Hazen 
 
 Provider assurance differs: Hazen metadata must identify `pearl-1`; the current UTSA integration does not publish chain identity or checksum metadata through this path, so treat it as a lower-assurance source and review the displayed provider information before continuing. Sapphire snapshots remain incompatible with Pearl.
 
+Before snapshot maintenance, verify the local RPC reports `pearl-1` with `catching_up=false`. The current Pearl release predates upstream crash-safety fix gnolang/gno#6085, so an operator should not stop a catching-up Pearl node.
+
 ## Features
 
 - Pinned Pearl source, genesis checksum, and official Linux amd64 release checksums

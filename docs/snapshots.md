@@ -32,3 +32,5 @@ The snapshot helper applies the following safeguards regardless of provider:
 8. keeps the existing node configuration and node secrets in place.
 
 Snapshot use remains an operator decision. These safeguards reduce activation risk; they do not turn a third-party snapshot into cryptographic proof of chain history. Normal P2P synchronization through the official Pearl peers remains the fallback when snapshot provenance is not acceptable.
+
+Before starting snapshot maintenance, verify the local RPC reports `pearl-1` and `catching_up=false`. The current Pearl release predates upstream crash-safety fix gnolang/gno#6085; stopping a node while it is catching up should be avoided.

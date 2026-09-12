@@ -64,7 +64,6 @@ if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then
     exit 1
 fi
 
-
 function safe_stop_preflight() {
     local rpc_base status_json network catching_up
 
@@ -111,14 +110,14 @@ function safe_stop_preflight() {
     esac
 }
 
+# Refuse obviously unsafe maintenance before doing any updater work.
 safe_stop_preflight
 
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
-mkdir -p "$HOME/go/bin"
-
+# Stage and verify every network-dependent artifact while the node is still
+# running. A GitHub/release outage or checksum failure must not create downtime.
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
     echo "Gno source checkout is missing at $GNO_SOURCE_DIR; run the Pearl installer instead." >&2
     exit 1
@@ -129,6 +128,25 @@ else
     git -C "$GNO_SOURCE_DIR" remote add origin https://github.com/gnolang/gno.git
 fi
 git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"
+if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse FETCH_HEAD)" != "$RELEASE_COMMIT" ]; then
+    echo "Fetched Gno source does not match the pinned Pearl commit." >&2
+    exit 1
+fi
+
+curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
+echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
+chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
+
+# Re-check immediately before the maintenance boundary in case sync state changed
+# while artifacts were staged.
+safe_stop_preflight
+sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
+
+# Everything below is local activation: no release download or source fetch should
+# extend the node's stopped window.
+mkdir -p "$HOME/go/bin"
 git -C "$GNO_SOURCE_DIR" checkout --detach --force FETCH_HEAD
 if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
     echo "Unexpected Gno source commit at $GNO_SOURCE_DIR." >&2
@@ -139,11 +157,6 @@ if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
     exit 1
 fi
 
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnokey_linux_amd64" -o "$tmpdir/gnokey"
-echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
-echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
-chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
 install "$tmpdir/gnoland" "$GNOLAND_BIN"
 install "$tmpdir/gnokey" "$GNOKEY_BIN"
 

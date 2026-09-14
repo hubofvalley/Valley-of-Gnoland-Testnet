@@ -32,6 +32,17 @@ set -e
 "${common_env[@]}" GNOLAND_TESTNET_SERVICE_NAME=explicit-instance bash "$DOCTOR" --json > "$TEST_ROOT/explicit-env.json"
 assert_jq "$TEST_ROOT/explicit-env.json" '.instance.service == "explicit-instance.service"'
 
+# Without a profile export, the shipped monolithic doctor must select the
+# renamed testnet unit rather than the mainnet service name.
+mkdir -p "$ESCAPE_HOME"
+cat > "$ESCAPE_HOME/.bash_profile" <<'EOF_DEFAULT_PROFILE'
+export GNO_SOURCE_DIR="$FIXTURE_HOME/gno"
+export GNOLAND_TESTNET_HOME="$FIXTURE_HOME/gno/gnoland-data"
+EOF_DEFAULT_PROFILE
+legacy_service_var=$(printf 'GNOLAND_%s' 'SERVICE_NAME')
+HOME="$ESCAPE_HOME" env -u GNOLAND_TESTNET_SERVICE_NAME -u "$legacy_service_var" bash "$DOCTOR" --json > "$TEST_ROOT/default-env.json"
+assert_jq "$TEST_ROOT/default-env.json" '.instance.service == "gnoland-testnet.service"'
+
 # JSON escaping must preserve a literal backslash instead of turning it into an escape sequence.
 ESCAPE_HOME="$TEST_ROOT/escape-home"
 mkdir -p "$ESCAPE_HOME"

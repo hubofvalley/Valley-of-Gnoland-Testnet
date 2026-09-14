@@ -204,7 +204,7 @@ sudo systemctl disable "$GNOLAND_TESTNET_SERVICE_NAME" 2>/dev/null || true
 sudo rm -f "$SERVICE_FILE"
 rm -rf "$GNOLAND_TESTNET_HOME"
 rm -f "$GENESIS_FILE"
-sed -i '/GNOLAND_/d;/GNOKEY_/d;/GNO_SOURCE_DIR/d;/GNOROOT/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
+sed -i '/^export GNOLAND_CHAIN_ID=/d;/^export GNOLAND_TESTNET_HOME=/d;/^export GNOLAND_TESTNET_SERVICE_NAME=/d;/^export GNOLAND_GENESIS=/d;/^export GNOLAND_MONIKER=/d;/^export GNOLAND_PORT=/d;/^export GNOLAND_REMOTE=/d;/^export GNOLAND_PUBLIC_REMOTE=/d;/^export GNOKEY_HOME=/d;/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 
 CURRENT_STAGE="install prerequisites"
 sudo apt update -y

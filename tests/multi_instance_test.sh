@@ -49,7 +49,18 @@ grep -Fq 'GNOLAND_ABCI_PORT="${GNOLAND_PORT}658"' "$INSTALLER" || fail "custom A
 grep -Fq 'service_belongs_to_current_instance()' "$MAIN" || fail "main menu service ownership guard missing"
 grep -Fq 'this service is not configured for pearl-1' "$UPDATER" || fail "updater Pearl gate missing"
 grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME=${INPUT_SVC:-gnoland-testnet}' "$MAIN" || fail "menu default service semantics drifted"
-grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}' "$ROOT/resources/node-doctor/part-01.bash" || fail "Node Doctor default service semantics drifted"
+grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}' "$ROOT/resources/node-doctor/part-01.bash" || fail "modular Node Doctor default service semantics drifted"
+grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-$(profile_value GNOLAND_TESTNET_SERVICE_NAME "gnoland-testnet")}' "$ROOT/resources/gnoland_node_doctor.sh" || fail "Node Doctor default service semantics drifted"
+if grep -Fq "sed -i '/GNOLAND_/d" "$INSTALLER" "$MAIN"; then
+    fail "testnet profile cleanup still deletes every GNOLAND_* export"
+fi
+for cleanup_file in "$INSTALLER" "$MAIN"; do
+    grep -Fq '^export GNOLAND_TESTNET_HOME=/d' "$cleanup_file" || fail "testnet cleanup does not explicitly remove GNOLAND_TESTNET_HOME in ${cleanup_file#$ROOT/}"
+    grep -Fq '^export GNOLAND_TESTNET_SERVICE_NAME=/d' "$cleanup_file" || fail "testnet cleanup does not explicitly remove GNOLAND_TESTNET_SERVICE_NAME in ${cleanup_file#$ROOT/}"
+    if grep -Fq 'GNOLAND_MAINNET_HOME' "$cleanup_file" || grep -Fq 'GNOLAND_MAINNET_SERVICE_NAME' "$cleanup_file"; then
+        fail "testnet cleanup may delete mainnet-scoped exports in ${cleanup_file#$ROOT/}"
+    fi
+done
 
 if grep -REn '/usr/local/bin/(gnoland|gnokey)' "$ROOT/resources"; then
     fail "runtime scripts must not manage global Gnoland command links"

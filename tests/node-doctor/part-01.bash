@@ -3,7 +3,7 @@ export GNOKEY_HOME="$FIXTURE_HOME/.config/gno"
 export GNOROOT="$FIXTURE_HOME/gno"
 export GNOLAND_BIN="$FIXTURE_HOME/go/bin/gnoland"
 export GNOKEY_BIN="$FIXTURE_HOME/go/bin/gnokey"
-export GNOLAND_SERVICE_NAME="gnoland"
+export GNOLAND_TESTNET_SERVICE_NAME="gnoland"
 export GNOLAND_PORT="26"
 export GNOLAND_PUBLIC_REMOTE="https://rpc.sapphire.testnets.gno.land"
 export PATH="$FIXTURE_HOME/go/bin:$MOCK_BIN:/usr/bin:/bin"
@@ -17,7 +17,7 @@ cat > "$MOCK_BIN/systemctl" <<EOF_SYSTEMCTL
 case "\${1:-}" in
     show)
         if [ "\${3:-}" = "-p" ] && [ "\${4:-}" = "FragmentPath" ]; then
-            printf '%s\n' "$SERVICE_DIR/gnoland.service"
+            printf '%s\n' "$SERVICE_DIR/gnoland-testnet.service"
         fi
         ;;
     is-active)

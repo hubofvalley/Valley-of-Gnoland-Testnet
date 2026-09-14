@@ -1,6 +1,6 @@
 [ "$ownership_rc" -eq 1 ] || fail "ownership drift run should return 1, got $ownership_rc"
 assert_jq "$TEST_ROOT/ownership-drift.json" '.checks[] | select(.id == "ownership" and .status == "FAIL")'
-mv "$SERVICE_DIR/gnoland.service.bak" "$SERVICE_DIR/gnoland.service"
+mv "$SERVICE_DIR/gnoland-testnet.service.bak" "$SERVICE_DIR/gnoland-testnet.service"
 
 # Restore health, then force a warning to verify strict-mode semantics.
 write_healthy_config

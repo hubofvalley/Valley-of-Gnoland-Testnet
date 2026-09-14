@@ -9,7 +9,7 @@ jq -e . "$TEST_ROOT/healthy.json" >/dev/null
 assert_jq "$TEST_ROOT/healthy.json" '.summary.fail == 0'
 assert_jq "$TEST_ROOT/healthy.json" '.summary.overall == "PASS"'
 assert_jq "$TEST_ROOT/healthy.json" '.read_only == true'
-assert_jq "$TEST_ROOT/healthy.json" '.instance.service == "gnoland.service"'
+assert_jq "$TEST_ROOT/healthy.json" '.instance.service == "gnoland-testnet.service"'
 assert_jq "$TEST_ROOT/healthy.json" '.checks[] | select(.id == "timeout_commit" and .status == "PASS")'
 assert_jq "$TEST_ROOT/healthy.json" '.checks[] | select(.id == "rpc_bind" and .status == "PASS")'
 assert_jq "$TEST_ROOT/healthy.json" '.checks[] | select(.id == "public_rpc_chain_id" and .status == "PASS")'
@@ -29,14 +29,25 @@ set -e
 [ "$invalid_rc" -eq 2 ] || fail "invalid option should return 2, got $invalid_rc"
 
 # Explicit environment variables take precedence over matching profile exports.
-"${common_env[@]}" GNOLAND_SERVICE_NAME=explicit-instance bash "$DOCTOR" --json > "$TEST_ROOT/explicit-env.json"
+"${common_env[@]}" GNOLAND_TESTNET_SERVICE_NAME=explicit-instance bash "$DOCTOR" --json > "$TEST_ROOT/explicit-env.json"
 assert_jq "$TEST_ROOT/explicit-env.json" '.instance.service == "explicit-instance.service"'
+
+# Without a profile export, the shipped monolithic doctor must select the
+# renamed testnet unit rather than the mainnet service name.
+mkdir -p "$ESCAPE_HOME"
+cat > "$ESCAPE_HOME/.bash_profile" <<'EOF_DEFAULT_PROFILE'
+export GNO_SOURCE_DIR="$FIXTURE_HOME/gno"
+export GNOLAND_TESTNET_HOME="$FIXTURE_HOME/gno/gnoland-data"
+EOF_DEFAULT_PROFILE
+legacy_service_var=$(printf 'GNOLAND_%s' 'SERVICE_NAME')
+HOME="$ESCAPE_HOME" env -u GNOLAND_TESTNET_SERVICE_NAME -u "$legacy_service_var" bash "$DOCTOR" --json > "$TEST_ROOT/default-env.json"
+assert_jq "$TEST_ROOT/default-env.json" '.instance.service == "gnoland-testnet.service"'
 
 # JSON escaping must preserve a literal backslash instead of turning it into an escape sequence.
 ESCAPE_HOME="$TEST_ROOT/escape-home"
 mkdir -p "$ESCAPE_HOME"
 cat > "$ESCAPE_HOME/.bash_profile" <<'EOF_ESCAPE_PROFILE'
-export GNOLAND_SERVICE_NAME='bad\name'
+export GNOLAND_TESTNET_SERVICE_NAME='bad\name'
 EOF_ESCAPE_PROFILE
 set +e
 env -u SUDO_USER \

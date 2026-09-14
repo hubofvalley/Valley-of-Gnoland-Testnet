@@ -14,7 +14,7 @@
 check_secret_permissions() {
     local target mode insecure=() checked=0
 
-    for target in "$GNOLAND_HOME/secrets" "$GNOKEY_HOME"; do
+    for target in "$GNOLAND_TESTNET_HOME/secrets" "$GNOKEY_HOME"; do
         if [ ! -e "$target" ]; then
             add_result "security" "$(basename "$target")_permissions" "WARN" "Sensitive path is not present" "$target"
             continue

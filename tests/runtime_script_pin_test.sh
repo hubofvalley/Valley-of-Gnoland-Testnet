@@ -12,13 +12,24 @@ doctor_ref=$(sed -n 's/^readonly DEFAULT_NODE_DOCTOR_REF="\([0-9a-f]\{40\}\)"$/\
 [ -n "$runtime_ref" ] || fail "VALLEY_RUNTIME_REF must be a full commit SHA"
 [ -n "$doctor_ref" ] || fail "Node Doctor default ref must be a full commit SHA"
 
-grep -Fq 'Valley-of-Gnoland-Testnet/${VALLEY_RUNTIME_REF}/${NODE_DOCTOR_RELATIVE_PATH}' "$MAIN" || fail "doctor fallback is not pinned"
+grep -Fq 'Valley-of-Gnoland-Testnet/ba3df2b4a5ac9ca104a09b6a5e1c23fdaada7717/${NODE_DOCTOR_RELATIVE_PATH}' "$MAIN" || fail "doctor fallback is not pinned"
 grep -Fq 'GNOLAND_NODE_DOCTOR_REF="$VALLEY_RUNTIME_REF" bash "$script_file"' "$MAIN" || fail "doctor fallback does not pass immutable ref"
-grep -Fq 'Valley-of-Gnoland-Testnet/${VALLEY_RUNTIME_REF}/${relative_path}' "$MAIN" || fail "helper loader is not pinned"
+grep -Fq 'Valley-of-Gnoland-Testnet/ba3df2b4a5ac9ca104a09b6a5e1c23fdaada7717/${relative_path}' "$MAIN" || fail "helper loader is not pinned"
 
 if grep -Fq 'raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/' "$MAIN"; then
     fail "runtime helpers execute from mutable main"
 fi
+
+for helper in resources/gnoland_node_install_testnet.sh resources/gnoland_node_doctor.sh resources/gnoland_update.sh resources/apply_snapshot.sh; do
+    remote_helper=$(curl -fsSL "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/${runtime_ref}/${helper}") || fail "cannot fetch pinned helper: $helper"
+    if [[ "$helper" != resources/gnoland_update.sh ]]; then
+        grep -Fq 'GNOLAND_TESTNET_HOME' <<<"$remote_helper" || fail "pinned helper lacks GNOLAND_TESTNET_HOME: $helper"
+    fi
+    grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME' <<<"$remote_helper" || fail "pinned helper lacks GNOLAND_TESTNET_SERVICE_NAME: $helper"
+    if grep -Eq 'GNOLAND_(SERVICE_NAME|HOME)([^A-Za-z0-9_]|$)' <<<"$remote_helper"; then
+        fail "pinned helper still contains legacy environment names: $helper"
+    fi
+done
 
 set +e
 GNOLAND_NODE_DOCTOR_REF=main bash "$DOCTOR" --version >/dev/null 2>&1

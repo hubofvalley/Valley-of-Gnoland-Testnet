@@ -14,8 +14,8 @@
         add_result "hardware" "memory" "WARN" "Total RAM could not be determined"
     fi
 
-    if [ -e "$GNOLAND_HOME" ]; then
-        disk_target=$GNOLAND_HOME
+    if [ -e "$GNOLAND_TESTNET_HOME" ]; then
+        disk_target=$GNOLAND_TESTNET_HOME
     elif [ -e "$GNO_SOURCE_DIR" ]; then
         disk_target=$GNO_SOURCE_DIR
     else

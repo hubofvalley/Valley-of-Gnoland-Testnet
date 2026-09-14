@@ -67,7 +67,7 @@ EXPECTED_GNOKEY_SHA="f27c7ad0430bdc4a7855af6a6762d202b7d609161f80a8fa223f85882be
 EXPECTED_GENESIS_SHA="d511e0e5b767d4e53f5c1afeeea1bc61d2c7b2118146c820f1f3e4296f67498e"
 OS_USER=$(id -un)
 
-cat > "$SERVICE_DIR/gnoland.service" <<EOF_SERVICE
+cat > "$SERVICE_DIR/gnoland-testnet.service" <<EOF_SERVICE
 [Unit]
 Description=Mock Gno.land Sapphire Node
 After=network-online.target
@@ -115,6 +115,6 @@ EOF_CONFIG
 write_healthy_config
 
 cat > "$FIXTURE_HOME/.bash_profile" <<EOF_PROFILE
-export GNOLAND_SERVICE_NAME="stale-service"
+export GNOLAND_TESTNET_SERVICE_NAME="stale-service"
 export GNO_SOURCE_DIR="$FIXTURE_HOME/gno"
-export GNOLAND_HOME="$FIXTURE_HOME/gno/gnoland-data"
+export GNOLAND_TESTNET_HOME="$FIXTURE_HOME/gno/gnoland-data"

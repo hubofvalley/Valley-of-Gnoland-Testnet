@@ -10,15 +10,15 @@ Interactive terminal tool by **Grand Valley** to deploy, migrate, inspect, and m
 - Release: `chain/pearl`
 - Pinned upstream commit: `c4c72fdd288c757e8da0d93aae867fa479b1b15c`
 - Source tree / `GNOROOT`: `~/gno`
-- Node directory: `~/gno/gnoland-data`
+- Node directory: `~/gno/gnoland-data` (override with `GNOLAND_TESTNET_HOME`)
 - Operator keyring: `~/.config/gno`
 - Genesis file: `~/gno/genesis.json`
-- Service: user-selected, default `gnoland.service`
+- Service: user-selected, default `gnoland-testnet.service`
 - Per-user binaries: `~/go/bin/gnoland`, `~/go/bin/gnokey`
 - RPC: `https://rpc.pearl.testnets.gno.land`
 - Faucet: https://pearl.testnets.gno.land/faucet
 
-Pearl is a **fresh chain**, not a Sapphire hardfork. Sapphire chain data, db/wal, consensus state, and snapshots cannot be reused. Valley of Gnoland can preserve/recover the existing operator key if you want the same `g1...` operator address, but key reuse does **not** migrate validator status. Pearl candidate registration and GovDAO admission are separate new-chain steps.
+Pearl is a **fresh chain**, not a Sapphire hardfork. Testnet-specific runtime overrides are `GNOLAND_TESTNET_HOME` and `GNOLAND_TESTNET_SERVICE_NAME`; the defaults are `~/gno/gnoland-data` and `gnoland-testnet.service`. Sapphire chain data, db/wal, consensus state, and snapshots cannot be reused. Valley of Gnoland can preserve/recover the existing operator key if you want the same `g1...` operator address, but key reuse does **not** migrate validator status. Pearl candidate registration and GovDAO admission are separate new-chain steps.
 
 ## Run
 

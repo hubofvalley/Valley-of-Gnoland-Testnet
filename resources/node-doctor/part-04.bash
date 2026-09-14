@@ -1,13 +1,13 @@
-    if [[ "$GNOLAND_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then
-        add_result "runtime" "service_name" "PASS" "Service name is valid" "$GNOLAND_SERVICE_NAME.service"
+    if [[ "$GNOLAND_TESTNET_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then
+        add_result "runtime" "service_name" "PASS" "Service name is valid" "$GNOLAND_TESTNET_SERVICE_NAME.service"
     else
         add_result "runtime" "service_name" "FAIL" \
             "Service name is invalid" \
-            "$GNOLAND_SERVICE_NAME" \
+            "$GNOLAND_TESTNET_SERVICE_NAME" \
             "Use a service name beginning with a letter or number and containing only _, ., @, or -."
     fi
 
-    for path in "$GNO_SOURCE_DIR" "$GNOLAND_HOME" "$GNOKEY_HOME" "$GNOROOT" "$GNOLAND_BIN" "$GNOKEY_BIN" "$GNOLAND_GENESIS"; do
+    for path in "$GNO_SOURCE_DIR" "$GNOLAND_TESTNET_HOME" "$GNOKEY_HOME" "$GNOROOT" "$GNOLAND_BIN" "$GNOKEY_BIN" "$GNOLAND_GENESIS"; do
         if ! path_is_under_home "$path"; then
             unsafe_paths+=("$path")
         fi
@@ -62,19 +62,19 @@ check_service() {
         return
     fi
 
-    SERVICE_FILE=$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
+    SERVICE_FILE=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
     if [ -z "$SERVICE_FILE" ]; then
         add_result "service" "unit_file" "FAIL" \
             "Systemd service is not installed" \
-            "$GNOLAND_SERVICE_NAME.service" \
-            "Deploy the node or export the correct GNOLAND_SERVICE_NAME."
+            "$GNOLAND_TESTNET_SERVICE_NAME.service" \
+            "Deploy the node or export the correct GNOLAND_TESTNET_SERVICE_NAME."
         return
     fi
     if [ ! -f "$SERVICE_FILE" ]; then
         add_result "service" "unit_file" "FAIL" \
             "Systemd returned an unreadable unit path" \
             "$SERVICE_FILE" \
-            "Inspect: systemctl cat '$GNOLAND_SERVICE_NAME'."
+            "Inspect: systemctl cat '$GNOLAND_TESTNET_SERVICE_NAME'."
         return
     fi
     add_result "service" "unit_file" "PASS" "Systemd unit file is present" "$SERVICE_FILE"

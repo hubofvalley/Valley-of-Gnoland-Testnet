@@ -48,8 +48,8 @@ assert_jq "$TEST_ROOT/ufw-rpc-rule.json" '.summary.fail == 0'
 assert_jq "$TEST_ROOT/ufw-rpc-rule.json" '.checks[] | select(.id == "firewall_rpc_rule" and .status == "WARN")'
 
 # Service ownership drift must be treated as a failure.
-cp "$SERVICE_DIR/gnoland.service" "$SERVICE_DIR/gnoland.service.bak"
-sed -i 's/^User=.*/User=another-user/' "$SERVICE_DIR/gnoland.service"
+cp "$SERVICE_DIR/gnoland-testnet.service" "$SERVICE_DIR/gnoland-testnet.service.bak"
+sed -i 's/^User=.*/User=another-user/' "$SERVICE_DIR/gnoland-testnet.service"
 set +e
 "${common_env[@]}" bash "$DOCTOR" --json > "$TEST_ROOT/ownership-drift.json"
 ownership_rc=$?

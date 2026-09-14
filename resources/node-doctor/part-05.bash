@@ -45,14 +45,14 @@
             "LimitNOFILE=${nofile_limit:-missing}; expected at least 65536"
     fi
 
-    service_state=$(systemctl is-active "$GNOLAND_SERVICE_NAME" 2>/dev/null || true)
+    service_state=$(systemctl is-active "$GNOLAND_TESTNET_SERVICE_NAME" 2>/dev/null || true)
     if [ "$service_state" = "active" ]; then
-        add_result "service" "active_state" "PASS" "Gnoland service is active" "$GNOLAND_SERVICE_NAME.service"
+        add_result "service" "active_state" "PASS" "Gnoland service is active" "$GNOLAND_TESTNET_SERVICE_NAME.service"
     else
         add_result "service" "active_state" "FAIL" \
             "Gnoland service is not active" \
             "State=${service_state:-unknown}" \
-            "Inspect: systemctl status '$GNOLAND_SERVICE_NAME' --no-pager -l and journalctl -u '$GNOLAND_SERVICE_NAME' -n 100."
+            "Inspect: systemctl status '$GNOLAND_TESTNET_SERVICE_NAME' --no-pager -l and journalctl -u '$GNOLAND_TESTNET_SERVICE_NAME' -n 100."
     fi
 }
 

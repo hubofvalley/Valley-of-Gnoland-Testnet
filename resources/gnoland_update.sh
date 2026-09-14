@@ -8,14 +8,14 @@ source "$HOME/.bash_profile" 2>/dev/null || true
 readonly RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
 readonly GNOLAND_SHA256="055b24001a31de7054649a049c9f9db5282965713814b84f7f864e8e6efa237d"
 readonly GNOKEY_SHA256="a69017c6e9ce9d77d3bd2f1e811731f6353e0deba5da4f620672d58e5fcec804"
-GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
-GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME%.service}
+GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}
+GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME%.service}
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
 GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 OS_USER=$(id -un)
-SERVICE_FILE=$(systemctl show "$GNOLAND_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
+SERVICE_FILE=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
 
 if [ -n "${SUDO_USER:-}" ]; then
     echo "Run the updater as the node OS user, not with sudo." >&2
@@ -31,8 +31,8 @@ for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
     esac
 done
 
-if [[ ! "$GNOLAND_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then
-    echo "Invalid Gnoland service name: $GNOLAND_SERVICE_NAME" >&2
+if [[ ! "$GNOLAND_TESTNET_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then
+    echo "Invalid Gnoland service name: $GNOLAND_TESTNET_SERVICE_NAME" >&2
     exit 1
 fi
 
@@ -44,7 +44,7 @@ if [ -n "$SERVICE_FILE" ]; then
     UNIT_USER=$(sed -n 's/^User=//p' "$SERVICE_FILE" | tail -n 1)
     UNIT_WORKDIR=$(sed -n 's/^WorkingDirectory=//p' "$SERVICE_FILE" | tail -n 1)
     if [ "$UNIT_USER" != "$OS_USER" ] || [ "$UNIT_WORKDIR" != "$GNO_SOURCE_DIR" ]; then
-        echo "$GNOLAND_SERVICE_NAME.service belongs to another instance." >&2
+        echo "$GNOLAND_TESTNET_SERVICE_NAME.service belongs to another instance." >&2
         exit 1
     fi
     if ! grep -Fq -- '--chainid pearl-1' "$SERVICE_FILE"; then
@@ -66,7 +66,7 @@ fi
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || true
+sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME" 2>/dev/null || true
 mkdir -p "$HOME/go/bin"
 
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
@@ -117,5 +117,5 @@ if [ "$(command -v gnoland)" != "$GNOLAND_BIN" ] || [ "$(command -v gnokey)" != 
 fi
 
 sudo systemctl daemon-reload
-sudo systemctl restart "$GNOLAND_SERVICE_NAME"
-sudo systemctl status "$GNOLAND_SERVICE_NAME" --no-pager -l || true
+sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"
+sudo systemctl status "$GNOLAND_TESTNET_SERVICE_NAME" --no-pager -l || true

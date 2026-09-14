@@ -13,10 +13,10 @@ source "$HOME/.bash_profile" 2>/dev/null || true
 if [ -z "${GNO_SOURCE_DIR:-}" ]; then
     GNO_SOURCE_DIR="$HOME/gno"
 fi
-if [ -z "${GNOLAND_HOME:-}" ] || [ "$GNOLAND_HOME" = "$HOME/.gnoland" ] || [ "$GNOLAND_HOME" = "$HOME/gnoland-data" ]; then
-    GNOLAND_HOME="$GNO_SOURCE_DIR/gnoland-data"
+if [ -z "${GNOLAND_TESTNET_HOME:-}" ] || [ "$GNOLAND_TESTNET_HOME" = "$HOME/.gnoland" ] || [ "$GNOLAND_TESTNET_HOME" = "$HOME/gnoland-data" ]; then
+    GNOLAND_TESTNET_HOME="$GNO_SOURCE_DIR/gnoland-data"
 fi
-GNOLAND_SERVICE_NAME=${GNOLAND_SERVICE_NAME:-gnoland}
+GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}
 
 UTSA_SNAPSHOT_URL="https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4"
 HAZEN_INDEX_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl/index.json"
@@ -61,15 +61,15 @@ function check_dependencies() {
 
 function validate_node_home() {
     local resolved_home resolved_source
-    resolved_home=$(readlink -m -- "$GNOLAND_HOME")
+    resolved_home=$(readlink -m -- "$GNOLAND_TESTNET_HOME")
     resolved_source=$(readlink -m -- "$GNO_SOURCE_DIR")
     case "$resolved_home" in
         /|"$HOME"|"$resolved_source")
-            echo -e "${RED}Unsafe GNOLAND_HOME rejected: $resolved_home${NC}"
+            echo -e "${RED}Unsafe GNOLAND_TESTNET_HOME rejected: $resolved_home${NC}"
             return 1
             ;;
     esac
-    GNOLAND_HOME="$resolved_home"
+    GNOLAND_TESTNET_HOME="$resolved_home"
 }
 
 function reset_snapshot_metadata() {
@@ -217,15 +217,15 @@ function backup_current_database() {
     local backup_file
     backup_file="$HOME/gnoland-db-wal-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
 
-    [ -d "$GNOLAND_HOME/db" ] && backup_items+=(db)
-    [ -d "$GNOLAND_HOME/wal" ] && backup_items+=(wal)
+    [ -d "$GNOLAND_TESTNET_HOME/db" ] && backup_items+=(db)
+    [ -d "$GNOLAND_TESTNET_HOME/wal" ] && backup_items+=(wal)
     if [ "${#backup_items[@]}" -eq 0 ]; then
         echo -e "${YELLOW}No db or wal folders found to backup.${NC}"
         return 0
     fi
 
     echo -e "${GREEN}Backing up current database...${NC}"
-    tar -czf "$backup_file" -C "$GNOLAND_HOME" "${backup_items[@]}" || return 1
+    tar -czf "$backup_file" -C "$GNOLAND_TESTNET_HOME" "${backup_items[@]}" || return 1
     chmod 600 "$backup_file" || return 1
     echo -e "${GREEN}Backup saved to:${NC} $backup_file"
 }
@@ -260,17 +260,17 @@ function verify_snapshot_archive() {
 
 function stop_gnoland() {
     echo -e "${GREEN}Stopping Gnoland service...${NC}"
-    sudo systemctl stop "$GNOLAND_SERVICE_NAME" 2>/dev/null || pkill -f "gnoland start" 2>/dev/null || true
+    sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME" 2>/dev/null || pkill -f "gnoland start" 2>/dev/null || true
 }
 
 function start_gnoland() {
     echo -e "${GREEN}Restarting Gnoland service...${NC}"
-    sudo systemctl restart "$GNOLAND_SERVICE_NAME"
+    sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"
     local attempts=0
     while [ "$attempts" -lt 3 ]; do
         attempts=$((attempts + 1))
         sleep 3
-        if sudo systemctl is-active --quiet "$GNOLAND_SERVICE_NAME"; then
+        if sudo systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME"; then
             return 0
         fi
     done
@@ -280,18 +280,18 @@ function start_gnoland() {
 function rollback_database() {
     echo -e "${RED}Snapshot activation failed; restoring the previous db and wal.${NC}"
     if [ "$MOVED_DB" -eq 1 ]; then
-        rm -rf -- "$GNOLAND_HOME/db"
-        mv "$ROLLBACK_DIR/db" "$GNOLAND_HOME/db"
+        rm -rf -- "$GNOLAND_TESTNET_HOME/db"
+        mv "$ROLLBACK_DIR/db" "$GNOLAND_TESTNET_HOME/db"
     elif [ "$HAD_DB" -eq 0 ]; then
-        rm -rf -- "$GNOLAND_HOME/db"
+        rm -rf -- "$GNOLAND_TESTNET_HOME/db"
     fi
     if [ "$MOVED_WAL" -eq 1 ]; then
-        rm -rf -- "$GNOLAND_HOME/wal"
-        mv "$ROLLBACK_DIR/wal" "$GNOLAND_HOME/wal"
+        rm -rf -- "$GNOLAND_TESTNET_HOME/wal"
+        mv "$ROLLBACK_DIR/wal" "$GNOLAND_TESTNET_HOME/wal"
     elif [ "$HAD_WAL" -eq 0 ]; then
-        rm -rf -- "$GNOLAND_HOME/wal"
+        rm -rf -- "$GNOLAND_TESTNET_HOME/wal"
     fi
-    sudo systemctl restart "$GNOLAND_SERVICE_NAME" || true
+    sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME" || true
 }
 
 function activate_snapshot() {
@@ -307,27 +307,27 @@ function activate_snapshot() {
     if [ "$should_backup" -eq 1 ]; then
         if ! backup_current_database; then
             echo -e "${RED}Database backup failed; restarting Gnoland without applying the snapshot.${NC}"
-            sudo systemctl restart "$GNOLAND_SERVICE_NAME" || true
+            sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME" || true
             return 1
         fi
     fi
 
-    ROLLBACK_DIR="$GNOLAND_HOME/.vog-snapshot-rollback-$(date +%Y%m%d-%H%M%S)"
+    ROLLBACK_DIR="$GNOLAND_TESTNET_HOME/.vog-snapshot-rollback-$(date +%Y%m%d-%H%M%S)"
     if ! mkdir -p "$ROLLBACK_DIR"; then
-        sudo systemctl restart "$GNOLAND_SERVICE_NAME" || true
+        sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME" || true
         return 1
     fi
-    [ -d "$GNOLAND_HOME/db" ] && HAD_DB=1
-    [ -d "$GNOLAND_HOME/wal" ] && HAD_WAL=1
+    [ -d "$GNOLAND_TESTNET_HOME/db" ] && HAD_DB=1
+    [ -d "$GNOLAND_TESTNET_HOME/wal" ] && HAD_WAL=1
     if [ "$HAD_DB" -eq 1 ]; then
-        if ! mv "$GNOLAND_HOME/db" "$ROLLBACK_DIR/db"; then
+        if ! mv "$GNOLAND_TESTNET_HOME/db" "$ROLLBACK_DIR/db"; then
             rollback_database
             return 1
         fi
         MOVED_DB=1
     fi
     if [ "$HAD_WAL" -eq 1 ]; then
-        if ! mv "$GNOLAND_HOME/wal" "$ROLLBACK_DIR/wal"; then
+        if ! mv "$GNOLAND_TESTNET_HOME/wal" "$ROLLBACK_DIR/wal"; then
             rollback_database
             return 1
         fi
@@ -335,7 +335,7 @@ function activate_snapshot() {
     fi
 
     echo -e "${GREEN}Extracting the verified snapshot...${NC}"
-    if ! lz4 -d -c "$archive" | tar -xf - -C "$GNOLAND_HOME"; then
+    if ! lz4 -d -c "$archive" | tar -xf - -C "$GNOLAND_TESTNET_HOME"; then
         rollback_database
         return 1
     fi
@@ -372,8 +372,8 @@ function apply_snapshot() {
     fi
 
     check_dependencies
-    mkdir -p "$(dirname "$GNOLAND_HOME")"
-    STAGING_DIR=$(mktemp -d "$(dirname "$GNOLAND_HOME")/.vog-snapshot-download.XXXXXX")
+    mkdir -p "$(dirname "$GNOLAND_TESTNET_HOME")"
+    STAGING_DIR=$(mktemp -d "$(dirname "$GNOLAND_TESTNET_HOME")/.vog-snapshot-download.XXXXXX")
     local archive="$STAGING_DIR/snapshot.tar.lz4"
 
     echo -e "${GREEN}Downloading snapshot before stopping Gnoland...${NC}"
@@ -383,7 +383,7 @@ function apply_snapshot() {
 
     echo -e "${GREEN}Snapshot setup completed successfully.${NC}"
     echo -e "${YELLOW}Showing live logs. Press Ctrl+C to stop following logs.${NC}"
-    sudo journalctl -u "$GNOLAND_SERVICE_NAME" -f -o cat
+    sudo journalctl -u "$GNOLAND_TESTNET_SERVICE_NAME" -f -o cat
 }
 
 function main() {

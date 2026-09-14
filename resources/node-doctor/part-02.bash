@@ -28,8 +28,8 @@ json_escape() {
 emit_text() {
     local i status
     printf 'Valley of Gnoland Node Doctor v%s\n' "$DOCTOR_VERSION"
-    printf 'Service: %s.service\n' "$GNOLAND_SERVICE_NAME"
-    printf 'Node home: %s\n' "$GNOLAND_HOME"
+    printf 'Service: %s.service\n' "$GNOLAND_TESTNET_SERVICE_NAME"
+    printf 'Node home: %s\n' "$GNOLAND_TESTNET_HOME"
     printf 'Expected network: %s\n\n' "$EXPECTED_CHAIN_ID"
 
     for i in "${!CHECK_IDS[@]}"; do
@@ -74,10 +74,10 @@ emit_json() {
     printf '"read_only":true,'
     printf '"offline":%s,' "$OFFLINE_MODE"
     printf '"instance":{'
-    printf '"service":"%s.service",' "$(json_escape "$GNOLAND_SERVICE_NAME")"
+    printf '"service":"%s.service",' "$(json_escape "$GNOLAND_TESTNET_SERVICE_NAME")"
     printf '"os_user":"%s",' "$(json_escape "$OS_USER")"
     printf '"source_dir":"%s",' "$(json_escape "$GNO_SOURCE_DIR")"
-    printf '"node_home":"%s",' "$(json_escape "$GNOLAND_HOME")"
+    printf '"node_home":"%s",' "$(json_escape "$GNOLAND_TESTNET_HOME")"
     printf '"config_file":"%s",' "$(json_escape "$CONFIG_FILE")"
     printf '"expected_chain_id":"%s"' "$(json_escape "$EXPECTED_CHAIN_ID")"
     printf '},'

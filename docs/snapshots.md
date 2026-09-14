@@ -1,6 +1,6 @@
 # Pearl Snapshot Safety
 
-Snapshot application is currently **disabled** for Gno.land Pearl.
+Snapshot application is currently **disabled** for Gno.land Pearl. The helper uses `GNOLAND_TESTNET_HOME` and `GNOLAND_TESTNET_SERVICE_NAME`, defaulting to `~/gno/gnoland-data` and `gnoland-testnet.service`.
 
 Pearl is a fresh chain. The snapshot sources previously integrated into Valley of Gnoland were Sapphire-specific, so those archives must not be applied to `pearl-1`.
 

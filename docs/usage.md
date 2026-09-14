@@ -1,6 +1,6 @@
 # Valley of Gnoland - Usage Guide
 
-Valley of Gnoland now targets the Gno.land **Pearl** testnet (`pearl-1`).
+Valley of Gnoland now targets the Gno.land **Pearl** testnet (`pearl-1`). Testnet-specific overrides are `GNOLAND_TESTNET_SERVICE_NAME` and `GNOLAND_TESTNET_HOME`; they default to `gnoland-testnet` and `~/gno/gnoland-data`.
 
 ## Run
 
@@ -17,7 +17,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnolan
 
 ## Sapphire to Pearl migration
 
-Pearl is a fresh chain, not a Sapphire hardfork. Valley keeps the established paths (`~/gno`, `~/gno/gnoland-data`, `~/.config/gno`, per-user binaries, and the selected service name), but it does **not** reuse Sapphire db/wal or consensus state.
+Pearl is a fresh chain, not a Sapphire hardfork. Valley keeps the established paths (`~/gno`, `~/gno/gnoland-data`, `~/.config/gno`, per-user binaries, and the selected service name), but it does **not** reuse Sapphire db/wal or consensus state. The default testnet unit is `gnoland-testnet.service`, so the mainnet `gnoland.service` name remains available on the same host.
 
 Menu option `1a` is the migration/fresh-install path. It:
 
@@ -43,13 +43,13 @@ Reusing/recovering a Sapphire operator key is optional **operator-address contin
 | `1c` | Fails closed until a Pearl-specific snapshot provider is reviewed and pinned. |
 | `1d` | Adds peers manually or resets to the official Pearl persistent peers. |
 | `1e` | Shows local Pearl chain ID, height, sync state, and peer count. |
-| `1f` | Follows the selected Gnoland service logs. |
+| `1f` | Follows the selected Gnoland service logs, defaulting to `gnoland-testnet.service`. |
 | `1g` | Runs the read-only Pearl Node Doctor. |
 | `2a` | Lists/reuses, recovers, or creates an operator key without overwriting an existing name. |
 | `2b` | Shows the fresh Pearl consensus `gpub1...` key. |
 | `2c` | Broadcasts Pearl valoper candidate registration after confirmation. |
 | `2d` | Queries a path or shows Pearl candidate/active-validator realms. |
-| `3a`–`3d` | Restart, stop, delete Pearl node data, or back up Pearl node secrets. |
+| `3a`–`3d` | Restart, stop, delete Pearl node data, or back up Pearl node secrets. These actions use `GNOLAND_TESTNET_SERVICE_NAME` and `GNOLAND_TESTNET_HOME`. |
 
 ## Recommended validator flow
 

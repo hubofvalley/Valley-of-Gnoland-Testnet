@@ -27,11 +27,16 @@ Pearl is a fresh chain. Do not reuse Sapphire db/wal, consensus state, or Sapphi
 
 ```bash
 GNO_SOURCE_DIR="$HOME/gno"
-GNOLAND_HOME="$HOME/gno/gnoland-data"
+GNOLAND_TESTNET_HOME="$HOME/gno/gnoland-data"
+GNOLAND_TESTNET_SERVICE_NAME="gnoland-testnet"
 GNOKEY_HOME="$HOME/.config/gno"
 GNOLAND_BIN="$HOME/go/bin/gnoland"
 GNOKEY_BIN="$HOME/go/bin/gnokey"
 ```
+
+The testnet scripts read `GNOLAND_TESTNET_HOME` and
+`GNOLAND_TESTNET_SERVICE_NAME` for instance-specific overrides. The defaults
+are `~/gno/gnoland-data` and `gnoland-testnet` (that is, `gnoland-testnet.service`).
 
 Valley preserves this layout during Sapphire -> Pearl migration. Back up existing node secrets and the operator keyring first; preserve `GNOKEY_HOME` if you want the same operator `g1...` address.
 

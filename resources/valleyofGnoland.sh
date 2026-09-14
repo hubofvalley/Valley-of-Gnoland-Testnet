@@ -10,7 +10,7 @@ RESET='\033[0m'
 
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
-readonly VALLEY_RUNTIME_REF="0ead8d4273d23cee19a6153f99e7aa38494856ca"
+readonly VALLEY_RUNTIME_REF="ba3df2b4a5ac9ca104a09b6a5e1c23fdaada7717"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {

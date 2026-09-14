@@ -20,6 +20,17 @@ if grep -Fq 'raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/mai
     fail "runtime helpers execute from mutable main"
 fi
 
+for helper in resources/gnoland_node_install_testnet.sh resources/gnoland_node_doctor.sh resources/gnoland_update.sh resources/apply_snapshot.sh; do
+    remote_helper=$(curl -fsSL "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/${runtime_ref}/${helper}") || fail "cannot fetch pinned helper: $helper"
+    if [[ "$helper" != resources/gnoland_update.sh ]]; then
+        grep -Fq 'GNOLAND_TESTNET_HOME' <<<"$remote_helper" || fail "pinned helper lacks GNOLAND_TESTNET_HOME: $helper"
+    fi
+    grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME' <<<"$remote_helper" || fail "pinned helper lacks GNOLAND_TESTNET_SERVICE_NAME: $helper"
+    if grep -Eq 'GNOLAND_(SERVICE_NAME|HOME)([^A-Za-z0-9_]|$)' <<<"$remote_helper"; then
+        fail "pinned helper still contains legacy environment names: $helper"
+    fi
+done
+
 set +e
 GNOLAND_NODE_DOCTOR_REF=main bash "$DOCTOR" --version >/dev/null 2>&1
 rc=$?

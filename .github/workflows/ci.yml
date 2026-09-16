@@ -47,8 +47,14 @@ jobs:
       - name: Run Pearl Node Doctor regression test
         run: bash tests/node_doctor_test.sh
 
-      - name: Run snapshot fail-closed regression test
+      - name: Run Pearl snapshot regression test
         run: bash tests/apply_snapshot_test.sh
+
+      - name: Run Pearl safe-stop regression test
+        run: bash tests/safe_stop_test.sh
+
+      - name: Run snapshot documentation contract test
+        run: bash tests/snapshot_docs_contract_test.sh
 
       - name: Run immutable runtime pin regression test
         run: bash tests/runtime_script_pin_test.sh

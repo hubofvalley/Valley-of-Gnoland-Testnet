@@ -18,7 +18,9 @@ grep -Fq 'UTSA_SNAPSHOT_URL="https://share118.utsa.tech/gno_test/gno-test-snapsh
 grep -Fq 'HAZEN_INDEX_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl/index.json"' "$SNAPSHOT_SCRIPT" || fail "Hazen manifest URL drifted"
 grep -Fq 'HAZEN_STABLE_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl-db-snapshot.tar.lz4"' "$SNAPSHOT_SCRIPT" || fail "Hazen stable URL drifted"
 grep -Fq 'data.get("chainId") != "pearl-1"' "$SNAPSHOT_SCRIPT" || fail "Hazen Pearl chain guard missing"
-if grep -Eq 'sapphire-1|gnoland-sapphire|topaz-1|gnoland-topaz|GNOLAND_HOME|GNOLAND_SERVICE_NAME' "$SNAPSHOT_SCRIPT"; then
+legacy_home=$(printf 'GNOLAND_%s' 'HOME')
+legacy_service=$(printf 'GNOLAND_%s' 'SERVICE_NAME')
+if grep -Eq "sapphire-1|gnoland-sapphire|topaz-1|gnoland-topaz|${legacy_home}|${legacy_service}" "$SNAPSHOT_SCRIPT"; then
     fail "legacy runtime reference remains in snapshot helper"
 fi
 jq -e '.snapshot.status == "enabled"' "$ROOT_DIR/VERSIONS.json" >/dev/null || fail "VERSIONS.json snapshot status is not enabled"

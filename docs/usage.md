@@ -39,8 +39,8 @@ Reusing/recovering a Sapphire operator key is optional **operator-address contin
 | Option | Behaviour |
 |---|---|
 | `1a` | Fresh-installs Pearl or migrates a Sapphire installation to Pearl with backups and explicit confirmation. |
-| `1b` | Updates only an already-Pearl service to the pinned Pearl binaries; refuses Sapphire services. |
-| `1c` | Fails closed until a Pearl-specific snapshot provider is reviewed and pinned. |
+| `1b` | Updates only an already-Pearl service to the pinned Pearl binaries; stages and verifies network artifacts before stopping the node. |
+| `1c` | Applies a Pearl snapshot from UTSA or Hazen with archive validation, optional backup, rollback, and safe-stop gating. |
 | `1d` | Adds peers manually or resets to the official Pearl persistent peers. |
 | `1e` | Shows local Pearl chain ID, height, sync state, and peer count. |
 | `1f` | Follows the selected Gnoland service logs, defaulting to `gnoland-testnet.service`. |
@@ -64,6 +64,7 @@ Reusing/recovering a Sapphire operator key is optional **operator-address contin
 ## Safety
 
 - Never copy Sapphire db/wal or a Sapphire snapshot into Pearl.
+- Before updater or snapshot maintenance stops an active Pearl service, local RPC must report `pearl-1` with `catching_up=false`.
 - Run VOG as the node OS user, not with `sudo bash ...`; VOG requests sudo only where system access is needed.
 - Use one OS user/service name/port prefix per instance.
 - Never share mnemonics or node secrets.

@@ -67,7 +67,11 @@ After the node is synced:
 
 ## Snapshot safety
 
-Snapshot application is currently **disabled for Pearl**. The previous UTSA/Hazen configuration was Sapphire-specific. Valley of Gnoland fails closed instead of risking a Sapphire snapshot being applied to `pearl-1`. The snapshot feature should be re-enabled only after a Pearl-specific provider and verification metadata are reviewed and pinned.
+Snapshot application is available for Pearl through the UTSA and Hazen Network Solutions paths recorded in `VERSIONS.json`. The helper downloads and validates the archive before the maintenance boundary, keeps node config and secrets in place, optionally backs up the current `db`/`wal`, and rolls back the previous database if activation or restart fails.
+
+Provider assurance differs. Hazen metadata must identify `pearl-1` and its published SHA-256 is verified when present. The current UTSA integration exposes archive availability but does not provide chain identity or checksum metadata through this path, so treat UTSA as the lower-assurance option.
+
+Before any active Pearl service is stopped, the tooling verifies a local loopback RPC reports `pearl-1` with `catching_up=false`. The pinned Pearl release predates upstream crash-safety fix gnolang/gno#6085, so maintenance fails closed when sync state cannot be verified.
 
 ## Features
 
@@ -78,14 +82,15 @@ Snapshot application is currently **disabled for Pearl**. The previous UTSA/Haze
 - Per-user binaries and service ownership guards for isolated instances
 - Node status, logs, peer management, and validator candidate registration
 - Read-only Pearl Node Doctor with human and JSON output
-- Fail-closed snapshot path until Pearl snapshots are independently verified
+- Pearl UTSA/Hazen snapshot support with archive validation, optional checksum verification, backup, rollback, and safe-stop gating
+- Updater artifact staging and checksum verification before the node maintenance boundary
 
 ## Documentation
 
 - [Usage guide](docs/usage.md)
 - [Manual Pearl node guide](docs/node-guide.md)
 - [Node Doctor guide](docs/node-doctor.md)
-- [Snapshot safety](docs/snapshots.md)
+- [Snapshot providers and safety](docs/snapshots.md)
 
 ## Upstream sources
 

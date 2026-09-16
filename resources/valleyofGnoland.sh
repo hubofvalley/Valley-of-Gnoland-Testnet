@@ -10,7 +10,7 @@ RESET='\033[0m'
 
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
-readonly VALLEY_RUNTIME_REF="ba3df2b4a5ac9ca104a09b6a5e1c23fdaada7717"
+readonly VALLEY_RUNTIME_REF="d932d2033c84126950fce6c2785e391edf11d005"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -29,7 +29,7 @@ run_node_doctor_script() {
 
     script_file=$(mktemp)
     if ! curl -fsSL \
-        "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/ba3df2b4a5ac9ca104a09b6a5e1c23fdaada7717/${NODE_DOCTOR_RELATIVE_PATH}" \
+        "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/${VALLEY_RUNTIME_REF}/${NODE_DOCTOR_RELATIVE_PATH}" \
         -o "$script_file"; then
         rm -f "$script_file"
         echo -e "${RED}Failed to download the Node Doctor from pinned commit ${VALLEY_RUNTIME_REF}. Nothing was executed.${RESET}" >&2
@@ -309,7 +309,7 @@ function run_repository_script() {
     local relative_path=$1
     local script_file exit_code
     script_file=$(mktemp)
-    if ! curl -fsSL "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/ba3df2b4a5ac9ca104a09b6a5e1c23fdaada7717/${relative_path}" -o "$script_file"; then
+    if ! curl -fsSL "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/${VALLEY_RUNTIME_REF}/${relative_path}" -o "$script_file"; then
         rm -f "$script_file"
         echo -e "${RED}Failed to download ${relative_path} from pinned commit ${VALLEY_RUNTIME_REF}. Nothing was executed.${RESET}"
         return 1
@@ -789,7 +789,7 @@ function show_guidelines() {
     echo -e "${GREEN}Node Interactions:${RESET}"
     echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Pearl node."
     echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Pearl binaries."
-    echo "   c. Apply Snapshot: Pearl snapshots remain disabled until a Pearl-specific provider is verified and pinned."
+    echo "   c. Apply Snapshot: Uses the Pearl UTSA/Hazen paths with archive validation, rollback, and safe-stop checks."
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."

@@ -11,6 +11,7 @@ readonly GNOKEY_SHA256="a69017c6e9ce9d77d3bd2f1e811731f6353e0deba5da4f620672d58e
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME%.service}
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
+GNOLAND_TESTNET_HOME=${GNOLAND_TESTNET_HOME:-$GNO_SOURCE_DIR/gnoland-data}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
 GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
@@ -22,7 +23,7 @@ if [ -n "${SUDO_USER:-}" ]; then
     exit 1
 fi
 
-for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
+for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_TESTNET_HOME" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
     CANONICAL_HOME=$(realpath -m "$HOME")
     CANONICAL_PATH=$(realpath -m "$instance_path")
     case "$CANONICAL_PATH" in
@@ -63,12 +64,86 @@ if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then
     exit 1
 fi
 
+get_local_rpc_url() {
+    local cfg="$GNOLAND_TESTNET_HOME/config/config.toml" port=""
+    if [ -f "$cfg" ]; then
+        port=$(awk -F: '
+            /^[[:space:]]*\[rpc\][[:space:]]*$/ {in_rpc=1; next}
+            /^[[:space:]]*\[/ {in_rpc=0}
+            in_rpc && /^[[:space:]]*laddr = "tcp:\/\// {
+                gsub(/".*/, "", $NF)
+                print $NF
+                exit
+            }
+        ' "$cfg")
+    fi
+    echo "http://127.0.0.1:${port:-26657}"
+}
+
+safe_stop_preflight() {
+    local service_state rpc_base status_json network catching_up
+
+    service_state=$(systemctl is-active "$GNOLAND_TESTNET_SERVICE_NAME" 2>/dev/null || true)
+    case "$service_state" in
+        inactive|failed)
+            return 0
+            ;;
+        active)
+            ;;
+        *)
+            echo "Safe-stop preflight blocked: unable to verify $GNOLAND_TESTNET_SERVICE_NAME.service state (reported: ${service_state:-unavailable})." >&2
+            return 1
+            ;;
+    esac
+
+    rpc_base=${GNOLAND_REMOTE:-$(get_local_rpc_url)}
+    rpc_base=${rpc_base%/}
+    case "$rpc_base" in
+        http://127.0.0.1:*|http://localhost:*) ;;
+        *)
+            echo "Safe-stop preflight blocked: the Pearl status check must use a local loopback RPC endpoint." >&2
+            return 1
+            ;;
+    esac
+
+    if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+        echo "Safe-stop preflight blocked: curl and jq are required to verify node sync state." >&2
+        return 1
+    fi
+
+    status_json=$(curl -m 5 -fsS "${rpc_base}/status" 2>/dev/null || true)
+    network=$(printf '%s' "$status_json" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+    catching_up=$(printf '%s' "$status_json" | jq -r 'if .result.sync_info.catching_up == null then empty else (.result.sync_info.catching_up | tostring) end' 2>/dev/null || true)
+
+    if [ "$network" != "pearl-1" ]; then
+        echo "Safe-stop preflight blocked: local RPC did not verify pearl-1 (reported: ${network:-unavailable})." >&2
+        return 1
+    fi
+
+    case "$catching_up" in
+        false)
+            return 0
+            ;;
+        true)
+            echo "Safe-stop preflight blocked: this Pearl node reports catching_up=true." >&2
+            echo "The pinned Pearl release predates gnolang/gno#6085; do not stop it while it is catching up." >&2
+            return 1
+            ;;
+        *)
+            echo "Safe-stop preflight blocked: local RPC did not return a recognised catching_up value." >&2
+            return 1
+            ;;
+    esac
+}
+
+# Refuse obviously unsafe maintenance before doing network work.
+safe_stop_preflight
+
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME" 2>/dev/null || true
-mkdir -p "$HOME/go/bin"
-
+# Stage and verify every network-dependent artifact while the node is still
+# running. A GitHub/release outage or checksum failure must not create downtime.
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
     echo "Gno source checkout is missing at $GNO_SOURCE_DIR; run the Pearl installer instead." >&2
     exit 1
@@ -79,6 +154,27 @@ else
     git -C "$GNO_SOURCE_DIR" remote add origin https://github.com/gnolang/gno.git
 fi
 git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"
+if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse FETCH_HEAD)" != "$RELEASE_COMMIT" ]; then
+    echo "Fetched Gno source does not match the pinned Pearl commit." >&2
+    exit 1
+fi
+
+curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
+echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
+chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
+
+# Sync state may have changed while artifacts were staged, so re-check immediately
+# before crossing the maintenance boundary.
+safe_stop_preflight
+if systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME"; then
+    sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME"
+fi
+
+# Everything below is local activation. No source fetch or release download should
+# extend the stopped window.
+mkdir -p "$HOME/go/bin"
 git -C "$GNO_SOURCE_DIR" checkout --detach --force FETCH_HEAD
 if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
     echo "Unexpected Gno source commit at $GNO_SOURCE_DIR." >&2
@@ -89,11 +185,6 @@ if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
     exit 1
 fi
 
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnokey_linux_amd64" -o "$tmpdir/gnokey"
-echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
-echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
-chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
 install "$tmpdir/gnoland" "$GNOLAND_BIN"
 install "$tmpdir/gnokey" "$GNOKEY_BIN"
 

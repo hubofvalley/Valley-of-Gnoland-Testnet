@@ -59,6 +59,9 @@ jobs:
       - name: Run immutable runtime pin regression test
         run: bash tests/runtime_script_pin_test.sh
 
+      - name: Run reviewed runtime payload contract test
+        run: bash tests/runtime_payload_contract_test.sh
+
       - name: Check patch whitespace
         run: git show --check --format= HEAD
 

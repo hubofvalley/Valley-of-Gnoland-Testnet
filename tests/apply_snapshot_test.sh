@@ -3,34 +3,164 @@ set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 SNAPSHOT_SCRIPT="$ROOT_DIR/resources/apply_snapshot.sh"
+TEST_TMP=$(mktemp -d)
+trap 'rm -rf "$TEST_TMP"' EXIT
 
-fail() { echo "SNAPSHOT_FAIL_CLOSED_TEST_FAIL: $*" >&2; exit 1; }
-assert_contains() { grep -Fq -- "$2" <<<"$1" || fail "missing expected text: $2"; }
+fail() { echo "SNAPSHOT_TEST_FAIL: $*" >&2; exit 1; }
+assert_contains() { [[ "$1" == *"$2"* ]] || fail "expected output to contain: $2"; }
+assert_file() { [ -f "$1" ] || fail "expected file: $1"; }
 
 [ -f "$SNAPSHOT_SCRIPT" ] || fail "snapshot script missing"
 
-# Pearl snapshot support must remain fail-closed. Keep the checks explicit so a
-# future provider cannot quietly reintroduce mutation behind the visible menu.
-if grep -Eq '(^|[^[:alnum:]_])(curl|wget|lz4|tar|pkill|systemctl)([^[:alnum:]_]|$)|rm -rf|(^|[^[:alnum:]_])mv[[:space:]]|(^|[^[:alnum:]_])mkdir[[:space:]]' "$SNAPSHOT_SCRIPT"; then
-    fail "disabled snapshot helper contains forbidden operation"
+grep -Fq 'GNOLAND_TESTNET_HOME' "$SNAPSHOT_SCRIPT" || fail "testnet home variable missing"
+grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME' "$SNAPSHOT_SCRIPT" || fail "testnet service variable missing"
+grep -Fq 'UTSA_SNAPSHOT_URL="https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4"' "$SNAPSHOT_SCRIPT" || fail "UTSA URL drifted"
+grep -Fq 'HAZEN_INDEX_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl/index.json"' "$SNAPSHOT_SCRIPT" || fail "Hazen manifest URL drifted"
+grep -Fq 'HAZEN_STABLE_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl-db-snapshot.tar.lz4"' "$SNAPSHOT_SCRIPT" || fail "Hazen stable URL drifted"
+grep -Fq 'data.get("chainId") != "pearl-1"' "$SNAPSHOT_SCRIPT" || fail "Hazen Pearl chain guard missing"
+if grep -Eq 'sapphire-1|gnoland-sapphire|topaz-1|gnoland-topaz|GNOLAND_HOME|GNOLAND_SERVICE_NAME' "$SNAPSHOT_SCRIPT"; then
+    fail "legacy runtime reference remains in snapshot helper"
 fi
+jq -e '.snapshot.status == "enabled"' "$ROOT_DIR/VERSIONS.json" >/dev/null || fail "VERSIONS.json snapshot status is not enabled"
 
-grep -Fq 'GNOLAND_TESTNET_HOME' "$SNAPSHOT_SCRIPT" || fail "snapshot helper lost testnet home variable"
-grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME' "$SNAPSHOT_SCRIPT" || fail "snapshot helper lost testnet service variable"
-grep -Fq 'Snapshot application is disabled for Pearl.' "$SNAPSHOT_SCRIPT" || fail "fail-closed message missing"
-grep -Fq 'No provider was executed' "$SNAPSHOT_SCRIPT" || fail "no-mutation evidence missing"
+menu_output=$(
+    HOME="$TEST_TMP/menu-home" GNO_SOURCE_DIR="$TEST_TMP/menu-home/gno" GNOLAND_TESTNET_HOME="$TEST_TMP/menu-home/gno/gnoland-data" \
+        bash -c 'mkdir -p "$HOME"; source "$1"; show_menu' _ "$SNAPSHOT_SCRIPT"
+)
+assert_contains "$menu_output" '1. UTSA'
+assert_contains "$menu_output" '2. Hazen Network Solutions'
+assert_contains "$menu_output" '3. Exit'
 
-menu_output=$(HOME="$(mktemp -d)" bash -c 'source "$1"; show_menu' _ "$SNAPSHOT_SCRIPT")
-assert_contains "$menu_output" 'Pearl snapshot support is disabled.'
-assert_contains "$menu_output" '1. Disabled'
-assert_contains "$menu_output" '2. Exit'
+HOME="$TEST_TMP/hazen-good-home" GNO_SOURCE_DIR="$TEST_TMP/hazen-good-home/gno" GNOLAND_TESTNET_HOME="$TEST_TMP/hazen-good-home/gno/gnoland-data" \
+SNAPSHOT_SCRIPT="$SNAPSHOT_SCRIPT" bash <<'EOS'
+set -euo pipefail
+mkdir -p "$HOME"
+source "$SNAPSHOT_SCRIPT"
+curl() {
+    if [[ "$*" == *"$HAZEN_INDEX_URL"* ]] && [[ "$*" != *"--head"* ]]; then
+        printf '%s\n' '{"chainId":"pearl-1","stableUrl":"https://snapshot.example/pearl.tar.lz4","generatedAt":"2026-09-01T03:17:34Z","blockHeight":112375,"sizeBytes":2076715616,"sha256":"abc123","verifiedAgainst":"apphash"}'
+        return 0
+    fi
+    if [[ "$*" == *"--head"* ]]; then
+        printf 'HTTP/1.1 200 OK\r\nContent-Length: 5916315648\r\n'
+        return 0
+    fi
+    return 1
+}
+load_hazen_metadata
+[ "$SNAPSHOT_AVAILABLE" -eq 1 ]
+[ "$SNAPSHOT_HEIGHT" = "112375" ]
+[ "$SNAPSHOT_URL" = "https://snapshot.example/pearl.tar.lz4" ]
+EOS
 
-if HOME="$(mktemp -d)" GNOLAND_TESTNET_HOME="/tmp/gnoland-testnet-fixture" GNOLAND_TESTNET_SERVICE_NAME="gnoland-testnet" bash -c 'source "$1"; apply_snapshot' _ "$SNAPSHOT_SCRIPT" >/tmp/gnoland-snapshot-test.out 2>&1; then
-    fail "disabled snapshot path unexpectedly succeeded"
-fi
-assert_contains "$(cat /tmp/gnoland-snapshot-test.out)" 'No provider was executed'
-rm -f /tmp/gnoland-snapshot-test.out
+HOME="$TEST_TMP/hazen-bad-home" GNO_SOURCE_DIR="$TEST_TMP/hazen-bad-home/gno" GNOLAND_TESTNET_HOME="$TEST_TMP/hazen-bad-home/gno/gnoland-data" \
+SNAPSHOT_SCRIPT="$SNAPSHOT_SCRIPT" bash <<'EOS'
+set -euo pipefail
+mkdir -p "$HOME"
+source "$SNAPSHOT_SCRIPT"
+curl() {
+    if [[ "$*" == *"$HAZEN_INDEX_URL"* ]] && [[ "$*" != *"--head"* ]]; then
+        printf '%s\n' '{"chainId":"sapphire-1","stableUrl":"https://snapshot.example/sapphire.tar.lz4"}'
+        return 0
+    fi
+    if [[ "$*" == *"--head"* ]]; then return 0; fi
+    return 1
+}
+if load_hazen_metadata; then exit 1; fi
+[ "$SNAPSHOT_AVAILABLE" -eq 0 ]
+EOS
 
-jq -e '.snapshot.status == "disabled"' "$ROOT_DIR/VERSIONS.json" >/dev/null || fail "VERSIONS.json snapshot status is not disabled"
+for mode in cancel unavailable; do
+    case_home="$TEST_TMP/$mode-home"
+    mkdir -p "$case_home/gno/gnoland-data/db" "$case_home/gno/gnoland-data/wal"
+    printf 'old-db\n' >"$case_home/gno/gnoland-data/db/marker"
+    printf 'old-wal\n' >"$case_home/gno/gnoland-data/wal/marker"
+    if [ "$mode" = "cancel" ]; then
+        HOME="$case_home" GNO_SOURCE_DIR="$case_home/gno" GNOLAND_TESTNET_HOME="$case_home/gno/gnoland-data" SNAPSHOT_SCRIPT="$SNAPSHOT_SCRIPT" \
+            bash -c 'source "$SNAPSHOT_SCRIPT"; loader(){ reset_snapshot_metadata; SNAPSHOT_PROVIDER=UTSA; SNAPSHOT_URL="$UTSA_SNAPSHOT_URL"; SNAPSHOT_AVAILABLE=1; }; printf "no\n" | apply_snapshot loader' >/dev/null
+    else
+        if HOME="$case_home" GNO_SOURCE_DIR="$case_home/gno" GNOLAND_TESTNET_HOME="$case_home/gno/gnoland-data" SNAPSHOT_SCRIPT="$SNAPSHOT_SCRIPT" \
+            bash -c 'source "$SNAPSHOT_SCRIPT"; loader(){ reset_snapshot_metadata; SNAPSHOT_PROVIDER=UTSA; return 1; }; apply_snapshot loader' >/dev/null 2>&1; then
+            fail "unavailable provider unexpectedly succeeded"
+        fi
+    fi
+    assert_file "$case_home/gno/gnoland-data/db/marker"
+    assert_file "$case_home/gno/gnoland-data/wal/marker"
+done
 
-echo "SNAPSHOT_FAIL_CLOSED_TEST_OK"
+HOME="$TEST_TMP/archive-home" GNO_SOURCE_DIR="$TEST_TMP/archive-home/gno" GNOLAND_TESTNET_HOME="$TEST_TMP/archive-home/gno/gnoland-data" \
+SNAPSHOT_SCRIPT="$SNAPSHOT_SCRIPT" bash <<'EOS'
+set -euo pipefail
+mkdir -p "$HOME" "$GNOLAND_TESTNET_HOME"
+source "$SNAPSHOT_SCRIPT"
+STAGING_DIR=$(mktemp -d)
+SNAPSHOT_SHA256=""
+lz4() { cat "${@: -1}"; }
+tar() {
+    if [ "${1:-}" = "-tf" ]; then cat; return 0; fi
+    command tar "$@"
+}
+printf 'db/\ndb/state\nwal/\nwal/log\n' >"$STAGING_DIR/valid"
+verify_snapshot_archive "$STAGING_DIR/valid" >/dev/null
+printf 'db/\nwal/\nsecrets/validator_key\n' >"$STAGING_DIR/extra"
+if verify_snapshot_archive "$STAGING_DIR/extra" >/dev/null 2>&1; then exit 1; fi
+printf 'db/\nwal/\ndb/../secrets/key\n' >"$STAGING_DIR/traversal"
+if verify_snapshot_archive "$STAGING_DIR/traversal" >/dev/null 2>&1; then exit 1; fi
+EOS
+
+HOME="$TEST_TMP/activate-home" GNO_SOURCE_DIR="$TEST_TMP/activate-home/gno" GNOLAND_TESTNET_HOME="$TEST_TMP/activate-home/gno/gnoland-data" \
+SNAPSHOT_SCRIPT="$SNAPSHOT_SCRIPT" bash <<'EOS'
+set -euo pipefail
+mkdir -p "$HOME" "$GNOLAND_TESTNET_HOME/db" "$GNOLAND_TESTNET_HOME/wal"
+printf old >"$GNOLAND_TESTNET_HOME/db/marker"
+printf old >"$GNOLAND_TESTNET_HOME/wal/marker"
+source "$SNAPSHOT_SCRIPT"
+stop_gnoland() { :; }
+start_gnoland() { return 0; }
+lz4() { cat "${@: -1}"; }
+tar() {
+    if [ "${1:-}" = "-xf" ]; then
+        local dest=""
+        while [ "$#" -gt 0 ]; do
+            if [ "$1" = "-C" ]; then dest=$2; break; fi
+            shift
+        done
+        mkdir -p "$dest/db" "$dest/wal"
+        printf new >"$dest/db/marker"
+        printf new >"$dest/wal/marker"
+        cat >/dev/null
+        return 0
+    fi
+    command tar "$@"
+}
+archive="$HOME/fake-archive"
+printf archive >"$archive"
+activate_snapshot "$archive" 0 >/dev/null
+[ "$(cat "$GNOLAND_TESTNET_HOME/db/marker")" = new ]
+[ "$(cat "$GNOLAND_TESTNET_HOME/wal/marker")" = new ]
+[ -z "$ROLLBACK_DIR" ]
+if find "$GNOLAND_TESTNET_HOME" -maxdepth 1 -name '.vog-snapshot-rollback-*' | grep -q .; then exit 1; fi
+EOS
+
+HOME="$TEST_TMP/rollback-home" GNO_SOURCE_DIR="$TEST_TMP/rollback-home/gno" GNOLAND_TESTNET_HOME="$TEST_TMP/rollback-home/gno/gnoland-data" \
+SNAPSHOT_SCRIPT="$SNAPSHOT_SCRIPT" bash <<'EOS'
+set -euo pipefail
+mkdir -p "$HOME" "$GNOLAND_TESTNET_HOME/db" "$GNOLAND_TESTNET_HOME/wal"
+printf old-db >"$GNOLAND_TESTNET_HOME/db/marker"
+printf old-wal >"$GNOLAND_TESTNET_HOME/wal/marker"
+source "$SNAPSHOT_SCRIPT"
+stop_gnoland() { :; }
+sudo() { return 0; }
+lz4() { cat "${@: -1}"; }
+tar() {
+    if [ "${1:-}" = "-xf" ]; then cat >/dev/null; return 1; fi
+    command tar "$@"
+}
+archive="$HOME/fake-archive"
+printf archive >"$archive"
+if activate_snapshot "$archive" 0 >/dev/null 2>&1; then exit 1; fi
+[ "$(cat "$GNOLAND_TESTNET_HOME/db/marker")" = old-db ]
+[ "$(cat "$GNOLAND_TESTNET_HOME/wal/marker")" = old-wal ]
+EOS
+
+echo "SNAPSHOT_TEST_OK"

@@ -69,3 +69,15 @@ Reusing/recovering a Sapphire operator key is optional **operator-address contin
 - Use one OS user/service name/port prefix per instance.
 - Never share mnemonics or node secrets.
 - Candidate registration is not active-validator admission.
+
+## Validator / Key / Account interactions
+
+The `2.x` section provides first-class operator workflows instead of requiring users to know raw ABCI paths:
+
+- `2a` manages local operator keys.
+- `2b` correlates the local consensus key with the on-chain valoper profile and active validator set.
+- `2c` registers a valoper candidate with signer/address, input, duplicate-profile, balance visibility, and dynamic registration-fee preflight. Local node sync remains advisory rather than a transaction blocker.
+- `2d` queries `bank/balances/<address>`, `auth/accounts/<address>`, `auth/gasprice`, valoper status, and current valoper fee/rotation parameters.
+- `2e` manages the verified `UpdateMoniker`, `UpdateDescription`, `UpdateServerType`, and `UpdateKeepRunning` valoper functions with transaction previews and explicit confirmation.
+- `2f` exposes high-impact `UpdateSigningKey` rotation behind dynamic fee checks and an exact `ROTATE` confirmation. Valley does not modify local validator secrets automatically.
+- `2g` exposes read-only `vm/qrender`, `vm/qfuncs`, `vm/qdoc`, `vm/qeval`, `vm/qstorage`, `vm/qpaths`, plus arbitrary ABCI queries.

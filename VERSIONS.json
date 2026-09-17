@@ -40,5 +40,29 @@
     "operator_key_reuse": "optional_address_continuity_only"
   },
   "status": "pearl",
-  "last_reviewed": "2026-09-17"
+  "last_reviewed": "2026-09-18",
+  "validator_interactions": {
+    "account_queries": [
+      "bank/balances/{address}",
+      "auth/accounts/{address}",
+      "auth/gasprice"
+    ],
+    "candidate_realm": "r/gnops/valopers",
+    "active_realm": "r/sys/validators/v3",
+    "profile_updates": [
+      "UpdateMoniker",
+      "UpdateDescription",
+      "UpdateServerType",
+      "UpdateKeepRunning"
+    ],
+    "signing_key_rotation": "UpdateSigningKey",
+    "read_only_vm_queries": [
+      "vm/qrender",
+      "vm/qfuncs",
+      "vm/qdoc",
+      "vm/qeval",
+      "vm/qstorage",
+      "vm/qpaths"
+    ]
+  }
 }

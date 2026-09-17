@@ -85,6 +85,10 @@ Before any active Pearl service is stopped, the tooling verifies a local loopbac
 - Pearl UTSA/Hazen snapshot support with archive validation, optional checksum verification, backup, rollback, and safe-stop gating
 - Updater artifact staging and checksum verification before the node maintenance boundary
 
+## Validator / Key / Account Console
+
+The `2.x` menu is an operator console rather than a raw-command shortcut. It can inspect local operator keys, account balance/account sequence, gas price, valoper candidate and active-validator state, and the local-vs-registered consensus identity. It also exposes confirmed valoper profile updates, guarded signing-key rotation, and an advanced read-only realm inspector. Option `2c` remains the validator-registration entry point.
+
 ## Documentation
 
 - [Usage guide](docs/usage.md)

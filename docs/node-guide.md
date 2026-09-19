@@ -99,4 +99,6 @@ Candidate registration does not directly add the node to the active validator se
 
 ## Snapshot
 
-Valley intentionally disables snapshot application until a Pearl-specific provider and verification metadata are reviewed. Do not apply the previous Sapphire UTSA/Hazen archives to Pearl.
+Snapshot application is available for Pearl through the UTSA and Hazen Network Solutions paths recorded in `VERSIONS.json`. Select menu option `1c` to run the provider flow. It downloads and validates the archive before stopping an active service, keeps node configuration and secrets in place, and can back up and roll back `db`/`wal` state. Read [Snapshot providers and safety](snapshots.md) for provider assurance and safe-stop requirements.
+
+Never apply Sapphire db/wal or Sapphire snapshots to Pearl. An active service must report `pearl-1` with `catching_up=false` through a local loopback RPC before snapshot maintenance can stop it.

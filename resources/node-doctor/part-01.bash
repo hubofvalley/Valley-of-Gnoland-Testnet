@@ -83,9 +83,6 @@ load_managed_profile_exports
 OS_USER=$(id -un)
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOLAND_TESTNET_HOME=${GNOLAND_TESTNET_HOME:-$GNO_SOURCE_DIR/gnoland-data}
-if [ "$GNOLAND_TESTNET_HOME" = "$HOME/.gnoland" ] || [ "$GNOLAND_TESTNET_HOME" = "$HOME/gnoland-data" ]; then
-    GNOLAND_TESTNET_HOME="$GNO_SOURCE_DIR/gnoland-data"
-fi
 GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
 GNOLAND_GENESIS=${GNOLAND_GENESIS:-$GNO_SOURCE_DIR/genesis.json}

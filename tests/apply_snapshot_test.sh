@@ -116,7 +116,20 @@ set -euo pipefail
 mkdir -p "$HOME" "$GNOLAND_TESTNET_HOME/db" "$GNOLAND_TESTNET_HOME/wal"
 printf old >"$GNOLAND_TESTNET_HOME/db/marker"
 printf old >"$GNOLAND_TESTNET_HOME/wal/marker"
+cat >"$HOME/gnoland-testnet.service" <<SERVICE
+[Service]
+User=$(id -un)
+WorkingDirectory=$GNO_SOURCE_DIR
+ExecStart=/bin/gnoland start --data-dir $GNOLAND_TESTNET_HOME --chainid pearl-1 --skip-genesis-sig-verification
+SERVICE
 source "$SNAPSHOT_SCRIPT"
+systemctl() {
+    if [ "${1:-}" = "show" ]; then
+        printf '%s\n' "$HOME/gnoland-testnet.service"
+        return 0
+    fi
+    return 1
+}
 stop_gnoland() { :; }
 start_gnoland() { return 0; }
 lz4() { cat "${@: -1}"; }
@@ -150,7 +163,20 @@ set -euo pipefail
 mkdir -p "$HOME" "$GNOLAND_TESTNET_HOME/db" "$GNOLAND_TESTNET_HOME/wal"
 printf old-db >"$GNOLAND_TESTNET_HOME/db/marker"
 printf old-wal >"$GNOLAND_TESTNET_HOME/wal/marker"
+cat >"$HOME/gnoland-testnet.service" <<SERVICE
+[Service]
+User=$(id -un)
+WorkingDirectory=$GNO_SOURCE_DIR
+ExecStart=/bin/gnoland start --data-dir $GNOLAND_TESTNET_HOME --chainid pearl-1 --skip-genesis-sig-verification
+SERVICE
 source "$SNAPSHOT_SCRIPT"
+systemctl() {
+    if [ "${1:-}" = "show" ]; then
+        printf '%s\n' "$HOME/gnoland-testnet.service"
+        return 0
+    fi
+    return 1
+}
 stop_gnoland() { :; }
 sudo() { return 0; }
 lz4() { cat "${@: -1}"; }

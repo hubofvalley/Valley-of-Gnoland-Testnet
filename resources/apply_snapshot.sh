@@ -14,6 +14,7 @@ GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOLAND_TESTNET_HOME=${GNOLAND_TESTNET_HOME:-$GNO_SOURCE_DIR/gnoland-data}
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME%.service}
+OS_USER=$(id -un)
 
 UTSA_SNAPSHOT_URL="https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4"
 HAZEN_INDEX_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl/index.json"
@@ -81,6 +82,53 @@ validate_runtime_targets() {
     fi
 
     GNOLAND_TESTNET_HOME="$resolved_home"
+}
+
+extract_service_data_dir() {
+    local exec_line=$1
+    if [[ "$exec_line" =~ (^|[[:space:]])--data-dir=([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    elif [[ "$exec_line" =~ (^|[[:space:]])--data-dir[[:space:]]+([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    fi
+}
+
+validate_service_target() {
+    local service_file unit_user unit_workdir unit_exec service_data_dir
+
+    if ! validate_runtime_targets; then
+        return 1
+    fi
+
+    service_file=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
+    if [ -z "$service_file" ]; then
+        echo -e "${RED}Snapshot blocked: cannot prove the selected service targets this testnet instance.${RESET}" >&2
+        return 1
+    fi
+    if [ ! -f "$service_file" ]; then
+        echo -e "${RED}Snapshot blocked: cannot inspect service unit $service_file.${RESET}" >&2
+        return 1
+    fi
+
+    unit_user=$(sed -n 's/^User=//p' "$service_file" | tail -n 1)
+    unit_workdir=$(sed -n 's/^WorkingDirectory=//p' "$service_file" | tail -n 1)
+    unit_exec=$(sed -n 's/^ExecStart=//p' "$service_file" | tail -n 1)
+    if [ "$unit_user" != "$OS_USER" ] || [ "$unit_workdir" != "$GNO_SOURCE_DIR" ]; then
+        echo -e "${RED}Snapshot blocked: selected service belongs to another instance.${RESET}" >&2
+        return 1
+    fi
+
+    service_data_dir=$(extract_service_data_dir "$unit_exec")
+    if [ -z "$service_data_dir" ] || [ "$(readlink -m -- "$service_data_dir")" != "$GNOLAND_TESTNET_HOME" ]; then
+        echo -e "${RED}Snapshot blocked: service --data-dir does not match GNOLAND_TESTNET_HOME.${RESET}" >&2
+        echo "Existing --data-dir=${service_data_dir:-missing}, requested --data-dir=$GNOLAND_TESTNET_HOME" >&2
+        return 1
+    fi
+    if ! grep -Fq -- '--chainid pearl-1' "$service_file"; then
+        echo -e "${RED}Snapshot blocked: selected service is not configured for pearl-1.${RESET}" >&2
+        return 1
+    fi
+    return 0
 }
 
 reset_snapshot_metadata() {
@@ -286,6 +334,8 @@ get_local_rpc_url() {
 safe_stop_preflight() {
     local service_state rpc_base status_json network catching_up
 
+    validate_service_target || return 1
+
     service_state=$(systemctl is-active "$GNOLAND_TESTNET_SERVICE_NAME" 2>/dev/null || true)
     case "$service_state" in
         inactive|failed)
@@ -379,6 +429,11 @@ activate_snapshot() {
     MOVED_DB=0
     MOVED_WAL=0
 
+    # The target proof must happen before service stop, backup, mv, or extract.
+    # This also covers an inactive/failed service, where no RPC identity check is
+    # available and the systemd unit is the only safe target proof.
+    validate_service_target || return 1
+
     stop_gnoland || return 1
     if [ "$should_backup" -eq 1 ]; then
         if ! backup_current_database; then
@@ -463,8 +518,9 @@ apply_snapshot() {
 }
 
 main() {
-    check_dependencies
     validate_runtime_targets
+    validate_service_target
+    check_dependencies
     show_menu
     read -r -p "Enter your choice: " provider_choice
 

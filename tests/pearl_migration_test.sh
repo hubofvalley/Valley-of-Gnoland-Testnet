@@ -27,7 +27,9 @@ done
 
 grep -Fq 'MIGRATE-TO-PEARL' "$INSTALLER" || fail "Pearl migration confirmation missing"
 grep -Fq 'sapphire-node-secrets.tar.gz' "$INSTALLER" || fail "Sapphire source backup naming missing"
-grep -Fq -- '--chainid $CHAIN_ID --genesis genesis.json --skip-genesis-sig-verification' "$INSTALLER" || fail "Pearl service startup contract missing"
+grep -Fq -- '--data-dir $GNOLAND_TESTNET_HOME --chainid $CHAIN_ID --genesis $GENESIS_FILE --skip-genesis-sig-verification' "$INSTALLER" || fail "Pearl service startup/data-dir contract missing"
+grep -Fq 'config init -config-path "$CONFIG_FILE" -force' "$INSTALLER" || fail "config init is not pinned to GNOLAND_TESTNET_HOME"
+grep -Fq 'secrets init -data-dir "$SECRETS_DIR" -force' "$INSTALLER" || fail "secrets init is not pinned to GNOLAND_TESTNET_HOME"
 
 grep -Fq 'VALOPER_GAS_WANTED=70000000' "$MAIN" || fail "Pearl valoper base gas wanted is not the reviewed 70M floor"
 grep -Fq "suggested gas-wanted (gas used + 5%)" "$MAIN" || fail "Pearl valoper adaptive gas parser missing"

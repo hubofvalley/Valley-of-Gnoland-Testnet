@@ -75,8 +75,9 @@ Start with:
 
 ```bash
 gnoland start \
+  --data-dir "$GNOLAND_TESTNET_HOME" \
   --chainid pearl-1 \
-  --genesis genesis.json \
+  --genesis "$GNOLAND_GENESIS" \
   --skip-genesis-sig-verification \
   --log-level info
 ```
@@ -90,7 +91,7 @@ Reusing/recovering the Sapphire operator key is optional if you want operator-ad
 After the node is synced:
 
 ```bash
-gnoland secrets get validator_key
+gnoland secrets get --data-dir "$GNOLAND_TESTNET_HOME/secrets" validator_key
 ```
 
 Fund the operator address using the Pearl faucet, then register a candidate on `gno.land/r/gnops/valopers` using chain `pearl-1`, Pearl RPC, `1000000ugnot` gas fee, and the Pearl guide's gas-wanted value.

@@ -36,6 +36,7 @@ The doctor checks:
 - `p2p.flush_throttle_timeout = 10ms`;
 - PEX enabled;
 - systemd starts `pearl-1`;
+- systemd ownership and explicit `--data-dir` match `GNOLAND_TESTNET_HOME`;
 - required `--skip-genesis-sig-verification` startup flag;
 - local RPC reports `pearl-1`;
 - public Pearl RPC reachability/network;

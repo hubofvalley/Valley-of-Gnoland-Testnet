@@ -10,7 +10,7 @@ RESET='\033[0m'
 
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
-readonly VALLEY_RUNTIME_REF="d932d2033c84126950fce6c2785e391edf11d005"
+readonly VALLEY_RUNTIME_REF="3b10d242fc2a04fec35a0c780f0406cae0a2dea8"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -65,9 +65,7 @@ fi
 if [ -z "${GNO_SOURCE_DIR:-}" ]; then
     GNO_SOURCE_DIR="$HOME/gno"
 fi
-if [ -z "${GNOLAND_TESTNET_HOME:-}" ] || [ "$GNOLAND_TESTNET_HOME" = "$HOME/.gnoland" ] || [ "$GNOLAND_TESTNET_HOME" = "$HOME/gnoland-data" ]; then
-    GNOLAND_TESTNET_HOME="$GNO_SOURCE_DIR/gnoland-data"
-fi
+GNOLAND_TESTNET_HOME=${GNOLAND_TESTNET_HOME:-$GNO_SOURCE_DIR/gnoland-data}
 GNOKEY_HOME=${GNOKEY_HOME:-$HOME/.config/gno}
 GNOLAND_GENESIS=${GNOLAND_GENESIS:-$GNO_SOURCE_DIR/genesis.json}
 GNOROOT=${GNOROOT:-$GNO_SOURCE_DIR}
@@ -78,12 +76,68 @@ export PATH="$HOME/go/bin:$PATH"
 GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-pearl-1}
 GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.pearl.testnets.gno.land}
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
+SECRETS_DIR="$GNOLAND_TESTNET_HOME/secrets"
 OFFICIAL_PEARL_PEERS="g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
 PEARL_PERSISTENT_PEERS="$OFFICIAL_PEARL_PEERS"
 # Pearl's upstream guide still shows 50M, but live simulation can exceed it.
 # 70M clears the observed 65.2M registration while the 2c flow below can
 # safely retry a simulation-only out-of-gas result using gnokey's own +5% suggestion.
 VALOPER_GAS_WANTED=70000000
+
+canonical_path() {
+    realpath -m -- "$1"
+}
+
+extract_service_data_dir() {
+    local exec_line=$1
+    if [[ "$exec_line" =~ (^|[[:space:]])--data-dir=([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    elif [[ "$exec_line" =~ (^|[[:space:]])--data-dir[[:space:]]+([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    fi
+}
+
+validate_runtime_paths() {
+    local canonical_home canonical_source canonical_node canonical_genesis instance_path canonical_instance
+    canonical_home=$(canonical_path "$HOME")
+    canonical_source=$(canonical_path "$GNO_SOURCE_DIR")
+    canonical_node=$(canonical_path "$GNOLAND_TESTNET_HOME")
+    canonical_genesis=$(canonical_path "$GNOLAND_GENESIS")
+
+    case "$canonical_node" in
+        /|"$canonical_home"|"$canonical_source")
+            echo -e "${RED}Unsafe GNOLAND_TESTNET_HOME rejected: $canonical_node${RESET}" >&2
+            exit 1
+            ;;
+        "$canonical_home"/*) ;;
+        *)
+            echo -e "${RED}GNOLAND_TESTNET_HOME must stay inside $HOME.${RESET}" >&2
+            exit 1
+            ;;
+    esac
+    case "$canonical_genesis" in
+        "$canonical_home"/*) ;;
+        *)
+            echo -e "${RED}GNOLAND_GENESIS must stay inside $HOME: $GNOLAND_GENESIS${RESET}" >&2
+            exit 1
+            ;;
+    esac
+    for instance_path in "$GNO_SOURCE_DIR" "$GNOKEY_HOME" "$GNOROOT" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
+        canonical_instance=$(canonical_path "$instance_path")
+        case "$canonical_instance" in
+            "$canonical_home"/*) ;;
+            *)
+                echo -e "${RED}Unsafe instance path outside $HOME: $instance_path${RESET}" >&2
+                exit 1
+                ;;
+        esac
+    done
+    GNOLAND_TESTNET_HOME=$canonical_node
+    GNOLAND_GENESIS=$canonical_genesis
+    SECRETS_DIR="$GNOLAND_TESTNET_HOME/secrets"
+}
+
+validate_runtime_paths
 
 while :; do
     if [ -z "${GNOLAND_TESTNET_SERVICE_NAME:-}" ]; then
@@ -104,19 +158,33 @@ echo "export GNOLAND_TESTNET_SERVICE_NAME=\"$GNOLAND_TESTNET_SERVICE_NAME\"" >> 
 export GNOLAND_TESTNET_SERVICE_NAME
 
 service_belongs_to_current_instance() {
-    local service_file unit_user unit_workdir
+    local require_service=${1:-0}
+    local service_file unit_user unit_workdir unit_exec service_data_dir
     service_file=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
-    [ -n "$service_file" ] || return 0
+    if [ -z "$service_file" ]; then
+        if [ "$require_service" -eq 1 ]; then
+            echo -e "${RED}Cannot verify ${GNOLAND_TESTNET_SERVICE_NAME}.service identity.${RESET}" >&2
+            return 1
+        fi
+        return 0
+    fi
     if [ ! -f "$service_file" ]; then
         echo -e "${RED}Cannot inspect existing service: $service_file${RESET}" >&2
         return 1
     fi
     unit_user=$(sed -n 's/^User=//p' "$service_file" | tail -n 1)
     unit_workdir=$(sed -n 's/^WorkingDirectory=//p' "$service_file" | tail -n 1)
+    unit_exec=$(sed -n 's/^ExecStart=//p' "$service_file" | tail -n 1)
     if [ "$unit_user" != "$OS_USER" ] || [ "$unit_workdir" != "$GNO_SOURCE_DIR" ]; then
         echo -e "${RED}${GNOLAND_TESTNET_SERVICE_NAME}.service belongs to another instance.${RESET}" >&2
         echo "Existing User=${unit_user:-unknown}, WorkingDirectory=${unit_workdir:-unknown}" >&2
         echo "Current User=$OS_USER, WorkingDirectory=$GNO_SOURCE_DIR" >&2
+        return 1
+    fi
+    service_data_dir=$(extract_service_data_dir "$unit_exec")
+    if [ -z "$service_data_dir" ] || [ "$(canonical_path "$service_data_dir")" != "$(canonical_path "$GNOLAND_TESTNET_HOME")" ]; then
+        echo -e "${RED}${GNOLAND_TESTNET_SERVICE_NAME}.service does not target GNOLAND_TESTNET_HOME.${RESET}" >&2
+        echo "Existing --data-dir=${service_data_dir:-missing}, requested --data-dir=$GNOLAND_TESTNET_HOME" >&2
         return 1
     fi
 }
@@ -396,13 +464,13 @@ function add_peers() {
             echo "You entered: $peers"
             read -r -p "Proceed? (yes/no): " confirm
             if [[ "${confirm,,}" == "yes" ]]; then
-                gnoland config set -config-path "$CFG" p2p.persistent_peers "$peers"
+                "$GNOLAND_BIN" config set -config-path "$CFG" p2p.persistent_peers "$peers"
                 echo "Peers updated."
             fi
             ;;
         2)
-            gnoland config set -config-path "$CFG" p2p.seeds ""
-            gnoland config set -config-path "$CFG" p2p.persistent_peers "$PEARL_PERSISTENT_PEERS"
+            "$GNOLAND_BIN" config set -config-path "$CFG" p2p.seeds ""
+            "$GNOLAND_BIN" config set -config-path "$CFG" p2p.persistent_peers "$PEARL_PERSISTENT_PEERS"
             echo "Official Pearl persistent peers restored."
             ;;
         *)
@@ -566,7 +634,7 @@ function create_operator_key() {
 
 function show_validator_pubkey() {
     echo -e "${CYAN}Your validator consensus public key:${RESET}"
-    (cd "$GNO_SOURCE_DIR" && gnoland secrets get validator_key)
+    "$GNOLAND_BIN" secrets get --data-dir "$SECRETS_DIR" validator_key
     echo -e "\n${YELLOW}Use the gpub1... value for valoper registration. Press Enter to go back.${RESET}"
     read -r
     menu
@@ -701,7 +769,13 @@ function query_balance_or_realm() {
 }
 
 function backup_node_secrets() {
+    if ! service_belongs_to_current_instance; then
+        echo -e "${RED}Backup blocked to protect the other instance.${RESET}"
+        menu
+        return
+    fi
     if [ -d "$GNOLAND_TESTNET_HOME/secrets" ]; then
+        local backup
         backup="$HOME/gnoland-secrets-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
         tar -czf "$backup" -C "$GNOLAND_TESTNET_HOME" secrets
         chmod 600 "$backup"
@@ -742,8 +816,14 @@ function delete_gnoland_node() {
     if ! prompt_back_or_continue; then
         return
     fi
-    if ! service_belongs_to_current_instance; then
-        echo -e "${RED}Delete blocked to protect the other instance.${RESET}"
+    if ! service_belongs_to_current_instance 1; then
+        echo -e "${RED}Delete blocked because the selected service identity could not be verified.${RESET}"
+        menu
+        return
+    fi
+    read -r -p "Type DELETE-PEARL-NODE to remove the testnet data directory: " delete_confirm
+    if [ "$delete_confirm" != "DELETE-PEARL-NODE" ]; then
+        echo -e "${RED}Delete cancelled.${RESET}"
         menu
         return
     fi
@@ -761,8 +841,8 @@ function delete_gnoland_node() {
     sudo systemctl disable "$GNOLAND_TESTNET_SERVICE_NAME" || true
     sudo rm -f "/etc/systemd/system/${GNOLAND_TESTNET_SERVICE_NAME}.service"
     sudo systemctl daemon-reload
-    rm -rf "$GNOLAND_TESTNET_HOME"
-    rm -f "$GNOLAND_GENESIS"
+    rm -rf -- "$GNOLAND_TESTNET_HOME"
+    rm -f -- "$GNOLAND_GENESIS"
     rm -f "$GNOLAND_BIN" "$GNOKEY_BIN"
     sed -i '/^export GNOLAND_CHAIN_ID=/d;/^export GNOLAND_TESTNET_HOME=/d;/^export GNOLAND_TESTNET_SERVICE_NAME=/d;/^export GNOLAND_GENESIS=/d;/^export GNOLAND_MONIKER=/d;/^export GNOLAND_PORT=/d;/^export GNOLAND_REMOTE=/d;/^export GNOLAND_PUBLIC_REMOTE=/d;/^export GNOKEY_HOME=/d;/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/go\/bin/d' "$HOME/.bash_profile"
     echo -e "${RED}Gnoland node deleted. Local gnokey home was not deleted: $GNOKEY_HOME${RESET}"
@@ -886,4 +966,6 @@ function menu() {
     esac
 }
 
-menu
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    menu
+fi

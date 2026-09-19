@@ -100,4 +100,4 @@ Candidate registration does not directly add the node to the active validator se
 
 ## Snapshot
 
-Pearl snapshot application is available through the reviewed UTSA and Hazen provider paths. Use the snapshot guide's verification and rollback safeguards, and never apply a Sapphire archive to the Pearl data directory.
+Valley intentionally disables snapshot application until a Pearl-specific provider and verification metadata are reviewed. Do not apply the previous Sapphire UTSA/Hazen archives to Pearl.

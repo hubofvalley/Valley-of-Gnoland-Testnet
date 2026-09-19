@@ -37,7 +37,9 @@ mkdir -p "$CUSTOM_HOME/secrets" "$DEFAULT_HOME/secrets"
 printf 'custom-secret\n' >"$CUSTOM_HOME/secrets/marker"
 printf 'default-secret\n' >"$DEFAULT_HOME/secrets/marker"
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
-    GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOLAND_TESTNET_SERVICE_NAME=custom-pearl bash -c '
+    GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
+    GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" \
+    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl bash -c '
         source "$1"
         menu() { :; }
         systemctl() { return 1; }
@@ -57,7 +59,8 @@ printf 'genesis\n' >"$SOURCE_ROOT/genesis.json"
 printf 'binary\n' >"$HOME_ROOT/go/bin/gnoland"
 printf 'key-binary\n' >"$HOME_ROOT/go/bin/gnokey"
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
-    GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOLAND_TESTNET_SERVICE_NAME=custom-pearl \
+    GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
+    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl \
     GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" bash -c '
         source "$1"
         menu() { :; }
@@ -68,7 +71,8 @@ HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HO
     ' _ "$MAIN" >/dev/null
 assert_file "$CUSTOM_HOME/db/marker"
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
-    GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOLAND_TESTNET_SERVICE_NAME=custom-pearl GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
+    GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
+    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
     GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" bash -c '
         source "$1"
         menu() { :; }

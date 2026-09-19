@@ -98,7 +98,7 @@ extract_service_data_dir() {
 }
 
 validate_runtime_paths() {
-    local canonical_home canonical_source canonical_node canonical_genesis
+    local canonical_home canonical_source canonical_node canonical_genesis instance_path canonical_instance
     canonical_home=$(canonical_path "$HOME")
     canonical_source=$(canonical_path "$GNO_SOURCE_DIR")
     canonical_node=$(canonical_path "$GNOLAND_TESTNET_HOME")
@@ -122,6 +122,16 @@ validate_runtime_paths() {
             exit 1
             ;;
     esac
+    for instance_path in "$GNO_SOURCE_DIR" "$GNOKEY_HOME" "$GNOROOT" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
+        canonical_instance=$(canonical_path "$instance_path")
+        case "$canonical_instance" in
+            "$canonical_home"/*) ;;
+            *)
+                echo -e "${RED}Unsafe instance path outside $HOME: $instance_path${RESET}" >&2
+                exit 1
+                ;;
+        esac
+    done
     GNOLAND_TESTNET_HOME=$canonical_node
     GNOLAND_GENESIS=$canonical_genesis
     SECRETS_DIR="$GNOLAND_TESTNET_HOME/secrets"

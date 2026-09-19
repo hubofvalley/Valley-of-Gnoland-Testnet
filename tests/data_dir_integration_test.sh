@@ -70,6 +70,7 @@ HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HO
         printf "no\\n" | delete_gnoland_node
     ' _ "$MAIN" >/dev/null
 assert_file "$CUSTOM_HOME/db/marker"
+# A missing service identity must block even an otherwise valid delete token.
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
     GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
     GNOLAND_TESTNET_SERVICE_NAME=custom-pearl GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
@@ -78,6 +79,31 @@ HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HO
         menu() { :; }
         prompt_back_or_continue() { return 0; }
         systemctl() { return 0; }
+        sudo() { return 0; }
+        printf "DELETE-PEARL-NODE\\n" | delete_gnoland_node
+    ' _ "$MAIN" >/dev/null 2>&1
+assert_file "$CUSTOM_HOME/db/marker"
+
+DELETE_SERVICE="$TEST_ROOT/delete.service"
+cat >"$DELETE_SERVICE" <<EOF_SERVICE
+[Service]
+User=$(id -un)
+WorkingDirectory=$SOURCE_ROOT
+ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $CUSTOM_HOME --chainid pearl-1 --skip-genesis-sig-verification
+EOF_SERVICE
+HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
+    GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
+    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
+    GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" MOCK_SERVICE_FILE="$DELETE_SERVICE" bash -c '
+        source "$1"
+        menu() { :; }
+        prompt_back_or_continue() { return 0; }
+        systemctl() {
+            if [ "${1:-}" = show ]; then
+                printf "%s\\n" "$MOCK_SERVICE_FILE"
+            fi
+            return 0
+        }
         sudo() { return 0; }
         printf "DELETE-PEARL-NODE\\n" | delete_gnoland_node
     ' _ "$MAIN" >/dev/null

@@ -158,9 +158,16 @@ echo "export GNOLAND_TESTNET_SERVICE_NAME=\"$GNOLAND_TESTNET_SERVICE_NAME\"" >> 
 export GNOLAND_TESTNET_SERVICE_NAME
 
 service_belongs_to_current_instance() {
+    local require_service=${1:-0}
     local service_file unit_user unit_workdir unit_exec service_data_dir
     service_file=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
-    [ -n "$service_file" ] || return 0
+    if [ -z "$service_file" ]; then
+        if [ "$require_service" -eq 1 ]; then
+            echo -e "${RED}Cannot verify ${GNOLAND_TESTNET_SERVICE_NAME}.service identity.${RESET}" >&2
+            return 1
+        fi
+        return 0
+    fi
     if [ ! -f "$service_file" ]; then
         echo -e "${RED}Cannot inspect existing service: $service_file${RESET}" >&2
         return 1
@@ -809,8 +816,8 @@ function delete_gnoland_node() {
     if ! prompt_back_or_continue; then
         return
     fi
-    if ! service_belongs_to_current_instance; then
-        echo -e "${RED}Delete blocked to protect the other instance.${RESET}"
+    if ! service_belongs_to_current_instance 1; then
+        echo -e "${RED}Delete blocked because the selected service identity could not be verified.${RESET}"
         menu
         return
     fi

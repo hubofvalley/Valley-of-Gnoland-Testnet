@@ -75,8 +75,9 @@ Start with:
 
 ```bash
 gnoland start \
+  --data-dir "$GNOLAND_TESTNET_HOME" \
   --chainid pearl-1 \
-  --genesis genesis.json \
+  --genesis "$GNOLAND_GENESIS" \
   --skip-genesis-sig-verification \
   --log-level info
 ```
@@ -90,7 +91,7 @@ Reusing/recovering the Sapphire operator key is optional if you want operator-ad
 After the node is synced:
 
 ```bash
-gnoland secrets get validator_key
+gnoland secrets get --data-dir "$GNOLAND_TESTNET_HOME/secrets" validator_key
 ```
 
 Fund the operator address using the Pearl faucet, then register a candidate on `gno.land/r/gnops/valopers` using chain `pearl-1`, Pearl RPC, `1000000ugnot` gas fee, and the Pearl guide's gas-wanted value.
@@ -99,4 +100,4 @@ Candidate registration does not directly add the node to the active validator se
 
 ## Snapshot
 
-Valley intentionally disables snapshot application until a Pearl-specific provider and verification metadata are reviewed. Do not apply the previous Sapphire UTSA/Hazen archives to Pearl.
+Pearl snapshot application is available through the reviewed UTSA and Hazen provider paths. Use the snapshot guide's verification and rollback safeguards, and never apply a Sapphire archive to the Pearl data directory.

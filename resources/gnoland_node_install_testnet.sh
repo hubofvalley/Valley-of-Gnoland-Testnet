@@ -43,6 +43,50 @@ GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 OS_USER=$(id -un)
 
+canonical_path() {
+    realpath -m -- "$1"
+}
+
+extract_service_data_dir() {
+    local exec_line=$1
+    if [[ "$exec_line" =~ (^|[[:space:]])--data-dir=([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    elif [[ "$exec_line" =~ (^|[[:space:]])--data-dir[[:space:]]+([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    fi
+}
+
+validate_instance_paths() {
+    local canonical_home canonical_source canonical_node canonical_genesis
+    canonical_home=$(canonical_path "$HOME")
+    canonical_source=$(canonical_path "$GNO_SOURCE_DIR")
+    canonical_node=$(canonical_path "$GNOLAND_TESTNET_HOME")
+    canonical_genesis=$(canonical_path "$GENESIS_FILE")
+
+    case "$canonical_node" in
+        /|"$canonical_home"|"$canonical_source")
+            echo -e "${RED}Unsafe GNOLAND_TESTNET_HOME rejected: $canonical_node${RESET}" >&2
+            false
+            ;;
+        "$canonical_home"/*) ;;
+        *)
+            echo -e "${RED}GNOLAND_TESTNET_HOME must stay inside $HOME.${RESET}" >&2
+            false
+            ;;
+    esac
+
+    case "$canonical_genesis" in
+        "$canonical_home"/*) ;;
+        *)
+            echo -e "${RED}GNOLAND_GENESIS must stay inside $HOME: $GENESIS_FILE${RESET}" >&2
+            false
+            ;;
+    esac
+
+    GNOLAND_TESTNET_HOME=$canonical_node
+    GENESIS_FILE=$canonical_genesis
+}
+
 if [ -n "${SUDO_USER:-}" ]; then
     echo -e "${RED}Run Valley of Gnoland as the node OS user, not with sudo.${RESET}" >&2
     echo "The installer requests sudo only for packages, firewall, and systemd." >&2
@@ -59,7 +103,9 @@ path_is_under_home() {
     esac
 }
 
-for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_TESTNET_HOME" "$GNOKEY_HOME" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
+validate_instance_paths
+
+for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_TESTNET_HOME" "$GNOKEY_HOME" "$GNOROOT" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
     if ! path_is_under_home "$instance_path"; then
         echo -e "${RED}Unsafe instance path outside $HOME: $instance_path${RESET}" >&2
         false
@@ -115,18 +161,27 @@ GNOLAND_ABCI_PORT="${GNOLAND_PORT}658"
 BACKUP_ROOT="$HOME/gnoland-migration-backups"
 BACKUP_STAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DIR="$BACKUP_ROOT/$BACKUP_STAMP"
+CONFIG_FILE="$GNOLAND_TESTNET_HOME/config/config.toml"
+SECRETS_DIR="$GNOLAND_TESTNET_HOME/secrets"
 
 service_belongs_to_instance() {
-    local unit_user unit_workdir resolved_service_file
+    local unit_user unit_workdir unit_exec service_data_dir resolved_service_file
     resolved_service_file=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
     [ -n "$resolved_service_file" ] || return 0
     if [ ! -f "$resolved_service_file" ]; then echo -e "${RED}Cannot inspect existing service: $resolved_service_file${RESET}" >&2; return 1; fi
     unit_user=$(sed -n 's/^User=//p' "$resolved_service_file" | tail -n 1)
     unit_workdir=$(sed -n 's/^WorkingDirectory=//p' "$resolved_service_file" | tail -n 1)
+    unit_exec=$(sed -n 's/^ExecStart=//p' "$resolved_service_file" | tail -n 1)
     if [ "$unit_user" != "$OS_USER" ] || [ "$unit_workdir" != "$GNO_SOURCE_DIR" ]; then
         echo -e "${RED}${GNOLAND_TESTNET_SERVICE_NAME}.service belongs to another instance.${RESET}" >&2
         echo "Existing User=${unit_user:-unknown}, WorkingDirectory=${unit_workdir:-unknown}" >&2
         echo "Requested User=$OS_USER, WorkingDirectory=$GNO_SOURCE_DIR" >&2
+        return 1
+    fi
+    service_data_dir=$(extract_service_data_dir "$unit_exec")
+    if [ -z "$service_data_dir" ] || [ "$(canonical_path "$service_data_dir")" != "$(canonical_path "$GNOLAND_TESTNET_HOME")" ]; then
+        echo -e "${RED}${GNOLAND_TESTNET_SERVICE_NAME}.service does not target GNOLAND_TESTNET_HOME.${RESET}" >&2
+        echo "Existing --data-dir=${service_data_dir:-missing}, requested --data-dir=$GNOLAND_TESTNET_HOME" >&2
         return 1
     fi
 }
@@ -293,8 +348,8 @@ echo -e "${GREEN}Operator key selected: $OPERATOR_KEY_NAME${RESET}"
 
 cd "$GNO_SOURCE_DIR"
 CURRENT_STAGE="initialise Pearl config and node secrets"
-"$GNOLAND_BIN" config init -force
-"$GNOLAND_BIN" secrets init -force
+"$GNOLAND_BIN" config init -config-path "$CONFIG_FILE" -force
+"$GNOLAND_BIN" secrets init -data-dir "$SECRETS_DIR" -force
 echo -e "${YELLOW}A fresh Pearl consensus/node identity was generated. Reusing an operator key does not reuse Sapphire consensus state.${RESET}"
 
 CURRENT_STAGE="download and verify Pearl genesis"
@@ -302,20 +357,20 @@ curl -fsSL "$GENESIS_URL" -o "$GENESIS_FILE"
 echo "${GENESIS_SHA256}  $GENESIS_FILE" | sha256sum -c -
 
 CURRENT_STAGE="apply official Pearl configuration"
-"$GNOLAND_BIN" config set moniker "$GNOLAND_MONIKER"
-"$GNOLAND_BIN" config set proxy_app "tcp://127.0.0.1:${GNOLAND_ABCI_PORT}"
-"$GNOLAND_BIN" config set p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
-"$GNOLAND_BIN" config set rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
-"$GNOLAND_BIN" config set p2p.seeds ""
-"$GNOLAND_BIN" config set p2p.persistent_peers "$OFFICIAL_PEARL_PEERS"
-"$GNOLAND_BIN" config set application.prune_strategy "syncable"
-"$GNOLAND_BIN" config set consensus.timeout_commit "3s"
-"$GNOLAND_BIN" config set consensus.peer_gossip_sleep_duration "10ms"
-"$GNOLAND_BIN" config set p2p.flush_throttle_timeout "10ms"
-"$GNOLAND_BIN" config set p2p.pex "true"
-"$GNOLAND_BIN" config set mempool.size "10000"
-"$GNOLAND_BIN" config set p2p.max_num_outbound_peers "40"
-if [ -n "$GNOLAND_EXTERNAL_HOST" ]; then "$GNOLAND_BIN" config set p2p.external_address "${GNOLAND_EXTERNAL_HOST}:${GNOLAND_P2P_PORT}"; fi
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" moniker "$GNOLAND_MONIKER"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" proxy_app "tcp://127.0.0.1:${GNOLAND_ABCI_PORT}"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.seeds ""
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.persistent_peers "$OFFICIAL_PEARL_PEERS"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" application.prune_strategy "syncable"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" consensus.timeout_commit "3s"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" consensus.peer_gossip_sleep_duration "10ms"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.flush_throttle_timeout "10ms"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.pex "true"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" mempool.size "10000"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.max_num_outbound_peers "40"
+if [ -n "$GNOLAND_EXTERNAL_HOST" ]; then "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.external_address "${GNOLAND_EXTERNAL_HOST}:${GNOLAND_P2P_PORT}"; fi
 
 if [[ "$SETUP_UFW" =~ ^[Yy]$ ]]; then
     sudo apt install -y ufw
@@ -334,8 +389,9 @@ After=network-online.target
 User=$OS_USER
 WorkingDirectory=$GNO_SOURCE_DIR
 Environment=GNOROOT=$GNOROOT
+Environment=GNOLAND_TESTNET_HOME=$GNOLAND_TESTNET_HOME
 Environment=PATH=$HOME/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=$GNOLAND_BIN start --chainid $CHAIN_ID --genesis genesis.json --skip-genesis-sig-verification --log-level info
+ExecStart=$GNOLAND_BIN start --data-dir $GNOLAND_TESTNET_HOME --chainid $CHAIN_ID --genesis $GENESIS_FILE --skip-genesis-sig-verification --log-level info
 StandardOutput=journal
 StandardError=journal
 Restart=on-failure

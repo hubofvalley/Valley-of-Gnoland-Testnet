@@ -61,7 +61,7 @@ After the node is synced:
 
 1. Reuse/recover a Sapphire operator key only if you want operator-address continuity, or create a new key.
 2. Fund that address using the Pearl faucet.
-3. Read the fresh Pearl consensus public key with `gnoland secrets get validator_key`.
+3. Read the fresh Pearl consensus public key with `gnoland secrets get --data-dir "$GNOLAND_TESTNET_HOME/secrets" validator_key`.
 4. Register a candidate on `gno.land/r/gnops/valopers` using `pearl-1` and the Pearl RPC.
 5. A GovDAO member must separately create and pass a validator proposal before the candidate joins the active validator set.
 

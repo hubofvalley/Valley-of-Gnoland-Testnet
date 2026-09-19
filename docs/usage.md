@@ -1,6 +1,6 @@
 # Valley of Gnoland - Usage Guide
 
-Valley of Gnoland now targets the Gno.land **Pearl** testnet (`pearl-1`). Testnet-specific overrides are `GNOLAND_TESTNET_SERVICE_NAME` and `GNOLAND_TESTNET_HOME`; they default to `gnoland-testnet` and `~/gno/gnoland-data`.
+Valley of Gnoland now targets the Gno.land **Pearl** testnet (`pearl-1`). Testnet-specific overrides are `GNOLAND_TESTNET_SERVICE_NAME` and `GNOLAND_TESTNET_HOME`; they default to `gnoland-testnet` and `~/gno/gnoland-data`. The selected data directory is passed explicitly to every `gnoland` init/start/secrets operation and to the systemd unit.
 
 ## Run
 

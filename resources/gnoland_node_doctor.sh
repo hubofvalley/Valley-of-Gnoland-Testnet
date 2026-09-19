@@ -48,6 +48,15 @@ GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 CONFIG_FILE="$GNOLAND_TESTNET_HOME/config/config.toml"
 
+extract_service_data_dir() {
+    local exec_line=$1
+    if [[ "$exec_line" =~ (^|[[:space:]])--data-dir=([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    elif [[ "$exec_line" =~ (^|[[:space:]])--data-dir[[:space:]]+([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    fi
+}
+
 PASS_COUNT=0
 WARN_COUNT=0
 FAIL_COUNT=0
@@ -108,6 +117,20 @@ fi
 
 service_file=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
 if [ -n "$service_file" ] && [ -f "$service_file" ]; then
+    unit_user=$(sed -n 's/^User=//p' "$service_file" | tail -n 1)
+    unit_workdir=$(sed -n 's/^WorkingDirectory=//p' "$service_file" | tail -n 1)
+    unit_exec=$(sed -n 's/^ExecStart=//p' "$service_file" | tail -n 1)
+    service_data_dir=$(extract_service_data_dir "$unit_exec")
+    if [ "$unit_user" = "$(id -un)" ] && [ "$unit_workdir" = "$GNO_SOURCE_DIR" ]; then
+        record PASS service_identity "systemd service ownership matches this instance"
+    else
+        record FAIL service_identity "systemd service ownership does not match this instance"
+    fi
+    if [ -n "$service_data_dir" ] && [ "$(realpath -m "$service_data_dir")" = "$(realpath -m "$GNOLAND_TESTNET_HOME")" ]; then
+        record PASS service_data_dir "systemd --data-dir matches GNOLAND_TESTNET_HOME"
+    else
+        record FAIL service_data_dir "systemd --data-dir does not match GNOLAND_TESTNET_HOME"
+    fi
     grep -Fq -- '--chainid pearl-1' "$service_file" && record PASS service_chain "systemd starts pearl-1" || record FAIL service_chain "systemd does not start pearl-1"
     grep -Fq -- '--skip-genesis-sig-verification' "$service_file" && record PASS genesis_flag "required Pearl genesis signature-skip flag is present" || record FAIL genesis_flag "required --skip-genesis-sig-verification flag is missing"
 else
@@ -147,7 +170,11 @@ if [ -d "$GNOLAND_TESTNET_HOME" ]; then
 fi
 
 if $JSON_MODE; then
-    printf '{"network":"%s","runtime_ref":"%s","pass":%d,"warn":%d,"fail":%d,"results":[' "$EXPECTED_CHAIN_ID" "$NODE_DOCTOR_REF" "$PASS_COUNT" "$WARN_COUNT" "$FAIL_COUNT"
+    printf '{"network":"%s","runtime_ref":"%s","node_home":' "$EXPECTED_CHAIN_ID" "$NODE_DOCTOR_REF"
+    printf '%s' "$GNOLAND_TESTNET_HOME" | jq -Rsa .
+    printf ',"config_file":'
+    printf '%s' "$CONFIG_FILE" | jq -Rsa .
+    printf ',"service":"%s.service","pass":%d,"warn":%d,"fail":%d,"results":[' "$GNOLAND_TESTNET_SERVICE_NAME" "$PASS_COUNT" "$WARN_COUNT" "$FAIL_COUNT"
     first=true
     for row in "${RESULTS[@]}"; do
         IFS='|' read -r level code message <<<"$row"
@@ -160,6 +187,9 @@ else
     echo "Valley of Gnoland Node Doctor - Pearl"
     echo "Expected chain: $EXPECTED_CHAIN_ID"
     echo "Pinned release: $EXPECTED_RELEASE_COMMIT"
+    echo "Node home: $GNOLAND_TESTNET_HOME"
+    echo "Config file: $CONFIG_FILE"
+    echo "Service: ${GNOLAND_TESTNET_SERVICE_NAME}.service"
     echo
     for row in "${RESULTS[@]}"; do
         IFS='|' read -r level code message <<<"$row"

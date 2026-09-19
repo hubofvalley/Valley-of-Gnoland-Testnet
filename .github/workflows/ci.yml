@@ -53,6 +53,9 @@ jobs:
       - name: Run Pearl safe-stop regression test
         run: bash tests/safe_stop_test.sh
 
+      - name: Run testnet data-directory sandbox integration test
+        run: bash tests/data_dir_integration_test.sh
+
       - name: Run snapshot documentation contract test
         run: bash tests/snapshot_docs_contract_test.sh
 

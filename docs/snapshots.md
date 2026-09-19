@@ -1,6 +1,6 @@
 # Pearl Snapshots
 
-Snapshot application is available for Gno.land Pearl through the provider paths recorded in `VERSIONS.json`. The helper uses `GNOLAND_TESTNET_HOME` and `GNOLAND_TESTNET_SERVICE_NAME`, defaulting to `~/gno/gnoland-data` and `gnoland-testnet.service`.
+Snapshot application is available for Gno.land Pearl through the provider paths recorded in `VERSIONS.json`. The helper uses `GNOLAND_TESTNET_HOME` and `GNOLAND_TESTNET_SERVICE_NAME`, defaulting to `~/gno/gnoland-data` and `gnoland-testnet.service`. Before any database change, it verifies that the selected systemd unit's explicit `--data-dir` matches `GNOLAND_TESTNET_HOME`, including when the unit is inactive or failed.
 
 Pearl is a fresh chain. Sapphire database state, WAL data, and snapshots must never be reused on `pearl-1`.
 

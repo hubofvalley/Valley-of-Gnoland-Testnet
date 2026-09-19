@@ -11,13 +11,24 @@ fail() { echo "SAFE_STOP_TEST_FAIL: $*" >&2; exit 1; }
 
 run_snapshot_case() {
     local service_state=$1 network=$2 catching_up=$3 expected=$4 output rc
+    local service_file="$TMP/snapshot.service"
+    cat >"$service_file" <<EOF_SERVICE
+[Service]
+User=$(id -un)
+WorkingDirectory=$TMP/snapshot-home/gno
+ExecStart=$TMP/snapshot-home/go/bin/gnoland start --data-dir $TMP/snapshot-home/gno/gnoland-data --chainid pearl-1 --skip-genesis-sig-verification
+EOF_SERVICE
     set +e
     output=$(HOME="$TMP/snapshot-home" GNO_SOURCE_DIR="$TMP/snapshot-home/gno" GNOLAND_TESTNET_HOME="$TMP/snapshot-home/gno/gnoland-data" \
-        SNAPSHOT="$SNAPSHOT" SERVICE_STATE="$service_state" NETWORK="$network" CATCHING_UP="$catching_up" bash <<'EOS' 2>&1
+        SNAPSHOT="$SNAPSHOT" SERVICE_STATE="$service_state" NETWORK="$network" CATCHING_UP="$catching_up" MOCK_SERVICE_FILE="$service_file" bash <<'EOS' 2>&1
 set -u -o pipefail
 mkdir -p "$HOME"
 source "$SNAPSHOT"
 systemctl() {
+    if [ "${1:-}" = "show" ]; then
+        printf '%s\n' "$MOCK_SERVICE_FILE"
+        return 0
+    fi
     if [ "${1:-}" = "is-active" ]; then
         printf '%s\n' "$SERVICE_STATE"
         case "$SERVICE_STATE" in active) return 0 ;; inactive|failed) return 3 ;; *) return 1 ;; esac
@@ -69,7 +80,7 @@ cat >"$SERVICE_FILE" <<EOF
 [Service]
 User=$(id -un)
 WorkingDirectory=$UPDATER_HOME/gno
-ExecStart=$UPDATER_HOME/go/bin/gnoland start --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=$UPDATER_HOME/go/bin/gnoland start --data-dir $UPDATER_HOME/gno/gnoland-data --chainid pearl-1 --skip-genesis-sig-verification
 EOF
 cat >"$MOCKBIN/systemctl" <<'EOS'
 #!/bin/bash

@@ -18,12 +18,25 @@ GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 OS_USER=$(id -un)
 SERVICE_FILE=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
 
+canonical_path() {
+    realpath -m -- "$1"
+}
+
+extract_service_data_dir() {
+    local exec_line=$1
+    if [[ "$exec_line" =~ (^|[[:space:]])--data-dir=([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    elif [[ "$exec_line" =~ (^|[[:space:]])--data-dir[[:space:]]+([^[:space:]]+) ]]; then
+        printf '%s\n' "${BASH_REMATCH[2]}"
+    fi
+}
+
 if [ -n "${SUDO_USER:-}" ]; then
     echo "Run the updater as the node OS user, not with sudo." >&2
     exit 1
 fi
 
-for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_TESTNET_HOME" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
+for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_TESTNET_HOME" "$GNOROOT" "$GNOLAND_BIN" "$GNOKEY_BIN"; do
     CANONICAL_HOME=$(realpath -m "$HOME")
     CANONICAL_PATH=$(realpath -m "$instance_path")
     case "$CANONICAL_PATH" in
@@ -32,32 +45,62 @@ for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_TESTNET_HOME" "$GNOLAND_BIN" "$
     esac
 done
 
+CANONICAL_HOME=$(canonical_path "$HOME")
+CANONICAL_SOURCE=$(canonical_path "$GNO_SOURCE_DIR")
+CANONICAL_TESTNET_HOME=$(canonical_path "$GNOLAND_TESTNET_HOME")
+case "$CANONICAL_TESTNET_HOME" in
+    /|"$CANONICAL_HOME"|"$CANONICAL_SOURCE")
+        echo "Unsafe GNOLAND_TESTNET_HOME rejected: $CANONICAL_TESTNET_HOME" >&2
+        exit 1
+        ;;
+    "$CANONICAL_HOME"/*) ;;
+    *)
+        echo "GNOLAND_TESTNET_HOME must stay inside $HOME." >&2
+        exit 1
+        ;;
+esac
+GNOLAND_TESTNET_HOME=$CANONICAL_TESTNET_HOME
+
+validate_service_target() {
+    local unit_user unit_workdir unit_exec service_data_dir
+    if [ -z "$SERVICE_FILE" ]; then
+        echo "Update blocked: cannot prove the selected service targets this testnet instance." >&2
+        return 1
+    fi
+    if [ ! -f "$SERVICE_FILE" ]; then
+        echo "Cannot inspect existing service: $SERVICE_FILE" >&2
+        return 1
+    fi
+    unit_user=$(sed -n 's/^User=//p' "$SERVICE_FILE" | tail -n 1)
+    unit_workdir=$(sed -n 's/^WorkingDirectory=//p' "$SERVICE_FILE" | tail -n 1)
+    unit_exec=$(sed -n 's/^ExecStart=//p' "$SERVICE_FILE" | tail -n 1)
+    if [ "$unit_user" != "$OS_USER" ] || [ "$unit_workdir" != "$GNO_SOURCE_DIR" ]; then
+        echo "$GNOLAND_TESTNET_SERVICE_NAME.service belongs to another instance." >&2
+        return 1
+    fi
+    service_data_dir=$(extract_service_data_dir "$unit_exec")
+    if [ -z "$service_data_dir" ] || [ "$(canonical_path "$service_data_dir")" != "$GNOLAND_TESTNET_HOME" ]; then
+        echo "Update blocked: service --data-dir does not match GNOLAND_TESTNET_HOME." >&2
+        echo "Existing --data-dir=${service_data_dir:-missing}, requested --data-dir=$GNOLAND_TESTNET_HOME" >&2
+        return 1
+    fi
+    if ! grep -Fq -- '--chainid pearl-1' "$SERVICE_FILE"; then
+        echo "Update blocked: this service is not configured for pearl-1." >&2
+        echo "Use Deploy/Re-deploy to perform the Sapphire -> Pearl fresh-chain migration first." >&2
+        return 1
+    fi
+    if ! grep -Fq -- '--skip-genesis-sig-verification' "$SERVICE_FILE"; then
+        echo "Update blocked: Pearl requires --skip-genesis-sig-verification in ExecStart." >&2
+        return 1
+    fi
+}
+
 if [[ ! "$GNOLAND_TESTNET_SERVICE_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_.@-]*$ ]]; then
     echo "Invalid Gnoland service name: $GNOLAND_TESTNET_SERVICE_NAME" >&2
     exit 1
 fi
 
-if [ -n "$SERVICE_FILE" ]; then
-    if [ ! -f "$SERVICE_FILE" ]; then
-        echo "Cannot inspect existing service: $SERVICE_FILE" >&2
-        exit 1
-    fi
-    UNIT_USER=$(sed -n 's/^User=//p' "$SERVICE_FILE" | tail -n 1)
-    UNIT_WORKDIR=$(sed -n 's/^WorkingDirectory=//p' "$SERVICE_FILE" | tail -n 1)
-    if [ "$UNIT_USER" != "$OS_USER" ] || [ "$UNIT_WORKDIR" != "$GNO_SOURCE_DIR" ]; then
-        echo "$GNOLAND_TESTNET_SERVICE_NAME.service belongs to another instance." >&2
-        exit 1
-    fi
-    if ! grep -Fq -- '--chainid pearl-1' "$SERVICE_FILE"; then
-        echo "Update blocked: this service is not configured for pearl-1." >&2
-        echo "Use Deploy/Re-deploy to perform the Sapphire -> Pearl fresh-chain migration first." >&2
-        exit 1
-    fi
-    if ! grep -Fq -- '--skip-genesis-sig-verification' "$SERVICE_FILE"; then
-        echo "Update blocked: Pearl requires --skip-genesis-sig-verification in ExecStart." >&2
-        exit 1
-    fi
-fi
+validate_service_target
 
 if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then
     echo "The verified prebuilt updater currently supports Linux amd64 only." >&2
@@ -82,6 +125,8 @@ get_local_rpc_url() {
 
 safe_stop_preflight() {
     local service_state rpc_base status_json network catching_up
+
+    validate_service_target || return 1
 
     service_state=$(systemctl is-active "$GNOLAND_TESTNET_SERVICE_NAME" 2>/dev/null || true)
     case "$service_state" in

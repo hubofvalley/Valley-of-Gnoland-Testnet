@@ -35,6 +35,7 @@ The doctor checks:
 - `consensus.peer_gossip_sleep_duration = 10ms`;
 - `p2p.flush_throttle_timeout = 10ms`;
 - PEX enabled;
+- `rpc.unsafe = false`, so unsafe RPC control/profiler endpoints stay disabled;
 - systemd starts `pearl-1`;
 - systemd ownership and explicit `--data-dir` match `GNOLAND_TESTNET_HOME`;
 - required `--skip-genesis-sig-verification` startup flag;

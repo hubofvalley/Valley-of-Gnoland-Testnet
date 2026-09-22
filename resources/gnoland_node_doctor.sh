@@ -16,7 +16,7 @@ if [[ ! "$NODE_DOCTOR_REF" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 
 if [ "${1:-}" = "--version" ]; then
-    echo "Valley of Gnoland Node Doctor (Pearl) 1.0.0"
+    echo "Valley of Gnoland Node Doctor (Pearl) 1.1.0"
     exit 0
 fi
 
@@ -111,6 +111,25 @@ if [ -f "$CONFIG_FILE" ]; then
     grep -Fq 'peer_gossip_sleep_duration = "10ms"' "$CONFIG_FILE" && record PASS gossip "peer gossip sleep is 10ms" || record FAIL gossip "consensus.peer_gossip_sleep_duration is not 10ms"
     grep -Fq 'flush_throttle_timeout = "10ms"' "$CONFIG_FILE" && record PASS flush "P2P flush throttle is 10ms" || record FAIL flush "p2p.flush_throttle_timeout is not 10ms"
     grep -Fq 'pex = true' "$CONFIG_FILE" && record PASS pex "P2P exchange is enabled" || record WARN pex "p2p.pex is not enabled"
+    rpc_unsafe=$(awk '
+        /^[[:space:]]*\[[^]]+\][[:space:]]*$/ {
+            in_rpc = ($0 ~ /^[[:space:]]*\[rpc\][[:space:]]*$/)
+            next
+        }
+        in_rpc && /^[[:space:]]*unsafe[[:space:]]*=/ {
+            line=$0
+            sub(/^[[:space:]]*unsafe[[:space:]]*=[[:space:]]*/, "", line)
+            sub(/[[:space:]]+#.*$/, "", line)
+            gsub(/[[:space:]]/, "", line)
+            print line
+            exit
+        }
+    ' "$CONFIG_FILE" 2>/dev/null)
+    if [ "$rpc_unsafe" = "false" ]; then
+        record PASS rpc_unsafe "unsafe RPC endpoints are disabled"
+    else
+        record FAIL rpc_unsafe "rpc.unsafe is ${rpc_unsafe:-missing}; unsafe RPC endpoints must remain disabled"
+    fi
 else
     record FAIL config "config.toml is missing at $CONFIG_FILE"
 fi

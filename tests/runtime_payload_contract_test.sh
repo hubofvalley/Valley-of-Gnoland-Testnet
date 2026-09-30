@@ -12,7 +12,7 @@ runtime_ref=$(sed -n 's/^readonly VALLEY_RUNTIME_REF="\([0-9a-f]\{40\}\)"$/\1/p'
 [ "$runtime_ref" = "3b10d242fc2a04fec35a0c780f0406cae0a2dea8" ] || fail "unexpected reviewed runtime payload ref: ${runtime_ref:-missing}"
 
 grep -Fq 'safe_stop_preflight' "$UPDATER" || fail "updater safe-stop guard missing"
-grep -Fq 'Fetched Gno source does not match the pinned Pearl commit.' "$UPDATER" || fail "updater fetch pin verification missing"
+grep -Fq 'Fetched Gno source does not match the pinned Onyx commit.' "$UPDATER" || fail "updater fetch pin verification missing"
 grep -Fq 'Choose a snapshot provider:' "$SNAPSHOT" || fail "snapshot provider menu missing"
 grep -Fq 'safe_stop_preflight || return 1' "$SNAPSHOT" || fail "snapshot safe-stop guard missing"
 

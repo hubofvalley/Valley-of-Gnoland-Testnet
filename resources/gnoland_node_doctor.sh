@@ -3,11 +3,11 @@
 set -u -o pipefail
 
 readonly DEFAULT_NODE_DOCTOR_REF="3988d923ab35e8ed7fd1acc0d006c77b8b138240"
-readonly EXPECTED_CHAIN_ID="pearl-1"
-readonly EXPECTED_RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
-readonly EXPECTED_GENESIS_SHA256="c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91"
-readonly EXPECTED_PEERS="g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
-readonly PUBLIC_RPC="https://rpc.pearl.testnets.gno.land"
+readonly EXPECTED_CHAIN_ID="onyx-1"
+readonly EXPECTED_RELEASE_COMMIT="5cdbc25fcde0b7569911a4e308ae5d2f6e96c399"
+readonly EXPECTED_GENESIS_SHA256="4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5"
+readonly EXPECTED_PEERS="g1x5mlj5ava0dw9vkf4j6admjlzswm6f06p44krn@seed-1.onyx.testnets.gno.land:26656,g1grq5zswt0dlwwe7clr4359w70k2ewgse0gcwck@seed-2.onyx.testnets.gno.land:26656"
+readonly PUBLIC_RPC="https://rpc.onyx.testnets.gno.land"
 
 NODE_DOCTOR_REF=${GNOLAND_NODE_DOCTOR_REF:-$DEFAULT_NODE_DOCTOR_REF}
 if [[ ! "$NODE_DOCTOR_REF" =~ ^[0-9a-f]{40}$ ]]; then
@@ -16,7 +16,7 @@ if [[ ! "$NODE_DOCTOR_REF" =~ ^[0-9a-f]{40}$ ]]; then
 fi
 
 if [ "${1:-}" = "--version" ]; then
-    echo "Valley of Gnoland Node Doctor (Pearl) 1.0.0"
+    echo "Valley of Gnoland Node Doctor (Onyx) 1.0.0"
     exit 0
 fi
 
@@ -75,13 +75,13 @@ record() {
 if [ -x "$GNOLAND_BIN" ] && [ -x "$GNOKEY_BIN" ]; then
     record PASS binaries "gnoland and gnokey are executable under $HOME/go/bin"
 else
-    record FAIL binaries "Pearl binaries are missing or not executable under $HOME/go/bin"
+    record FAIL binaries "Onyx binaries are missing or not executable under $HOME/go/bin"
 fi
 
 if [ -d "$GNO_SOURCE_DIR/.git" ]; then
     source_commit=$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD 2>/dev/null || true)
     if [ "$source_commit" = "$EXPECTED_RELEASE_COMMIT" ]; then
-        record PASS source_commit "source checkout matches pinned Pearl commit"
+        record PASS source_commit "source checkout matches pinned Onyx commit"
     else
         record FAIL source_commit "source checkout is ${source_commit:-unreadable}; expected $EXPECTED_RELEASE_COMMIT"
     fi
@@ -92,7 +92,7 @@ fi
 if [ -f "$GNOLAND_GENESIS" ]; then
     genesis_sha=$(sha256sum "$GNOLAND_GENESIS" 2>/dev/null | awk '{print $1}')
     if [ "$genesis_sha" = "$EXPECTED_GENESIS_SHA256" ]; then
-        record PASS genesis "Pearl genesis checksum matches the pinned release"
+        record PASS genesis "Onyx genesis checksum matches the pinned release"
     else
         record FAIL genesis "genesis checksum mismatch: ${genesis_sha:-unreadable}"
     fi
@@ -102,9 +102,9 @@ fi
 
 if [ -f "$CONFIG_FILE" ]; then
     if grep -Fq "persistent_peers = \"$EXPECTED_PEERS\"" "$CONFIG_FILE"; then
-        record PASS peers "official Pearl persistent peers are configured"
+        record PASS peers "official Onyx persistent peers are configured"
     else
-        record WARN peers "persistent peers differ from the pinned Pearl defaults"
+        record WARN peers "persistent peers differ from the pinned Onyx defaults"
     fi
     grep -Fq 'prune_strategy = "syncable"' "$CONFIG_FILE" && record PASS prune "prune_strategy is syncable" || record FAIL prune "application.prune_strategy is not syncable"
     grep -Fq 'timeout_commit = "3s"' "$CONFIG_FILE" && record PASS timeout_commit "consensus timeout_commit is 3s" || record FAIL timeout_commit "consensus.timeout_commit is not 3s"
@@ -131,8 +131,8 @@ if [ -n "$service_file" ] && [ -f "$service_file" ]; then
     else
         record FAIL service_data_dir "systemd --data-dir does not match GNOLAND_TESTNET_HOME"
     fi
-    grep -Fq -- '--chainid pearl-1' "$service_file" && record PASS service_chain "systemd starts pearl-1" || record FAIL service_chain "systemd does not start pearl-1"
-    grep -Fq -- '--skip-genesis-sig-verification' "$service_file" && record PASS genesis_flag "required Pearl genesis signature-skip flag is present" || record FAIL genesis_flag "required --skip-genesis-sig-verification flag is missing"
+    grep -Fq -- '--chainid onyx-1' "$service_file" && record PASS service_chain "systemd starts onyx-1" || record FAIL service_chain "systemd does not start onyx-1"
+    grep -Fq -- '--skip-genesis-sig-verification' "$service_file" && record PASS genesis_flag "required Onyx genesis signature-skip flag is present" || record FAIL genesis_flag "required --skip-genesis-sig-verification flag is missing"
 else
     record FAIL service "systemd unit for ${GNOLAND_TESTNET_SERVICE_NAME}.service was not found"
 fi
@@ -150,9 +150,9 @@ fi
 public_status=$(curl -m 5 -fsS "$PUBLIC_RPC/status" 2>/dev/null || true)
 public_network=$(printf '%s' "$public_status" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
 if [ "$public_network" = "$EXPECTED_CHAIN_ID" ]; then
-    record PASS public_rpc "official Pearl RPC reports $EXPECTED_CHAIN_ID"
+    record PASS public_rpc "official Onyx RPC reports $EXPECTED_CHAIN_ID"
 else
-    record WARN public_rpc "official Pearl RPC was unavailable or reported an unexpected network"
+    record WARN public_rpc "official Onyx RPC was unavailable or reported an unexpected network"
 fi
 
 if command -v timedatectl >/dev/null 2>&1; then
@@ -184,7 +184,7 @@ if $JSON_MODE; then
     done
     printf ']}\n'
 else
-    echo "Valley of Gnoland Node Doctor - Pearl"
+    echo "Valley of Gnoland Node Doctor - Onyx"
     echo "Expected chain: $EXPECTED_CHAIN_ID"
     echo "Pinned release: $EXPECTED_RELEASE_COMMIT"
     echo "Node home: $GNOLAND_TESTNET_HOME"

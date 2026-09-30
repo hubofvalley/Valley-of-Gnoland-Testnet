@@ -11,6 +11,7 @@ RESET='\033[0m'
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
 readonly VALLEY_RUNTIME_REF="3b10d242fc2a04fec35a0c780f0406cae0a2dea8"
+readonly VALLEY_RUNTIME_BASE_URL="https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/3b10d242fc2a04fec35a0c780f0406cae0a2dea8"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -29,7 +30,7 @@ run_node_doctor_script() {
 
     script_file=$(mktemp)
     if ! curl -fsSL \
-        "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/${VALLEY_RUNTIME_REF}/${NODE_DOCTOR_RELATIVE_PATH}" \
+        "${VALLEY_RUNTIME_BASE_URL}/${NODE_DOCTOR_RELATIVE_PATH}" \
         -o "$script_file"; then
         rm -f "$script_file"
         echo -e "${RED}Failed to download the Node Doctor from pinned commit ${VALLEY_RUNTIME_REF}. Nothing was executed.${RESET}" >&2
@@ -73,16 +74,16 @@ GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 export GNOROOT
 export PATH="$HOME/go/bin:$PATH"
-GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-pearl-1}
-GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.pearl.testnets.gno.land}
+GNOLAND_CHAIN_ID=${GNOLAND_CHAIN_ID:-onyx-1}
+GNOLAND_PUBLIC_REMOTE=${GNOLAND_PUBLIC_REMOTE:-https://rpc.onyx.testnets.gno.land}
 GNOLAND_REMOTE=${GNOLAND_REMOTE:-}
 SECRETS_DIR="$GNOLAND_TESTNET_HOME/secrets"
-OFFICIAL_PEARL_PEERS="g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
-PEARL_PERSISTENT_PEERS="$OFFICIAL_PEARL_PEERS"
-# Pearl's upstream guide still shows 50M, but live simulation can exceed it.
-# 70M clears the observed 65.2M registration while the 2c flow below can
+OFFICIAL_ONYX_PEERS="g1x5mlj5ava0dw9vkf4j6admjlzswm6f06p44krn@seed-1.onyx.testnets.gno.land:26656,g1grq5zswt0dlwwe7clr4359w70k2ewgse0gcwck@seed-2.onyx.testnets.gno.land:26656"
+ONYX_PERSISTENT_PEERS="$OFFICIAL_ONYX_PEERS"
+# Onyx's upstream guide still shows 50M, but live simulation can exceed it.
+# 50M clears the observed 65.2M registration while the 2c flow below can
 # safely retry a simulation-only out-of-gas result using gnokey's own +5% suggestion.
-VALOPER_GAS_WANTED=70000000
+VALOPER_GAS_WANTED=50000000
 
 canonical_path() {
     realpath -m -- "$1"
@@ -213,7 +214,7 @@ LOGO="
 INTRO="
 Valley of Gnoland by ${ORANGE}Grand Valley${RESET}
 
-${GREEN}Gno.land Pearl Node System Requirements${RESET}
+${GREEN}Gno.land Onyx Node System Requirements${RESET}
 ${YELLOW}| Category  | Requirements |
 | --------- | ------------ |
 | CPU       | 4+ vCPU      |
@@ -222,8 +223,8 @@ ${YELLOW}| Category  | Requirements |
 | Bandwidth | 100+ MBit/s  |${RESET}
 
 - service file name: ${CYAN}${GNOLAND_TESTNET_SERVICE_NAME}.service${RESET}
-- current network: ${CYAN}Gno.land Pearl${RESET}
-- current chain ID: ${CYAN}pearl-1${RESET}
+- current network: ${CYAN}Gno.land Onyx${RESET}
+- current chain ID: ${CYAN}onyx-1${RESET}
 - native denom: ${CYAN}ugnot${RESET}
 - binaries: ${CYAN}$HOME/go/bin/gnoland, $HOME/go/bin/gnokey${RESET}
 - node directory: ${CYAN}${GNOLAND_TESTNET_HOME}${RESET}
@@ -238,8 +239,8 @@ ${GREEN}No User Data Stored Externally${RESET}
 - This script does not store any user data externally. All operations are performed locally on your machine.
 
 ${GREEN}Candidate-only Validator Gate${RESET}
-- Pearl registration creates a validator candidate profile only.
-- Existing Sapphire validators must reuse the same operator g1 address if they want operator-address continuity.
+- Onyx registration creates a validator candidate profile only.
+- Existing Pearl validators must reuse the same operator g1 address if they want operator-address continuity.
 - GovDAO approval is required before a candidate joins the active validator set.
 
 ${GREEN}Security Best Practices${RESET}
@@ -256,17 +257,17 @@ Gno.land useful links:${RESET}
 - Official Docs: ${BLUE}https://docs.gno.land/${RESET}
 - Networks: ${BLUE}https://docs.gno.land/resources/gnoland-networks/${RESET}
 - GitHub: ${BLUE}https://github.com/gnolang/gno${RESET}
-- Pearl Release: ${BLUE}https://github.com/gnolang/gno/releases/tag/chain/pearl${RESET}
-- Pearl Validator Docs: ${BLUE}https://github.com/gnolang/gno/blob/chain/pearl/misc/deployments/pearl.gno.land/VALIDATOR.md${RESET}
-- Faucet: ${BLUE}https://pearl.testnets.gno.land/faucet${RESET}
-- Valoper Candidates: ${BLUE}https://pearl.testnets.gno.land/r/gnops/valopers${RESET}
-- Active Validators Realm: ${BLUE}https://pearl.testnets.gno.land/r/sys/validators/v3${RESET}
+- Onyx Release: ${BLUE}https://github.com/gnolang/gno/releases/tag/chain/onyx${RESET}
+- Onyx Validator Docs: ${BLUE}https://github.com/gnolang/gno/blob/chain/onyx/misc/deployments/onyx.gno.land/VALIDATOR.md${RESET}
+- Faucet: ${BLUE}https://onyx.testnets.gno.land/faucet${RESET}
+- Valoper Candidates: ${BLUE}https://onyx.testnets.gno.land/r/gnops/valopers${RESET}
+- Active Validators Realm: ${BLUE}https://onyx.testnets.gno.land/r/sys/validators/v0${RESET}
 
 ${GREEN}Network facts:${RESET}
-- Chain ID: ${CYAN}pearl-1${RESET}
-- RPC: ${CYAN}https://rpc.pearl.testnets.gno.land${RESET}
-- Official Pearl persistent peers: ${CYAN}${OFFICIAL_PEARL_PEERS}${RESET}
-- Genesis SHA256: ${CYAN}c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91${RESET}
+- Chain ID: ${CYAN}onyx-1${RESET}
+- RPC: ${CYAN}https://rpc.onyx.testnets.gno.land${RESET}
+- Official Onyx persistent peers: ${CYAN}${OFFICIAL_ONYX_PEERS}${RESET}
+- Genesis SHA256: ${CYAN}4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5${RESET}
 
 ${GREEN}Connect with Grand Valley:${RESET}
 - X: ${BLUE}https://x.com/bacvalley${RESET}
@@ -286,13 +287,13 @@ read -r
 
 sed -i '/^export GNOLAND_CHAIN_ID=/d;/^export GNOLAND_TESTNET_HOME=/d;/^export GNOLAND_GENESIS=/d;/^export GNOKEY_HOME=/d;/^export GNO_SOURCE_DIR=/d;/^export GNOROOT=/d;/^export GNOLAND_PUBLIC_REMOTE=/d;/go\/bin/d' "$HOME/.bash_profile" 2>/dev/null || true
 {
-    echo "export GNOLAND_CHAIN_ID=\"pearl-1\""
+    echo "export GNOLAND_CHAIN_ID=\"onyx-1\""
     echo "export GNOLAND_TESTNET_HOME=\"$GNOLAND_TESTNET_HOME\""
     echo "export GNOLAND_GENESIS=\"$GNOLAND_GENESIS\""
     echo "export GNOKEY_HOME=\"$GNOKEY_HOME\""
     echo "export GNO_SOURCE_DIR=\"$GNO_SOURCE_DIR\""
     echo "export GNOROOT=\"$GNOROOT\""
-    echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.pearl.testnets.gno.land\""
+    echo "export GNOLAND_PUBLIC_REMOTE=\"https://rpc.onyx.testnets.gno.land\""
     # shellcheck disable=SC2016
     echo 'export PATH="$HOME/go/bin:$PATH"'
 } >> "$HOME/.bash_profile"
@@ -377,7 +378,7 @@ function run_repository_script() {
     local relative_path=$1
     local script_file exit_code
     script_file=$(mktemp)
-    if ! curl -fsSL "https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/${VALLEY_RUNTIME_REF}/${relative_path}" -o "$script_file"; then
+    if ! curl -fsSL "${VALLEY_RUNTIME_BASE_URL}/${relative_path}" -o "$script_file"; then
         rm -f "$script_file"
         echo -e "${RED}Failed to download ${relative_path} from pinned commit ${VALLEY_RUNTIME_REF}. Nothing was executed.${RESET}"
         return 1
@@ -403,7 +404,7 @@ function deploy_gnoland_node() {
     echo -e "${RED}Migration replaces chain data only inside the current OS user's node directory.${RESET}"
     echo -e "${YELLOW}The installer backs up node secrets and the operator keyring before cleanup.${RESET}"
     echo
-    echo "This installs a Pearl full node and does not guarantee active validator status."
+    echo "This installs a Onyx full node and does not guarantee active validator status."
     echo "GovDAO proposal approval is required after candidate registration."
     read -r -p $'\n\e[33mDo you want to proceed with installation? (yes/no): \e[0m' confirm
     if [[ "${confirm,,}" != "yes" ]]; then
@@ -416,7 +417,7 @@ function deploy_gnoland_node() {
 }
 
 function update_gnoland_binary() {
-    echo -e "${YELLOW}Update gnoland and gnokey to the pinned Pearl release binaries.${RESET}"
+    echo -e "${YELLOW}Update gnoland and gnokey to the pinned Onyx release binaries.${RESET}"
     if ! prompt_back_or_continue; then
         return
     fi
@@ -442,7 +443,7 @@ function apply_snapshot() {
 function add_peers() {
     echo "Select an option:"
     echo "1. Add peers manually"
-    echo "2. Reset to official Pearl persistent peers"
+    echo "2. Reset to official Onyx persistent peers"
     echo "3. Back"
     read -r -p "Enter your choice (1, 2, or 3): " choice
 
@@ -470,8 +471,8 @@ function add_peers() {
             ;;
         2)
             "$GNOLAND_BIN" config set -config-path "$CFG" p2p.seeds ""
-            "$GNOLAND_BIN" config set -config-path "$CFG" p2p.persistent_peers "$PEARL_PERSISTENT_PEERS"
-            echo "Official Pearl persistent peers restored."
+            "$GNOLAND_BIN" config set -config-path "$CFG" p2p.persistent_peers "$ONYX_PERSISTENT_PEERS"
+            echo "Official Onyx persistent peers restored."
             ;;
         *)
             echo "Invalid choice."
@@ -588,15 +589,15 @@ function show_logs() {
 
 function create_operator_key() {
     echo "Choose an option:"
-    echo "1. Reuse/list an existing local Sapphire operator key"
-    echo "2. Recover the existing Sapphire operator key from mnemonic"
+    echo "1. Reuse/list an existing local Pearl operator key"
+    echo "2. Recover the existing Pearl operator key from mnemonic"
     echo "3. Create a new operator key"
     echo "4. Back"
     read -r -p "Enter your choice: " choice
 
     case $choice in
         1)
-            echo -e "${YELLOW}Existing Sapphire validators may reuse the same operator g1 address on Pearl for address continuity.${RESET}"
+            echo -e "${YELLOW}Existing Pearl validators may reuse the same operator g1 address on Onyx for address continuity.${RESET}"
             gnokey -home "$GNOKEY_HOME" list
             ;;
         2)
@@ -626,7 +627,7 @@ function create_operator_key() {
             echo "Invalid choice."
             ;;
     esac
-    echo -e "\n${YELLOW}Fund the operator g1 address via: ${BLUE}https://pearl.testnets.gno.land/faucet${RESET}"
+    echo -e "\n${YELLOW}Fund the operator g1 address via: ${BLUE}https://onyx.testnets.gno.land/faucet${RESET}"
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -643,7 +644,7 @@ function show_validator_pubkey() {
 function register_valoper_candidate() {
     local tx_output tx_status suggested_gas retry_confirm
 
-    echo -e "${CYAN}Register Gno.land Pearl Valoper Candidate${RESET}"
+    echo -e "${CYAN}Register Gno.land Onyx Valoper Candidate${RESET}"
     echo -e "${YELLOW}This broadcasts a transaction. It creates a candidate profile only, not active validator status.${RESET}"
     echo -e "${YELLOW}Requirements: synced node, funded operator key, and consensus gpub1... from option 2b.${RESET}"
     if ! prompt_back_or_continue; then
@@ -669,7 +670,7 @@ gnokey maketx call \
   --args "$OPERATOR_ADDR" \
   --args "$CONSENSUS_PUBKEY" \
   --gas-fee 1000000ugnot --gas-wanted $VALOPER_GAS_WANTED \
-  --chainid pearl-1 \
+  --chainid onyx-1 \
   --remote $GNOLAND_PUBLIC_REMOTE \
   --broadcast \
   $KEY_NAME
@@ -700,7 +701,7 @@ EOF
     if [ "$tx_status" -ne 0 ] && grep -Fq 'out of gas error' "$tx_output"; then
         suggested_gas=$(sed -n 's/.*suggested gas-wanted (gas used + 5%): \([0-9][0-9]*\).*/\1/p' "$tx_output" | tail -n 1)
         if [[ "$suggested_gas" =~ ^[0-9]+$ ]] && [ "$suggested_gas" -gt "$VALOPER_GAS_WANTED" ]; then
-            echo -e "\n${YELLOW}Pearl simulation needs more gas than the current ${VALOPER_GAS_WANTED}.${RESET}"
+            echo -e "\n${YELLOW}Onyx simulation needs more gas than the current ${VALOPER_GAS_WANTED}.${RESET}"
             echo -e "${YELLOW}gnokey suggested gas-wanted: ${suggested_gas}.${RESET}"
             echo "The failed attempt was simulation-only; no transaction hash was produced."
             read -r -p "Retry the same registration with suggested gas-wanted ${suggested_gas}? (yes/no): " retry_confirm
@@ -734,7 +735,7 @@ EOF
     fi
 
     echo -e "\n${GREEN}Candidate registration transaction broadcast succeeded.${RESET}"
-    echo -e "${YELLOW}Next gate: GovDAO proposal approval via r/sys/validators/v3.${RESET}"
+    echo -e "${YELLOW}Next gate: GovDAO proposal approval via r/sys/validators/v0.${RESET}"
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -752,8 +753,8 @@ function query_balance_or_realm() {
             gnokey_cmd query "$path"
             ;;
         2)
-            echo "Valoper candidates: https://pearl.testnets.gno.land/r/gnops/valopers"
-            echo "Active validators: https://pearl.testnets.gno.land/r/sys/validators/v3"
+            echo "Valoper candidates: https://onyx.testnets.gno.land/r/gnops/valopers"
+            echo "Active validators: https://onyx.testnets.gno.land/r/sys/validators/v0"
             ;;
         3)
             menu
@@ -821,8 +822,8 @@ function delete_gnoland_node() {
         menu
         return
     fi
-    read -r -p "Type DELETE-PEARL-NODE to remove the testnet data directory: " delete_confirm
-    if [ "$delete_confirm" != "DELETE-PEARL-NODE" ]; then
+    read -r -p "Type DELETE-ONYX-NODE to remove the testnet data directory: " delete_confirm
+    if [ "$delete_confirm" != "DELETE-ONYX-NODE" ]; then
         echo -e "${RED}Delete cancelled.${RESET}"
         menu
         return
@@ -860,20 +861,20 @@ function show_guidelines() {
     echo -e "${CYAN}Guidelines on How to Use the Valley of Gnoland${RESET}"
     echo -e "${GREEN}Recommended flow:${RESET}"
     echo " - 1a Deploy node -> wait until 1e shows synced"
-    echo " - 2a Reuse/recover the Sapphire operator key (or create a new key) -> fund via faucet"
+    echo " - 2a Reuse/recover the Pearl operator key (or create a new key) -> fund via faucet"
     echo " - 2b Show consensus pubkey"
     echo " - 2c Register valoper candidate"
     echo " - 3d Backup node secrets"
     echo -e "${YELLOW}Candidate registration is not active validator admission. GovDAO approval is required.${RESET}"
     echo
     echo -e "${GREEN}Node Interactions:${RESET}"
-    echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Pearl node."
-    echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Pearl binaries."
-    echo "   c. Apply Snapshot: Uses the Pearl UTSA/Hazen paths with archive validation, rollback, and safe-stop checks."
+    echo "   a. Deploy/Re-deploy Gnoland Node: Migrates or installs the Onyx node."
+    echo "   b. Update Gnoland/Gnokey Binaries: Refreshes the pinned Onyx binaries."
+    echo "   c. Apply Snapshot: Checks whether a verified Onyx snapshot provider is available; otherwise fails closed."
     echo "   d. Add/Reset Peers: Manages persistent peers and official seeds."
     echo "   e. Show Node Status: Shows the node health summary directly."
     echo "   f. Show Node Logs: Live-tails the Gnoland service logs."
-    echo "   g. Run Node Doctor: Read-only health and Pearl configuration-drift inspection."
+    echo "   g. Run Node Doctor: Read-only health and Onyx configuration-drift inspection."
     echo -e "${YELLOW}Press Enter to go back to main menu${RESET}"
     read -r
     menu
@@ -932,7 +933,7 @@ function menu() {
     echo "5. Show Guidelines"
     echo "6. Exit"
     echo
-    echo -e "Pearl Valoper Candidates: ${BLUE}https://pearl.testnets.gno.land/r/gnops/valopers${RESET}"
+    echo -e "Onyx Valoper Candidates: ${BLUE}https://onyx.testnets.gno.land/r/gnops/valopers${RESET}"
     echo -e "${GREEN}Let's Buidl Gnoland Together - Grand Valley${RESET}"
     if ! read -r -p "Choose an option: " choice; then
         echo

@@ -14,7 +14,7 @@ on_error() {
     local line_number=${1:-unknown}
     local failed_command=${2:-unknown}
     trap - ERR
-    echo -e "${RED}Pearl installation/migration failed.${RESET}" >&2
+    echo -e "${RED}Onyx installation/migration failed.${RESET}" >&2
     echo "Stage: $CURRENT_STAGE" >&2
     echo "Line: $line_number" >&2
     echo "Command: $failed_command" >&2
@@ -24,15 +24,15 @@ on_error() {
 }
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
-readonly CHAIN_ID="pearl-1"
-readonly RELEASE_TAG="chain/pearl"
-readonly RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
-readonly GENESIS_URL="https://github.com/gnolang/gno/releases/download/chain/pearl/genesis.json"
-readonly GENESIS_SHA256="c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91"
-readonly GNOLAND_SHA256="055b24001a31de7054649a049c9f9db5282965713814b84f7f864e8e6efa237d"
-readonly GNOKEY_SHA256="a69017c6e9ce9d77d3bd2f1e811731f6353e0deba5da4f620672d58e5fcec804"
-readonly OFFICIAL_PEARL_PEERS="g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656"
-readonly PUBLIC_RPC="https://rpc.pearl.testnets.gno.land"
+readonly CHAIN_ID="onyx-1"
+readonly RELEASE_TAG="chain/onyx"
+readonly RELEASE_COMMIT="5cdbc25fcde0b7569911a4e308ae5d2f6e96c399"
+readonly GENESIS_URL="https://github.com/gnolang/gno/releases/download/chain/onyx/genesis.json"
+readonly GENESIS_SHA256="4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5"
+readonly GNOLAND_SHA256="8dcff48228a881e398d238e3e14760c175c872fb164e85f21e5b4ee94a8b076d"
+readonly GNOKEY_SHA256="878eb6599161f491a37fdcbd4214477ad28d5d6208f8428f0bffcd3115cd35b4"
+readonly OFFICIAL_ONYX_PEERS="g1x5mlj5ava0dw9vkf4j6admjlzswm6f06p44krn@seed-1.onyx.testnets.gno.land:26656,g1grq5zswt0dlwwe7clr4359w70k2ewgse0gcwck@seed-2.onyx.testnets.gno.land:26656"
+readonly PUBLIC_RPC="https://rpc.onyx.testnets.gno.land"
 
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
 GNOLAND_TESTNET_HOME=${GNOLAND_TESTNET_HOME:-$GNO_SOURCE_DIR/gnoland-data}
@@ -112,15 +112,15 @@ for instance_path in "$GNO_SOURCE_DIR" "$GNOLAND_TESTNET_HOME" "$GNOKEY_HOME" "$
     fi
 done
 
-echo -e "\n--- Gno.land Pearl Node Setup ---"
-echo -e "${YELLOW}Pearl is a fresh chain. Sapphire chain data is not reusable.${RESET}"
-echo "Valley of Gnoland keeps the existing layout so an in-place Sapphire -> Pearl migration is predictable:"
+echo -e "\n--- Gno.land Onyx Node Setup ---"
+echo -e "${YELLOW}Onyx is a fresh chain. Pearl chain data is not reusable.${RESET}"
+echo "Valley of Gnoland keeps the existing layout so an in-place Pearl -> Onyx migration is predictable:"
 echo "  Source / GNOROOT: $GNO_SOURCE_DIR"
 echo "  Node data:        $GNOLAND_TESTNET_HOME"
 echo "  Operator keyring: $GNOKEY_HOME"
 echo "  Service:          gnoland-testnet.service (default)"
 echo -e "${GREEN}The operator keyring is preserved and backed up before cleanup.${RESET}"
-echo "Reusing a Sapphire operator key is optional continuity; it does not carry validator status into Pearl."
+echo "Reusing a Pearl operator key is optional continuity; it does not carry validator status into Onyx."
 
 while :; do
     read -r -p "Enter your GNOLAND_MONIKER: " GNOLAND_MONIKER
@@ -210,8 +210,8 @@ fi
 
 echo
 echo -e "${YELLOW}Operator key choice:${RESET}"
-echo "1. Reuse an existing local Sapphire operator key (recommended only if you want address continuity)"
-echo "2. Recover an existing Sapphire operator key from its mnemonic"
+echo "1. Reuse an existing local Pearl operator key (recommended only if you want address continuity)"
+echo "2. Recover an existing Pearl operator key from its mnemonic"
 echo "3. Create a new operator key"
 while :; do
     read -r -p "Choose 1, 2, or 3: " OPERATOR_KEY_ACTION
@@ -221,8 +221,8 @@ done
 
 echo
 echo -e "${YELLOW}Migration preview:${RESET}"
-echo "  Source network:   Sapphire (if an existing node is present)"
-echo "  Target network:   Pearl ($CHAIN_ID)"
+echo "  Source network:   Pearl (if an existing node is present)"
+echo "  Target network:   Onyx ($CHAIN_ID)"
 echo "  OS user:          $OS_USER"
 echo "  Service:          ${GNOLAND_TESTNET_SERVICE_NAME}.service"
 echo "  Binary:           $GNOLAND_BIN"
@@ -231,18 +231,18 @@ echo "  Node data:        $GNOLAND_TESTNET_HOME"
 echo "  Operator keyring: $GNOKEY_HOME"
 echo "  P2P/RPC/ABCI:     $GNOLAND_P2P_PORT / $GNOLAND_RPC_PORT / $GNOLAND_ABCI_PORT"
 echo
-echo -e "${YELLOW}This replaces chain data under $GNOLAND_TESTNET_HOME with a clean Pearl state.${RESET}"
+echo -e "${YELLOW}This replaces chain data under $GNOLAND_TESTNET_HOME with a clean Onyx state.${RESET}"
 echo "The old source checkout and genesis in $GNO_SOURCE_DIR are replaced."
 echo "The operator keyring at $GNOKEY_HOME is not deleted."
-read -r -p "Type MIGRATE-TO-PEARL to continue: " CONFIRM
-if [ "$CONFIRM" != "MIGRATE-TO-PEARL" ]; then echo "Installation cancelled."; exit 0; fi
+read -r -p "Type MIGRATE-TO-ONYX to continue: " CONFIRM
+if [ "$CONFIRM" != "MIGRATE-TO-ONYX" ]; then echo "Installation cancelled."; exit 0; fi
 
 mkdir -p "$BACKUP_DIR"
-CURRENT_STAGE="backup existing Sapphire keys and node secrets"
+CURRENT_STAGE="backup existing Pearl keys and node secrets"
 if [ -d "$GNOLAND_TESTNET_HOME/secrets" ]; then
-    tar -czf "$BACKUP_DIR/sapphire-node-secrets.tar.gz" -C "$GNOLAND_TESTNET_HOME" secrets
-    chmod 600 "$BACKUP_DIR/sapphire-node-secrets.tar.gz"
-    echo -e "${GREEN}Backed up existing node secrets to $BACKUP_DIR/sapphire-node-secrets.tar.gz${RESET}"
+    tar -czf "$BACKUP_DIR/pearl-node-secrets.tar.gz" -C "$GNOLAND_TESTNET_HOME" secrets
+    chmod 600 "$BACKUP_DIR/pearl-node-secrets.tar.gz"
+    echo -e "${GREEN}Backed up existing node secrets to $BACKUP_DIR/pearl-node-secrets.tar.gz${RESET}"
 fi
 if [ -d "$GNOKEY_HOME" ] && [ -n "$(find "$GNOKEY_HOME" -mindepth 1 -print -quit 2>/dev/null)" ]; then
     tar -czf "$BACKUP_DIR/operator-keyring.tar.gz" -C "$(dirname "$GNOKEY_HOME")" "$(basename "$GNOKEY_HOME")"
@@ -269,8 +269,8 @@ mkdir -p "$HOME/go/bin"
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
 
-CURRENT_STAGE="prepare pinned Pearl source"
-echo -e "${CYAN}Preparing pinned Gno Pearl source at ${RELEASE_COMMIT}.${RESET}"
+CURRENT_STAGE="prepare pinned Onyx source"
+echo -e "${CYAN}Preparing pinned Gno Onyx source at ${RELEASE_COMMIT}.${RESET}"
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then rm -rf "$GNO_SOURCE_DIR"; mkdir -p "$GNO_SOURCE_DIR"; git -C "$GNO_SOURCE_DIR" init; fi
 if git -C "$GNO_SOURCE_DIR" remote get-url origin >/dev/null 2>&1; then
     git -C "$GNO_SOURCE_DIR" remote set-url origin https://github.com/gnolang/gno.git
@@ -280,18 +280,18 @@ fi
 git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"
 git -C "$GNO_SOURCE_DIR" checkout --detach --force FETCH_HEAD
 if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then echo -e "${RED}Unexpected Gno source commit at $GNO_SOURCE_DIR.${RESET}" >&2; false; fi
-if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then echo -e "${RED}Missing Pearl stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2; false; fi
+if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then echo -e "${RED}Missing Onyx stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2; false; fi
 
-CURRENT_STAGE="install verified Pearl binaries"
+CURRENT_STAGE="install verified Onyx binaries"
 if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
     if ! command -v go >/dev/null 2>&1; then echo -e "${RED}Go is required for source builds. Install Go or rerun with prebuilt binaries.${RESET}" >&2; false; fi
     echo -e "${CYAN}Building gnoland and gnokey from ${RELEASE_TAG}.${RESET}"
     (cd "$GNO_SOURCE_DIR" && make -C gno.land install.gnoland install.gnokey)
 else
     if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then echo -e "${RED}The prebuilt path currently supports Linux amd64 only. Use source build on this host.${RESET}" >&2; false; fi
-    echo -e "${CYAN}Downloading official Pearl release binaries.${RESET}"
-    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-    curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+    echo -e "${CYAN}Downloading official Onyx release binaries.${RESET}"
+    curl -fsSL "https://github.com/gnolang/gno/releases/download/v1.5.0/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+    curl -fsSL "https://github.com/gnolang/gno/releases/download/v1.5.0/gnokey_linux_amd64" -o "$tmpdir/gnokey"
     echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
     echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
     chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
@@ -320,7 +320,7 @@ case "$OPERATOR_KEY_ACTION" in
             while :; do read -r -p "Choose 2 to recover or 3 for a new key: " OPERATOR_KEY_ACTION; [[ "$OPERATOR_KEY_ACTION" =~ ^[23]$ ]] && break; echo -e "${RED}Invalid choice. Please enter 2 or 3.${RESET}"; done
         else
             echo "$LOCAL_KEYS"
-            echo -e "${YELLOW}If you want operator-address continuity from Sapphire, select that existing key.${RESET}"
+            echo -e "${YELLOW}If you want operator-address continuity from Pearl, select that existing key.${RESET}"
             while :; do
                 read -r -p "Type the existing key name to reuse: " OPERATOR_KEY_NAME
                 if [ -n "$OPERATOR_KEY_NAME" ] && operator_key_exists "$OPERATOR_KEY_NAME"; then break; fi
@@ -332,7 +332,7 @@ esac
 
 case "$OPERATOR_KEY_ACTION" in
     2)
-        read -r -p "Enter key name for the recovered Sapphire operator (default 'operator'): " OPERATOR_KEY_NAME
+        read -r -p "Enter key name for the recovered Pearl operator (default 'operator'): " OPERATOR_KEY_NAME
         OPERATOR_KEY_NAME=${OPERATOR_KEY_NAME:-operator}
         if operator_key_exists "$OPERATOR_KEY_NAME"; then echo -e "${YELLOW}Key '$OPERATOR_KEY_NAME' already exists; reusing it without overwrite.${RESET}"; else "$GNOKEY_BIN" -home "$GNOKEY_HOME" add -recover "$OPERATOR_KEY_NAME"; fi
         ;;
@@ -347,22 +347,22 @@ echo -e "${GREEN}Operator key selected: $OPERATOR_KEY_NAME${RESET}"
 "$GNOKEY_BIN" -home "$GNOKEY_HOME" list
 
 cd "$GNO_SOURCE_DIR"
-CURRENT_STAGE="initialise Pearl config and node secrets"
+CURRENT_STAGE="initialise Onyx config and node secrets"
 "$GNOLAND_BIN" config init -config-path "$CONFIG_FILE" -force
 "$GNOLAND_BIN" secrets init -data-dir "$SECRETS_DIR" -force
-echo -e "${YELLOW}A fresh Pearl consensus/node identity was generated. Reusing an operator key does not reuse Sapphire consensus state.${RESET}"
+echo -e "${YELLOW}A fresh Onyx consensus/node identity was generated. Reusing an operator key does not reuse Pearl consensus state.${RESET}"
 
-CURRENT_STAGE="download and verify Pearl genesis"
+CURRENT_STAGE="download and verify Onyx genesis"
 curl -fsSL "$GENESIS_URL" -o "$GENESIS_FILE"
 echo "${GENESIS_SHA256}  $GENESIS_FILE" | sha256sum -c -
 
-CURRENT_STAGE="apply official Pearl configuration"
+CURRENT_STAGE="apply official Onyx configuration"
 "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" moniker "$GNOLAND_MONIKER"
 "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" proxy_app "tcp://127.0.0.1:${GNOLAND_ABCI_PORT}"
 "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.laddr "tcp://0.0.0.0:${GNOLAND_P2P_PORT}"
 "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" rpc.laddr "tcp://127.0.0.1:${GNOLAND_RPC_PORT}"
 "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.seeds ""
-"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.persistent_peers "$OFFICIAL_PEARL_PEERS"
+"$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" p2p.persistent_peers "$OFFICIAL_ONYX_PEERS"
 "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" application.prune_strategy "syncable"
 "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" consensus.timeout_commit "3s"
 "$GNOLAND_BIN" config set -config-path "$CONFIG_FILE" consensus.peer_gossip_sleep_duration "10ms"
@@ -375,14 +375,14 @@ if [ -n "$GNOLAND_EXTERNAL_HOST" ]; then "$GNOLAND_BIN" config set -config-path 
 if [[ "$SETUP_UFW" =~ ^[Yy]$ ]]; then
     sudo apt install -y ufw
     sudo ufw allow 22/tcp comment "SSH Access"
-    sudo ufw allow "${GNOLAND_P2P_PORT}/tcp" comment "Gno.land Pearl P2P"
+    sudo ufw allow "${GNOLAND_P2P_PORT}/tcp" comment "Gno.land Onyx P2P"
     sudo ufw --force enable
     sudo ufw status verbose
 fi
 
 sudo tee "$SERVICE_FILE" >/dev/null <<EOF_SERVICE
 [Unit]
-Description=Gno.land Pearl Node (${GNOLAND_TESTNET_SERVICE_NAME})
+Description=Gno.land Onyx Node (${GNOLAND_TESTNET_SERVICE_NAME})
 After=network-online.target
 
 [Service]
@@ -420,11 +420,11 @@ EOF_SERVICE
 } >> "$HOME/.bash_profile"
 
 sudo systemctl daemon-reload
-CURRENT_STAGE="start Pearl gnoland service"
+CURRENT_STAGE="start Onyx gnoland service"
 sudo systemctl enable "$GNOLAND_TESTNET_SERVICE_NAME"
 sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"
 
-echo -e "${CYAN}Waiting for the Pearl RPC startup check (up to 90 seconds).${RESET}"
+echo -e "${CYAN}Waiting for the Onyx RPC startup check (up to 90 seconds).${RESET}"
 RPC_STATUS=""
 for _ in $(seq 1 90); do
     if ! systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME"; then break; fi
@@ -440,15 +440,15 @@ CONFIG_P2P_PORT=$(awk -F: '/^[[:space:]]*\[p2p\][[:space:]]*$/ {in_p2p=1; next} 
 CONFIG_RPC_PORT=$(awk -F: '/^[[:space:]]*\[rpc\][[:space:]]*$/ {in_rpc=1; next} /^[[:space:]]*\[/ {in_rpc=0} in_rpc && /^[[:space:]]*laddr = "tcp:\/\// {gsub(/".*/, "", $NF); print $NF; exit}' "$CONFIG_FILE")
 
 if systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME" && [ "$RPC_NETWORK" = "$CHAIN_ID" ] && [ "$CONFIG_ABCI_PORT" = "$GNOLAND_ABCI_PORT" ] && [ "$CONFIG_P2P_PORT" = "$GNOLAND_P2P_PORT" ] && [ "$CONFIG_RPC_PORT" = "$GNOLAND_RPC_PORT" ]; then
-    echo -e "${GREEN}Pearl Gnoland service started successfully.${RESET}"
+    echo -e "${GREEN}Onyx Gnoland service started successfully.${RESET}"
     echo "Verified RPC network: $RPC_NETWORK"
     echo "Verified local ports: ABCI $CONFIG_ABCI_PORT, P2P $CONFIG_P2P_PORT, RPC $CONFIG_RPC_PORT"
     echo "Local status: curl -s http://127.0.0.1:${GNOLAND_RPC_PORT}/status | jq '.result.sync_info'"
-    echo "After sync, register a Pearl valoper candidate profile with '$OPERATOR_KEY_NAME'."
-    echo "Candidate registration does not restore Sapphire validator status; GovDAO admission is separate."
+    echo "After sync, register a Onyx valoper candidate profile with '$OPERATOR_KEY_NAME'."
+    echo "Candidate registration does not restore Pearl validator status; GovDAO admission is separate."
     echo "Backups created under: $BACKUP_DIR"
 else
-    echo -e "${RED}Gnoland failed the Pearl RPC startup check.${RESET}"
+    echo -e "${RED}Gnoland failed the Onyx RPC startup check.${RESET}"
     echo "Expected RPC network: $CHAIN_ID"
     echo "Observed RPC network: ${RPC_NETWORK:-unavailable}"
     echo "Expected local ports: ABCI $GNOLAND_ABCI_PORT, P2P $GNOLAND_P2P_PORT, RPC $GNOLAND_RPC_PORT"

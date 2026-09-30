@@ -38,19 +38,19 @@ jobs:
       - name: Validate JSON
         run: git ls-files -z '*.json' | xargs -0 -r -n1 jq empty
 
-      - name: Run Pearl migration contract test
-        run: bash tests/pearl_migration_test.sh
+      - name: Run Onyx migration contract test
+        run: bash tests/onyx_migration_test.sh
 
       - name: Run multi-instance guard regression test
         run: bash tests/multi_instance_test.sh
 
-      - name: Run Pearl Node Doctor regression test
+      - name: Run Onyx Node Doctor regression test
         run: bash tests/node_doctor_test.sh
 
-      - name: Run Pearl snapshot regression test
+      - name: Run Onyx snapshot regression test
         run: bash tests/apply_snapshot_test.sh
 
-      - name: Run Pearl safe-stop regression test
+      - name: Run Onyx safe-stop regression test
         run: bash tests/safe_stop_test.sh
 
       - name: Run testnet data-directory sandbox integration test

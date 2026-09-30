@@ -16,9 +16,9 @@ GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME%.service}
 OS_USER=$(id -un)
 
-UTSA_SNAPSHOT_URL="https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4"
-HAZEN_INDEX_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl/index.json"
-HAZEN_STABLE_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl-db-snapshot.tar.lz4"
+UTSA_SNAPSHOT_URL=""
+HAZEN_INDEX_URL=""
+HAZEN_STABLE_URL=""
 
 SNAPSHOT_PROVIDER=""
 SNAPSHOT_URL=""
@@ -124,8 +124,8 @@ validate_service_target() {
         echo "Existing --data-dir=${service_data_dir:-missing}, requested --data-dir=$GNOLAND_TESTNET_HOME" >&2
         return 1
     fi
-    if ! grep -Fq -- '--chainid pearl-1' "$service_file"; then
-        echo -e "${RED}Snapshot blocked: selected service is not configured for pearl-1.${RESET}" >&2
+    if ! grep -Fq -- '--chainid onyx-1' "$service_file"; then
+        echo -e "${RED}Snapshot blocked: selected service is not configured for onyx-1.${RESET}" >&2
         return 1
     fi
     return 0
@@ -196,7 +196,7 @@ load_hazen_metadata() {
     if ! mapfile -t metadata < <(python3 -c '
 import json, sys
 data = json.load(sys.stdin)
-if data.get("chainId") != "pearl-1":
+if data.get("chainId") != "onyx-1":
     raise SystemExit("unexpected chainId")
 for key in ("stableUrl", "url", "generatedAt", "blockHeight", "sizeBytes", "sha256", "verifiedAgainst"):
     value = data.get(key, "")
@@ -354,7 +354,7 @@ safe_stop_preflight() {
     case "$rpc_base" in
         http://127.0.0.1:*|http://localhost:*) ;;
         *)
-            echo "Safe-stop preflight blocked: the Pearl status check must use a local loopback RPC endpoint." >&2
+            echo "Safe-stop preflight blocked: the Onyx status check must use a local loopback RPC endpoint." >&2
             return 1
             ;;
     esac
@@ -363,16 +363,16 @@ safe_stop_preflight() {
     network=$(printf '%s' "$status_json" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
     catching_up=$(printf '%s' "$status_json" | jq -r 'if .result.sync_info.catching_up == null then empty else (.result.sync_info.catching_up | tostring) end' 2>/dev/null || true)
 
-    if [ "$network" != "pearl-1" ]; then
-        echo "Safe-stop preflight blocked: local RPC did not verify pearl-1 (reported: ${network:-unavailable})." >&2
+    if [ "$network" != "onyx-1" ]; then
+        echo "Safe-stop preflight blocked: local RPC did not verify onyx-1 (reported: ${network:-unavailable})." >&2
         return 1
     fi
 
     case "$catching_up" in
         false) return 0 ;;
         true)
-            echo "Safe-stop preflight blocked: this Pearl node reports catching_up=true." >&2
-            echo "The pinned Pearl release predates gnolang/gno#6085; do not stop it while it is catching up." >&2
+            echo "Safe-stop preflight blocked: this Onyx node reports catching_up=true." >&2
+            echo "The pinned Onyx release predates gnolang/gno#6085; do not stop it while it is catching up." >&2
             return 1
             ;;
         *)
@@ -518,6 +518,10 @@ apply_snapshot() {
 }
 
 main() {
+    echo -e "${YELLOW}Onyx snapshot support is currently unavailable: no chain-specific provider has been verified.${RESET}" >&2
+    echo "Use the official Onyx peers and normal P2P synchronization instead." >&2
+    return 1
+
     validate_runtime_targets
     validate_service_target
     check_dependencies

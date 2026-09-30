@@ -1,6 +1,6 @@
-# Valley of Gnoland Pearl Node Doctor
+# Valley of Gnoland Onyx Node Doctor
 
-Node Doctor is a read-only health and configuration-drift inspector for a Gno.land Pearl node managed by Valley of Gnoland.
+Node Doctor is a read-only health and configuration-drift inspector for a Gno.land Onyx node managed by Valley of Gnoland.
 
 It does not edit configuration, restart services, change firewall rules, replace binaries, or touch operator/consensus keys.
 
@@ -22,24 +22,24 @@ Treat warnings as non-zero as well:
 bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor --strict
 ```
 
-## Pearl checks
+## Onyx checks
 
 The doctor checks:
 
 - per-user `gnoland` and `gnokey` executables;
-- source checkout commit `c4c72fdd288c757e8da0d93aae867fa479b1b15c`;
-- Pearl genesis SHA-256 `c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91`;
-- official Pearl persistent peers;
+- source checkout commit `5cdbc25fcde0b7569911a4e308ae5d2f6e96c399`;
+- Onyx genesis SHA-256 `4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5`;
+- official Onyx persistent peers;
 - `application.prune_strategy = syncable`;
 - `consensus.timeout_commit = 3s`;
 - `consensus.peer_gossip_sleep_duration = 10ms`;
 - `p2p.flush_throttle_timeout = 10ms`;
 - PEX enabled;
-- systemd starts `pearl-1`;
+- systemd starts `onyx-1`;
 - systemd ownership and explicit `--data-dir` match `GNOLAND_TESTNET_HOME`;
 - required `--skip-genesis-sig-verification` startup flag;
-- local RPC reports `pearl-1`;
-- public Pearl RPC reachability/network;
+- local RPC reports `onyx-1`;
+- public Onyx RPC reachability/network;
 - NTP synchronization when available;
 - basic free-disk safety signal.
 

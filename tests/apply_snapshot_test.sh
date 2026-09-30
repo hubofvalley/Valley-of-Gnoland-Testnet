@@ -14,16 +14,16 @@ assert_file() { [ -f "$1" ] || fail "expected file: $1"; }
 
 grep -Fq 'GNOLAND_TESTNET_HOME' "$SNAPSHOT_SCRIPT" || fail "testnet home variable missing"
 grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME' "$SNAPSHOT_SCRIPT" || fail "testnet service variable missing"
-grep -Fq 'UTSA_SNAPSHOT_URL="https://share118.utsa.tech/gno_test/gno-test-snapshot.tar.lz4"' "$SNAPSHOT_SCRIPT" || fail "UTSA URL drifted"
-grep -Fq 'HAZEN_INDEX_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl/index.json"' "$SNAPSHOT_SCRIPT" || fail "Hazen manifest URL drifted"
-grep -Fq 'HAZEN_STABLE_URL="https://server-9.hazennetworksolutions.com/gnoland-pearl-db-snapshot.tar.lz4"' "$SNAPSHOT_SCRIPT" || fail "Hazen stable URL drifted"
-grep -Fq 'data.get("chainId") != "pearl-1"' "$SNAPSHOT_SCRIPT" || fail "Hazen Pearl chain guard missing"
+grep -Fq 'UTSA_SNAPSHOT_URL=""' "$SNAPSHOT_SCRIPT" || fail "UTSA must remain unverified for Onyx"
+grep -Fq 'HAZEN_INDEX_URL=""' "$SNAPSHOT_SCRIPT" || fail "Hazen manifest must remain unavailable for Onyx"
+grep -Fq 'HAZEN_STABLE_URL=""' "$SNAPSHOT_SCRIPT" || fail "Hazen archive must remain unavailable for Onyx"
+grep -Fq 'data.get("chainId") != "onyx-1"' "$SNAPSHOT_SCRIPT" || fail "Hazen Onyx chain guard missing"
 legacy_home=$(printf 'GNOLAND_%s' 'HOME')
 legacy_service=$(printf 'GNOLAND_%s' 'SERVICE_NAME')
-if grep -Eq "sapphire-1|gnoland-sapphire|topaz-1|gnoland-topaz|${legacy_home}|${legacy_service}" "$SNAPSHOT_SCRIPT"; then
+if grep -Eq "pearl-1|gnoland-pearl|topaz-1|gnoland-topaz|${legacy_home}|${legacy_service}" "$SNAPSHOT_SCRIPT"; then
     fail "legacy runtime reference remains in snapshot helper"
 fi
-jq -e '.snapshot.status == "enabled"' "$ROOT_DIR/VERSIONS.json" >/dev/null || fail "VERSIONS.json snapshot status is not enabled"
+jq -e '.snapshot.status == "unavailable"' "$ROOT_DIR/VERSIONS.json" >/dev/null || fail "VERSIONS.json snapshot status is not unavailable"
 
 menu_output=$(
     HOME="$TEST_TMP/menu-home" GNO_SOURCE_DIR="$TEST_TMP/menu-home/gno" GNOLAND_TESTNET_HOME="$TEST_TMP/menu-home/gno/gnoland-data" \
@@ -40,7 +40,7 @@ mkdir -p "$HOME"
 source "$SNAPSHOT_SCRIPT"
 curl() {
     if [[ "$*" == *"$HAZEN_INDEX_URL"* ]] && [[ "$*" != *"--head"* ]]; then
-        printf '%s\n' '{"chainId":"pearl-1","stableUrl":"https://snapshot.example/pearl.tar.lz4","generatedAt":"2026-09-01T03:17:34Z","blockHeight":112375,"sizeBytes":2076715616,"sha256":"abc123","verifiedAgainst":"apphash"}'
+        printf '%s\n' '{"chainId":"onyx-1","stableUrl":"https://snapshot.example/onyx.tar.lz4","generatedAt":"2026-09-01T03:17:34Z","blockHeight":112375,"sizeBytes":2076715616,"sha256":"abc123","verifiedAgainst":"apphash"}'
         return 0
     fi
     if [[ "$*" == *"--head"* ]]; then
@@ -52,7 +52,7 @@ curl() {
 load_hazen_metadata
 [ "$SNAPSHOT_AVAILABLE" -eq 1 ]
 [ "$SNAPSHOT_HEIGHT" = "112375" ]
-[ "$SNAPSHOT_URL" = "https://snapshot.example/pearl.tar.lz4" ]
+[ "$SNAPSHOT_URL" = "https://snapshot.example/onyx.tar.lz4" ]
 EOS
 
 HOME="$TEST_TMP/hazen-bad-home" GNO_SOURCE_DIR="$TEST_TMP/hazen-bad-home/gno" GNOLAND_TESTNET_HOME="$TEST_TMP/hazen-bad-home/gno/gnoland-data" \
@@ -120,7 +120,7 @@ cat >"$HOME/gnoland-testnet.service" <<SERVICE
 [Service]
 User=$(id -un)
 WorkingDirectory=$GNO_SOURCE_DIR
-ExecStart=/bin/gnoland start --data-dir $GNOLAND_TESTNET_HOME --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=/bin/gnoland start --data-dir $GNOLAND_TESTNET_HOME --chainid onyx-1 --skip-genesis-sig-verification
 SERVICE
 source "$SNAPSHOT_SCRIPT"
 systemctl() {
@@ -167,7 +167,7 @@ cat >"$HOME/gnoland-testnet.service" <<SERVICE
 [Service]
 User=$(id -un)
 WorkingDirectory=$GNO_SOURCE_DIR
-ExecStart=/bin/gnoland start --data-dir $GNOLAND_TESTNET_HOME --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=/bin/gnoland start --data-dir $GNOLAND_TESTNET_HOME --chainid onyx-1 --skip-genesis-sig-verification
 SERVICE
 source "$SNAPSHOT_SCRIPT"
 systemctl() {

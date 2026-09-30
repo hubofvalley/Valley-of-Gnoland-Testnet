@@ -47,7 +47,7 @@ grep -Fq 'GNOLAND_RPC_PORT="${GNOLAND_PORT}657"' "$INSTALLER" || fail "custom RP
 grep -Fq 'GNOLAND_P2P_PORT="${GNOLAND_PORT}656"' "$INSTALLER" || fail "custom P2P prefix missing"
 grep -Fq 'GNOLAND_ABCI_PORT="${GNOLAND_PORT}658"' "$INSTALLER" || fail "custom ABCI prefix missing"
 grep -Fq 'service_belongs_to_current_instance()' "$MAIN" || fail "main menu service ownership guard missing"
-grep -Fq 'this service is not configured for pearl-1' "$UPDATER" || fail "updater Pearl gate missing"
+grep -Fq 'this service is not configured for onyx-1' "$UPDATER" || fail "updater Onyx gate missing"
 grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME=${INPUT_SVC:-gnoland-testnet}' "$MAIN" || fail "menu default service semantics drifted"
 grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}' "$ROOT/resources/node-doctor/part-01.bash" || fail "modular Node Doctor default service semantics drifted"
 grep -Fq 'GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-$(profile_value GNOLAND_TESTNET_SERVICE_NAME "gnoland-testnet")}' "$ROOT/resources/gnoland_node_doctor.sh" || fail "Node Doctor default service semantics drifted"

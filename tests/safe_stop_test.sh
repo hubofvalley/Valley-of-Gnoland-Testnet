@@ -16,7 +16,7 @@ run_snapshot_case() {
 [Service]
 User=$(id -un)
 WorkingDirectory=$TMP/snapshot-home/gno
-ExecStart=$TMP/snapshot-home/go/bin/gnoland start --data-dir $TMP/snapshot-home/gno/gnoland-data --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=$TMP/snapshot-home/go/bin/gnoland start --data-dir $TMP/snapshot-home/gno/gnoland-data --chainid onyx-1 --skip-genesis-sig-verification
 EOF_SERVICE
     set +e
     output=$(HOME="$TMP/snapshot-home" GNO_SOURCE_DIR="$TMP/snapshot-home/gno" GNOLAND_TESTNET_HOME="$TMP/snapshot-home/gno/gnoland-data" \
@@ -51,12 +51,12 @@ EOS
     printf '%s' "$output"
 }
 
-run_snapshot_case active pearl-1 false pass >/dev/null
-output=$(run_snapshot_case active pearl-1 true block)
+run_snapshot_case active onyx-1 false pass >/dev/null
+output=$(run_snapshot_case active onyx-1 true block)
 [[ "$output" == *"catching_up=true"* ]] || fail "catching-up refusal message missing"
 output=$(run_snapshot_case active wrong-chain false block)
-[[ "$output" == *"did not verify pearl-1"* ]] || fail "network refusal message missing"
-output=$(run_snapshot_case unknown pearl-1 false block)
+[[ "$output" == *"did not verify onyx-1"* ]] || fail "network refusal message missing"
+output=$(run_snapshot_case unknown onyx-1 false block)
 [[ "$output" == *"unable to verify"* ]] || fail "unknown systemd state must fail closed"
 run_snapshot_case inactive wrong-chain true pass >/dev/null
 
@@ -80,7 +80,7 @@ cat >"$SERVICE_FILE" <<EOF
 [Service]
 User=$(id -un)
 WorkingDirectory=$UPDATER_HOME/gno
-ExecStart=$UPDATER_HOME/go/bin/gnoland start --data-dir $UPDATER_HOME/gno/gnoland-data --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=$UPDATER_HOME/go/bin/gnoland start --data-dir $UPDATER_HOME/gno/gnoland-data --chainid onyx-1 --skip-genesis-sig-verification
 EOF
 cat >"$MOCKBIN/systemctl" <<'EOS'
 #!/bin/bash
@@ -104,7 +104,7 @@ EOS
 cat >"$MOCKBIN/curl" <<'EOS'
 #!/bin/bash
 case "$*" in
-    *"/status"*) printf '%s\n' '{"result":{"node_info":{"network":"pearl-1"},"sync_info":{"catching_up":false}}}' ;;
+    *"/status"*) printf '%s\n' '{"result":{"node_info":{"network":"onyx-1"},"sync_info":{"catching_up":false}}}' ;;
     *) exit 22 ;;
 esac
 EOS
@@ -113,7 +113,7 @@ chmod +x "$MOCKBIN/systemctl" "$MOCKBIN/git" "$MOCKBIN/curl"
 set +e
 output=$(PATH="$MOCKBIN:$PATH" HOME="$UPDATER_HOME" GNO_SOURCE_DIR="$UPDATER_HOME/gno" GNOLAND_TESTNET_HOME="$UPDATER_HOME/gno/gnoland-data" \
     GNOLAND_TESTNET_SERVICE_NAME="gnoland-testnet" GNOLAND_BIN="$UPDATER_HOME/go/bin/gnoland" GNOKEY_BIN="$UPDATER_HOME/go/bin/gnokey" \
-    MOCK_SERVICE_FILE="$SERVICE_FILE" MOCK_STOP_MARKER="$TMP/stop-called" MOCK_RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c" \
+    MOCK_SERVICE_FILE="$SERVICE_FILE" MOCK_STOP_MARKER="$TMP/stop-called" MOCK_RELEASE_COMMIT="5cdbc25fcde0b7569911a4e308ae5d2f6e96c399" \
     bash "$UPDATER" 2>&1)
 rc=$?
 set -e

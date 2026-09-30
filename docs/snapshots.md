@@ -1,38 +1,26 @@
-# Pearl Snapshots
+# Onyx Snapshots
 
-Snapshot application is available for Gno.land Pearl through the provider paths recorded in `VERSIONS.json`. The helper uses `GNOLAND_TESTNET_HOME` and `GNOLAND_TESTNET_SERVICE_NAME`, defaulting to `~/gno/gnoland-data` and `gnoland-testnet.service`. Before any database change, it verifies that the selected systemd unit's explicit `--data-dir` matches `GNOLAND_TESTNET_HOME`, including when the unit is inactive or failed.
+Onyx snapshot support is currently unavailable. The menu option remains visible for UX compatibility, but `resources/apply_snapshot.sh` fails closed because no chain-specific provider, chain identity, and checksum have been verified. Use normal P2P synchronization through the official Onyx peers.
 
-Pearl is a fresh chain. Sapphire database state, WAL data, and snapshots must never be reused on `pearl-1`.
+Onyx is a fresh chain. Pearl database state, WAL data, and snapshots must never be reused on `onyx-1`. The current provider records remain in `VERSIONS.json` as unverified/unavailable evidence, not as usable download sources.
 
-## Current providers
+## Provider status
 
-### UTSA
+- **UTSA:** unverified. The available archive path does not provide verifiable Onyx chain identity or checksum metadata.
+- **Hazen Network Solutions:** unavailable. No Onyx manifest or archive was found at the known provider path.
 
-The UTSA path checks that the configured archive is reachable before presenting it to the operator. The current integration does not receive a Pearl chain identifier, block height, or SHA-256 checksum from this provider path.
+## Preserved safety contract
 
-Treat UTSA as the lower-assurance option: review the displayed provider information and use normal P2P sync if the provenance is not sufficient for your operating policy.
+When a chain-specific provider is added, the existing helper contract still requires:
 
-### Hazen Network Solutions
+1. a safe per-user `GNOLAND_TESTNET_HOME`;
+2. the testnet-scoped `GNOLAND_TESTNET_SERVICE_NAME`;
+3. archive download before any service stop;
+4. checksum verification when the provider publishes one;
+5. archive path validation limited to `db/` and `wal/`;
+6. local loopback RPC reporting `onyx-1` with `catching_up=false` before stopping an active service;
+7. optional `db`/`wal` backup;
+8. rollback state until extraction and restart succeed;
+9. preservation of node configuration and secrets.
 
-The Hazen path reads the provider index and requires its `chainId` to be exactly `pearl-1`. When present, the helper also surfaces the generated time, block height, archive size, SHA-256 checksum, and provider verification metadata before activation.
-
-If the provider publishes a SHA-256 checksum, the downloaded archive must match it before any database replacement can proceed.
-
-## Activation safeguards
-
-The snapshot helper applies the following safeguards:
-
-1. validates that `GNOLAND_TESTNET_HOME` is a safe per-user path and not `/`, `$HOME`, or the Gno source root;
-2. uses the testnet-scoped `GNOLAND_TESTNET_SERVICE_NAME` rather than the mainnet service name;
-3. downloads the archive before stopping Gnoland;
-4. verifies SHA-256 when the provider publishes one;
-5. inspects the archive and accepts only `db/` and `wal/` paths, rejecting absolute paths and traversal entries;
-6. before stopping an active service, requires a local loopback RPC to report `pearl-1` with `catching_up=false`;
-7. optionally creates a local backup of the current `db` and `wal` directories;
-8. moves the existing database state into a temporary rollback directory before extraction;
-9. restores the previous state if extraction or the service restart fails;
-10. keeps the existing node configuration and node secrets in place.
-
-The pinned Pearl release predates upstream crash-safety fix `gnolang/gno#6085`, so maintenance fails closed if the local service state, chain identity, or sync state cannot be verified. An inactive or already-failed service does not require a sync-state check because the helper is not causing the stop.
-
-Snapshot use remains an operator decision. These safeguards reduce activation risk; they do not turn a third-party snapshot into cryptographic proof of chain history. Normal P2P synchronization through the official Pearl peers remains the fallback when snapshot provenance is not acceptable.
+Do not apply Pearl database state, WAL data, or snapshots to Onyx.

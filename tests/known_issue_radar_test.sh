@@ -4,7 +4,7 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 HELPER="$REPO_ROOT/resources/node-doctor-known-issues.bash"
-EXPECTED_RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
+EXPECTED_RELEASE_COMMIT="5cdbc25fcde0b7569911a4e308ae5d2f6e96c399"
 
 fail() {
     echo "FAIL: $*" >&2
@@ -47,7 +47,7 @@ SOURCE_COMMIT="$EXPECTED_RELEASE_COMMIT"
 unset GNOLAND_DOCTOR_SKIP_KNOWN_ISSUES || true
 check_known_issues
 
-[ "$RESULT_COUNT" -eq 2 ] || fail "managed Pearl release should emit exactly two advisories"
+[ "$RESULT_COUNT" -eq 2 ] || fail "managed Onyx release should emit exactly two advisories"
 [ "$RESULT_CATEGORY" = "known_issues" ] || fail "unexpected advisory category: $RESULT_CATEGORY"
 [ "$RESULT_STATUS" = "WARN" ] || fail "known issues must remain WARN, got $RESULT_STATUS"
 [[ " $RESULT_IDS " == *" gno_pr_6054 "* ]] || fail "missing P2P advisory id"
@@ -67,7 +67,7 @@ RESULT_COUNT=0
 # shellcheck disable=SC2034
 SOURCE_COMMIT="131371844c4db8554d519c13a2430b5fbfbec4a8"
 check_known_issues
-[ "$RESULT_COUNT" -eq 0 ] || fail "non-managed source commit should not emit Pearl advisories"
+[ "$RESULT_COUNT" -eq 0 ] || fail "non-managed source commit should not emit Onyx advisories"
 
 # The skip flag is test/support-only and must suppress advisories deterministically.
 RESULT_COUNT=0

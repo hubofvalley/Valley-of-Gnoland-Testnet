@@ -1,27 +1,28 @@
-# Gno.land Pearl Node - Manual Guide
+# Gno.land Onyx Node - Manual Guide
 
 Official validator source:
 
-- https://github.com/gnolang/gno/blob/chain/pearl/misc/deployments/pearl.gno.land/VALIDATOR.md
-- https://github.com/gnolang/gno/releases/tag/chain/pearl
+- https://github.com/gnolang/gno/blob/chain/onyx/misc/deployments/onyx.gno.land/VALIDATOR.md
+- https://github.com/gnolang/gno/releases/tag/chain/onyx
 
 ## Network facts
 
 | Field | Value |
 |---|---|
-| Chain ID | `pearl-1` |
-| RPC | `https://rpc.pearl.testnets.gno.land` |
-| Faucet | `https://pearl.testnets.gno.land/faucet` |
-| Release commit | `c4c72fdd288c757e8da0d93aae867fa479b1b15c` |
-| Genesis SHA256 | `c45fe60c8c8a1f859d9e4d5aad7ce4d100ff0eb78302e71318ba0de481a8dc91` |
+| Chain ID | `onyx-1` |
+| RPC | `https://rpc.onyx.testnets.gno.land` |
+| Faucet | `https://onyx.testnets.gno.land/faucet` |
+| Source commit | `5cdbc25fcde0b7569911a4e308ae5d2f6e96c399` |
+| Binary release | `v1.5.0` |
+| Genesis SHA256 | `4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5` |
 
 Official persistent peers:
 
 ```text
-g1m37xukfq6yl555k93fcyzns83qnmgyax9zm875@seed-1.pearl.testnets.gno.land:26656,g1ngukqd3khekaqjf90k45cglzm0l25wwzl2fkn2@seed-2.pearl.testnets.gno.land:26656
+g1x5mlj5ava0dw9vkf4j6admjlzswm6f06p44krn@seed-1.onyx.testnets.gno.land:26656,g1grq5zswt0dlwwe7clr4359w70k2ewgse0gcwck@seed-2.onyx.testnets.gno.land:26656
 ```
 
-Pearl is a fresh chain. Do not reuse Sapphire db/wal, consensus state, or Sapphire snapshots.
+Onyx is a fresh chain. Do not reuse Pearl db/wal, consensus state, or Pearl snapshots.
 
 ## Existing Valley layout
 
@@ -38,28 +39,28 @@ The testnet scripts read `GNOLAND_TESTNET_HOME` and
 `GNOLAND_TESTNET_SERVICE_NAME` for instance-specific overrides. The defaults
 are `~/gno/gnoland-data` and `gnoland-testnet` (that is, `gnoland-testnet.service`).
 
-Valley preserves this layout during Sapphire -> Pearl migration. Back up existing node secrets and the operator keyring first; preserve `GNOKEY_HOME` if you want the same operator `g1...` address.
+Valley preserves this layout during Pearl -> Onyx migration. Back up existing node secrets and the operator keyring first; preserve `GNOKEY_HOME` if you want the same operator `g1...` address.
 
-## Install Pearl release
+## Install Onyx release
 
 Pin source to:
 
 ```text
-c4c72fdd288c757e8da0d93aae867fa479b1b15c
+5cdbc25fcde0b7569911a4e308ae5d2f6e96c399
 ```
 
 Official Linux amd64 binary checksums used by Valley:
 
 ```text
-055b24001a31de7054649a049c9f9db5282965713814b84f7f864e8e6efa237d  gnoland_linux_amd64
-a69017c6e9ce9d77d3bd2f1e811731f6353e0deba5da4f620672d58e5fcec804  gnokey_linux_amd64
+8dcff48228a881e398d238e3e14760c175c872fb164e85f21e5b4ee94a8b076d  gnoland_linux_amd64
+878eb6599161f491a37fdcbd4214477ad28d5d6208f8428f0bffcd3115cd35b4  gnokey_linux_amd64
 ```
 
-Initialize a fresh Pearl config and fresh Pearl node secrets, then verify the official Pearl genesis checksum above.
+Initialize a fresh Onyx config and fresh Onyx node secrets, then verify the official Onyx genesis checksum above.
 
 ## Required/expected configuration
 
-Valley applies the Pearl validator-guide values:
+Valley applies the Onyx validator-guide values:
 
 ```text
 application.prune_strategy = syncable
@@ -76,17 +77,17 @@ Start with:
 ```bash
 gnoland start \
   --data-dir "$GNOLAND_TESTNET_HOME" \
-  --chainid pearl-1 \
+  --chainid onyx-1 \
   --genesis "$GNOLAND_GENESIS" \
   --skip-genesis-sig-verification \
   --log-level info
 ```
 
-The `--skip-genesis-sig-verification` flag is required by the Pearl validator guide.
+The `--skip-genesis-sig-verification` flag is required by the Onyx validator guide.
 
 ## Operator key and validator candidate
 
-Reusing/recovering the Sapphire operator key is optional if you want operator-address continuity. It does not migrate validator status, and a fresh Pearl consensus key is still required.
+Reusing/recovering the Pearl operator key is optional if you want operator-address continuity. It does not migrate validator status, and a fresh Onyx consensus key is still required.
 
 After the node is synced:
 
@@ -94,12 +95,12 @@ After the node is synced:
 gnoland secrets get --data-dir "$GNOLAND_TESTNET_HOME/secrets" validator_key
 ```
 
-Fund the operator address using the Pearl faucet, then register a candidate on `gno.land/r/gnops/valopers` using chain `pearl-1`, Pearl RPC, `1000000ugnot` gas fee, and the Pearl guide's gas-wanted value.
+Fund the operator address using the Onyx faucet, then register a candidate on `gno.land/r/gnops/valopers` using chain `onyx-1`, Onyx RPC, `1000000ugnot` gas fee, and the Onyx guide's gas-wanted value.
 
-Candidate registration does not directly add the node to the active validator set. A GovDAO member must separately create and pass the validator proposal through `r/sys/validators/v3`.
+Candidate registration does not directly add the node to the active validator set. A GovDAO member must separately create and pass the validator proposal through `r/sys/validators/v0`.
 
 ## Snapshot
 
-Snapshot application is available for Pearl through the UTSA and Hazen Network Solutions paths recorded in `VERSIONS.json`. Select menu option `1c` to run the provider flow. It downloads and validates the archive before stopping an active service, keeps node configuration and secrets in place, and can back up and roll back `db`/`wal` state. Read [Snapshot providers and safety](snapshots.md) for provider assurance and safe-stop requirements.
+Onyx snapshot support is currently unavailable. Select menu option `1c` to preserve the existing Valley menu flow, but the helper fails closed and leaves node state unchanged until a chain-specific provider, chain identity, and checksum are verified. Read [Snapshot providers and safety](snapshots.md) for the current status.
 
-Never apply Sapphire db/wal or Sapphire snapshots to Pearl. An active service must report `pearl-1` with `catching_up=false` through a local loopback RPC before snapshot maintenance can stop it.
+Never apply Pearl db/wal or Pearl snapshots to Onyx. An active service must report `onyx-1` with `catching_up=false` through a local loopback RPC before snapshot maintenance can stop it.

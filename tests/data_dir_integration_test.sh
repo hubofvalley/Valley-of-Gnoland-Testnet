@@ -17,7 +17,7 @@ assert_missing() { [ ! -e "$1" ] || fail "unexpected path: $1"; }
 HOME_ROOT="$TEST_ROOT/home"
 SOURCE_ROOT="$HOME_ROOT/gno"
 DEFAULT_HOME="$SOURCE_ROOT/gnoland-data"
-CUSTOM_HOME="$HOME_ROOT/custom-pearl-data"
+CUSTOM_HOME="$HOME_ROOT/custom-onyx-data"
 OUTSIDE_ROOT="$TEST_ROOT/outside"
 mkdir -p "$HOME_ROOT" "$SOURCE_ROOT/.git" "$DEFAULT_HOME" "$CUSTOM_HOME" "$OUTSIDE_ROOT"
 : >"$HOME_ROOT/.bash_profile"
@@ -39,7 +39,7 @@ printf 'default-secret\n' >"$DEFAULT_HOME/secrets/marker"
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
     GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
     GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" \
-    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl bash -c '
+    GNOLAND_TESTNET_SERVICE_NAME=custom-onyx bash -c '
         source "$1"
         menu() { :; }
         systemctl() { return 1; }
@@ -60,7 +60,7 @@ printf 'binary\n' >"$HOME_ROOT/go/bin/gnoland"
 printf 'key-binary\n' >"$HOME_ROOT/go/bin/gnokey"
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
     GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
-    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl \
+    GNOLAND_TESTNET_SERVICE_NAME=custom-onyx \
     GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" bash -c '
         source "$1"
         menu() { :; }
@@ -73,14 +73,14 @@ assert_file "$CUSTOM_HOME/db/marker"
 # A missing service identity must block even an otherwise valid delete token.
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
     GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
-    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
+    GNOLAND_TESTNET_SERVICE_NAME=custom-onyx GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
     GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" bash -c '
         source "$1"
         menu() { :; }
         prompt_back_or_continue() { return 0; }
         systemctl() { return 0; }
         sudo() { return 0; }
-        printf "DELETE-PEARL-NODE\\n" | delete_gnoland_node
+        printf "DELETE-ONYX-NODE\\n" | delete_gnoland_node
     ' _ "$MAIN" >/dev/null 2>&1
 assert_file "$CUSTOM_HOME/db/marker"
 
@@ -89,11 +89,11 @@ cat >"$DELETE_SERVICE" <<EOF_SERVICE
 [Service]
 User=$(id -un)
 WorkingDirectory=$SOURCE_ROOT
-ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $CUSTOM_HOME --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $CUSTOM_HOME --chainid onyx-1 --skip-genesis-sig-verification
 EOF_SERVICE
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
     GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOROOT="$SOURCE_ROOT" GNOKEY_HOME="$HOME_ROOT/.config/gno" \
-    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
+    GNOLAND_TESTNET_SERVICE_NAME=custom-onyx GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
     GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" MOCK_SERVICE_FILE="$DELETE_SERVICE" bash -c '
         source "$1"
         menu() { :; }
@@ -105,7 +105,7 @@ HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HO
             return 0
         }
         sudo() { return 0; }
-        printf "DELETE-PEARL-NODE\\n" | delete_gnoland_node
+        printf "DELETE-ONYX-NODE\\n" | delete_gnoland_node
     ' _ "$MAIN" >/dev/null
 assert_missing "$CUSTOM_HOME"
 assert_file "$DEFAULT_HOME/db/marker"
@@ -128,10 +128,10 @@ cat >"$UPDATER_SERVICE" <<EOF_SERVICE
 [Service]
 User=$(id -un)
 WorkingDirectory=$SOURCE_ROOT
-ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $OUTSIDE_ROOT --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $OUTSIDE_ROOT --chainid onyx-1 --skip-genesis-sig-verification
 EOF_SERVICE
 if PATH="$UPDATER_MOCK:/usr/bin:/bin" HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" \
-    GNOLAND_TESTNET_HOME="$CUSTOM_HOME" GNOLAND_TESTNET_SERVICE_NAME=custom-pearl \
+    GNOLAND_TESTNET_HOME="$CUSTOM_HOME" GNOLAND_TESTNET_SERVICE_NAME=custom-onyx \
     GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" \
     MOCK_SERVICE_FILE="$UPDATER_SERVICE" bash "$UPDATER" >/dev/null 2>&1; then
     fail "updater accepted a service targeting another data directory"
@@ -146,10 +146,10 @@ for state in inactive failed; do
 [Service]
 User=$(id -un)
 WorkingDirectory=$SOURCE_ROOT
-ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $OUTSIDE_ROOT --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $OUTSIDE_ROOT --chainid onyx-1 --skip-genesis-sig-verification
 EOF_SERVICE
     if HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
-        GNOLAND_TESTNET_SERVICE_NAME=custom-pearl MOCK_SERVICE_FILE="$SNAPSHOT_SERVICE" \
+        GNOLAND_TESTNET_SERVICE_NAME=custom-onyx MOCK_SERVICE_FILE="$SNAPSHOT_SERVICE" \
         SNAPSHOT_STATE="$state" bash -c '
             source "$1"
             systemctl() {
@@ -177,10 +177,10 @@ cat >"$VALID_SERVICE" <<EOF_SERVICE
 [Service]
 User=$(id -un)
 WorkingDirectory=$SOURCE_ROOT
-ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $CUSTOM_HOME --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $CUSTOM_HOME --chainid onyx-1 --skip-genesis-sig-verification
 EOF_SERVICE
 HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" GNOLAND_TESTNET_HOME="$CUSTOM_HOME" \
-    GNOLAND_TESTNET_SERVICE_NAME=custom-pearl MOCK_SERVICE_FILE="$VALID_SERVICE" bash -c '
+    GNOLAND_TESTNET_SERVICE_NAME=custom-onyx MOCK_SERVICE_FILE="$VALID_SERVICE" bash -c '
         source "$1"
         systemctl() { if [ "${1:-}" = show ]; then printf "%s\\n" "$MOCK_SERVICE_FILE"; else return 1; fi; }
         stop_gnoland() { :; }
@@ -214,7 +214,7 @@ cat >"$DOCTOR_SERVICE" <<EOF_SERVICE
 [Service]
 User=$(id -un)
 WorkingDirectory=$SOURCE_ROOT
-ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $CUSTOM_HOME --chainid pearl-1 --skip-genesis-sig-verification
+ExecStart=$HOME_ROOT/go/bin/gnoland start --data-dir $CUSTOM_HOME --chainid onyx-1 --skip-genesis-sig-verification
 EOF_SERVICE
 mkdir -p "$HOME_ROOT/go/bin" "$CUSTOM_HOME/config"
 printf 'genesis\n' >"$SOURCE_ROOT/genesis.json"
@@ -238,11 +238,11 @@ exit 0
 SCRIPT
 cat >"$DOCTOR_MOCK/curl" <<'SCRIPT'
 #!/bin/bash
-printf '%s\n' '{"result":{"node_info":{"network":"pearl-1"}}}'
+printf '%s\n' '{"result":{"node_info":{"network":"onyx-1"}}}'
 SCRIPT
 chmod +x "$DOCTOR_MOCK/systemctl" "$DOCTOR_MOCK/curl"
 doctor_json=$(PATH="$DOCTOR_MOCK:/usr/bin:/bin" HOME="$HOME_ROOT" GNO_SOURCE_DIR="$SOURCE_ROOT" \
-    GNOLAND_TESTNET_HOME="$CUSTOM_HOME" GNOLAND_TESTNET_SERVICE_NAME=custom-pearl \
+    GNOLAND_TESTNET_HOME="$CUSTOM_HOME" GNOLAND_TESTNET_SERVICE_NAME=custom-onyx \
     GNOLAND_GENESIS="$SOURCE_ROOT/genesis.json" GNOLAND_BIN="$HOME_ROOT/go/bin/gnoland" \
     GNOKEY_BIN="$HOME_ROOT/go/bin/gnokey" GNOLAND_REMOTE=http://127.0.0.1:26657 \
     GNOLAND_PUBLIC_REMOTE=http://127.0.0.1:26657 MOCK_SERVICE_FILE="$DOCTOR_SERVICE" \

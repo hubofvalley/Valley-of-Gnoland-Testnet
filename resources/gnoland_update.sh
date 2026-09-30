@@ -5,9 +5,9 @@ set -euo pipefail
 # shellcheck source=/dev/null
 source "$HOME/.bash_profile" 2>/dev/null || true
 
-readonly RELEASE_COMMIT="c4c72fdd288c757e8da0d93aae867fa479b1b15c"
-readonly GNOLAND_SHA256="055b24001a31de7054649a049c9f9db5282965713814b84f7f864e8e6efa237d"
-readonly GNOKEY_SHA256="a69017c6e9ce9d77d3bd2f1e811731f6353e0deba5da4f620672d58e5fcec804"
+readonly RELEASE_COMMIT="5cdbc25fcde0b7569911a4e308ae5d2f6e96c399"
+readonly GNOLAND_SHA256="8dcff48228a881e398d238e3e14760c175c872fb164e85f21e5b4ee94a8b076d"
+readonly GNOKEY_SHA256="878eb6599161f491a37fdcbd4214477ad28d5d6208f8428f0bffcd3115cd35b4"
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME%.service}
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
@@ -84,13 +84,13 @@ validate_service_target() {
         echo "Existing --data-dir=${service_data_dir:-missing}, requested --data-dir=$GNOLAND_TESTNET_HOME" >&2
         return 1
     fi
-    if ! grep -Fq -- '--chainid pearl-1' "$SERVICE_FILE"; then
-        echo "Update blocked: this service is not configured for pearl-1." >&2
-        echo "Use Deploy/Re-deploy to perform the Sapphire -> Pearl fresh-chain migration first." >&2
+    if ! grep -Fq -- '--chainid onyx-1' "$SERVICE_FILE"; then
+        echo "Update blocked: this service is not configured for onyx-1." >&2
+        echo "Use Deploy/Re-deploy to perform the Pearl -> Onyx fresh-chain migration first." >&2
         return 1
     fi
     if ! grep -Fq -- '--skip-genesis-sig-verification' "$SERVICE_FILE"; then
-        echo "Update blocked: Pearl requires --skip-genesis-sig-verification in ExecStart." >&2
+        echo "Update blocked: Onyx requires --skip-genesis-sig-verification in ExecStart." >&2
         return 1
     fi
 }
@@ -146,7 +146,7 @@ safe_stop_preflight() {
     case "$rpc_base" in
         http://127.0.0.1:*|http://localhost:*) ;;
         *)
-            echo "Safe-stop preflight blocked: the Pearl status check must use a local loopback RPC endpoint." >&2
+            echo "Safe-stop preflight blocked: the Onyx status check must use a local loopback RPC endpoint." >&2
             return 1
             ;;
     esac
@@ -160,8 +160,8 @@ safe_stop_preflight() {
     network=$(printf '%s' "$status_json" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
     catching_up=$(printf '%s' "$status_json" | jq -r 'if .result.sync_info.catching_up == null then empty else (.result.sync_info.catching_up | tostring) end' 2>/dev/null || true)
 
-    if [ "$network" != "pearl-1" ]; then
-        echo "Safe-stop preflight blocked: local RPC did not verify pearl-1 (reported: ${network:-unavailable})." >&2
+    if [ "$network" != "onyx-1" ]; then
+        echo "Safe-stop preflight blocked: local RPC did not verify onyx-1 (reported: ${network:-unavailable})." >&2
         return 1
     fi
 
@@ -170,8 +170,8 @@ safe_stop_preflight() {
             return 0
             ;;
         true)
-            echo "Safe-stop preflight blocked: this Pearl node reports catching_up=true." >&2
-            echo "The pinned Pearl release predates gnolang/gno#6085; do not stop it while it is catching up." >&2
+            echo "Safe-stop preflight blocked: this Onyx node reports catching_up=true." >&2
+            echo "The pinned Onyx release predates gnolang/gno#6085; do not stop it while it is catching up." >&2
             return 1
             ;;
         *)
@@ -190,7 +190,7 @@ trap 'rm -rf "$tmpdir"' EXIT
 # Stage and verify every network-dependent artifact while the node is still
 # running. A GitHub/release outage or checksum failure must not create downtime.
 if [ ! -d "$GNO_SOURCE_DIR/.git" ]; then
-    echo "Gno source checkout is missing at $GNO_SOURCE_DIR; run the Pearl installer instead." >&2
+    echo "Gno source checkout is missing at $GNO_SOURCE_DIR; run the Onyx installer instead." >&2
     exit 1
 fi
 if git -C "$GNO_SOURCE_DIR" remote get-url origin >/dev/null 2>&1; then
@@ -200,12 +200,12 @@ else
 fi
 git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"
 if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse FETCH_HEAD)" != "$RELEASE_COMMIT" ]; then
-    echo "Fetched Gno source does not match the pinned Pearl commit." >&2
+    echo "Fetched Gno source does not match the pinned Onyx commit." >&2
     exit 1
 fi
 
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-curl -fsSL "https://github.com/gnolang/gno/releases/download/chain/pearl/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/v1.5.0/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/v1.5.0/gnokey_linux_amd64" -o "$tmpdir/gnokey"
 echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
 echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
 chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
@@ -226,7 +226,7 @@ if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then
     exit 1
 fi
 if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then
-    echo "Missing Pearl stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs." >&2
+    echo "Missing Onyx stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs." >&2
     exit 1
 fi
 

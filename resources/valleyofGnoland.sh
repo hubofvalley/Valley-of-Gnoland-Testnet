@@ -377,6 +377,17 @@ function prompt_back_or_continue() {
 function run_repository_script() {
     local relative_path=$1
     local script_file exit_code
+
+    # Onyx requires v1.6.0-rc.1 since the coordinated halt at height 445000.
+    # Both reviewed helpers in the pinned runtime commit still install v1.5.0.
+    # Refuse these paths before downloading or executing the outdated scripts.
+    case "$relative_path" in
+        resources/gnoland_node_install_testnet.sh|resources/gnoland_update.sh)
+            echo -e "${RED}Onyx install/update blocked: pinned v1.5.0 predates the activated v1.6.0-rc.1 upgrade.${RESET}" >&2
+            echo "Official Onyx upgrade ledger: https://github.com/gnolang/gno/blob/chain/mainnet/misc/deployments/onyx.gno.land/UPGRADES.md" >&2
+            return 1
+            ;;
+    esac
     script_file=$(mktemp)
     if ! curl -fsSL "${VALLEY_RUNTIME_BASE_URL}/${relative_path}" -o "$script_file"; then
         rm -f "$script_file"

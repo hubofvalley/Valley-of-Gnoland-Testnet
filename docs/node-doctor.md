@@ -16,6 +16,14 @@ JSON output:
 bash <(curl -fsSL https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/main/resources/valleyofGnoland.sh) doctor --json
 ```
 
+For this newly added diagnostic, run the Node Doctor directly from an updated checkout:
+
+```bash
+bash resources/gnoland_node_doctor.sh --json
+```
+
+The published launcher downloads an **immutable, older helper ref** if no local helper is available. Until that ref is separately reviewed and updated, this new check is not guaranteed via the download-only launcher path.
+
 Treat warnings as non-zero as well:
 
 ```bash
@@ -30,6 +38,7 @@ The doctor checks:
 - source checkout commit `5cdbc25fcde0b7569911a4e308ae5d2f6e96c399`;
 - Onyx genesis SHA-256 `4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5`;
 - official Onyx persistent peers;
+- top-level `halt_height` and `skip_upgrade_height` overrides (nonzero or unrecognized values generate warnings because they may affect coordinated halts or startup version gates);
 - `application.prune_strategy = syncable`;
 - `consensus.timeout_commit = 3s`;
 - `consensus.peer_gossip_sleep_duration = 10ms`;

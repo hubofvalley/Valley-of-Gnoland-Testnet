@@ -25,7 +25,6 @@ on_error() {
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
 readonly CHAIN_ID="onyx-1"
-readonly RELEASE_TAG="chain/onyx"
 readonly RELEASE_COMMIT="5cdbc25fcde0b7569911a4e308ae5d2f6e96c399"
 readonly BINARY_RELEASE_TAG="v1.7.0-rc.1"
 readonly BINARY_RELEASE_COMMIT="e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319"
@@ -128,6 +127,18 @@ verify_staged_binary_versions() {
         echo "Expected: gnokey version: $BINARY_RELEASE_TAG" >&2
         return 1
     fi
+}
+
+build_binaries_from_release_source() {
+    local binary_source_dir="$tmpdir/binary-release-source"
+    git clone --filter=blob:none --no-checkout --depth 1 https://github.com/gnolang/gno.git "$binary_source_dir"
+    git -C "$binary_source_dir" fetch --depth 1 origin "$BINARY_RELEASE_COMMIT"
+    git -C "$binary_source_dir" checkout --detach --force FETCH_HEAD
+    if [ "$(git -C "$binary_source_dir" rev-parse HEAD)" != "$BINARY_RELEASE_COMMIT" ]; then
+        echo -e "${RED}Binary build source does not match the official ${BINARY_RELEASE_TAG} commit.${RESET}" >&2
+        false
+    fi
+    (cd "$binary_source_dir" && make -C gno.land VERSION="$BINARY_RELEASE_TAG" install.gnoland install.gnokey)
 }
 
 path_is_under_home() {
@@ -320,14 +331,15 @@ if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then e
 if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then echo -e "${RED}Missing Onyx stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2; false; fi
 
 CURRENT_STAGE="install verified Onyx binaries"
+verify_binary_release_metadata
 if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
     if ! command -v go >/dev/null 2>&1; then echo -e "${RED}Go is required for source builds. Install Go or rerun with prebuilt binaries.${RESET}" >&2; false; fi
-    echo -e "${CYAN}Building gnoland and gnokey from ${RELEASE_TAG}.${RESET}"
-    (cd "$GNO_SOURCE_DIR" && make -C gno.land VERSION="$BINARY_RELEASE_TAG" install.gnoland install.gnokey)
+    echo -e "${CYAN}Building gnoland and gnokey from official ${BINARY_RELEASE_TAG} source.${RESET}"
+    build_binaries_from_release_source
 else
     if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then echo -e "${RED}The prebuilt path currently supports Linux amd64 only. Use source build on this host.${RESET}" >&2; false; fi
     echo -e "${CYAN}Downloading official Gno ${BINARY_RELEASE_TAG} binaries.${RESET}"
-    verify_binary_release_metadata
+
     curl -fsSL "https://github.com/gnolang/gno/releases/download/${BINARY_RELEASE_TAG}/gnoland_linux_amd64" -o "$tmpdir/gnoland"
     curl -fsSL "https://github.com/gnolang/gno/releases/download/${BINARY_RELEASE_TAG}/gnokey_linux_amd64" -o "$tmpdir/gnokey"
     echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -

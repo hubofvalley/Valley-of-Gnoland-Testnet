@@ -66,6 +66,8 @@ df61577df813d18184d9bfc15f8f28854f37c35bae659bac857d5cae388ea9fa  gnoland_linux_
 
 Initialize a fresh Onyx config and fresh Onyx node secrets, then verify the official Onyx genesis checksum above. The installer and updater also verify the release tag commit, binary version output, and these binary checksums before activation.
 
+For source builds, Valley checks out the separate binary-release commit `e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319` in a temporary build tree and keeps the deployment source tree as `GNOROOT`; it does not stamp the deployment commit as the binary release.
+
 ## Required/expected configuration
 
 Valley applies the Onyx validator-guide values:

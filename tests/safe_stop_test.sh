@@ -125,7 +125,7 @@ mapfile -t preflight_lines < <(grep -n '^safe_stop_preflight$' "$UPDATER" | cut 
 fetch_line=$(grep -nF 'git -C "$GNO_SOURCE_DIR" fetch --depth 1 origin "$RELEASE_COMMIT"' "$UPDATER" | cut -d: -f1)
 gnoland_checksum_line=$(grep -nF 'echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -' "$UPDATER" | cut -d: -f1)
 gnokey_checksum_line=$(grep -nF 'echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -' "$UPDATER" | cut -d: -f1)
-stop_line=$(grep -nF 'sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME"' "$UPDATER" | cut -d: -f1)
+stop_line=$(grep -nF 'sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME"' "$UPDATER" | tail -n1 | cut -d: -f1)
 checkout_line=$(grep -nF 'git -C "$GNO_SOURCE_DIR" checkout --detach --force FETCH_HEAD' "$UPDATER" | cut -d: -f1)
 
 [ -n "$fetch_line" ] && [ -n "$gnoland_checksum_line" ] && [ -n "$gnokey_checksum_line" ] && [ -n "$stop_line" ] && [ -n "$checkout_line" ] || fail "updater staging markers missing"

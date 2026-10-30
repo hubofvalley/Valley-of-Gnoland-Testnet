@@ -19,8 +19,12 @@ GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 OS_USER=$(id -un)
 SERVICE_FILE=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
-SERVICE_STOPPED=0
+SERVICE_WAS_ACTIVE=0
+ACTIVATION_ATTEMPTED=0
 ACTIVATION_SUCCEEDED=0
+PREVIOUS_SOURCE_COMMIT=""
+PREVIOUS_GNOLAND_BACKUP=""
+PREVIOUS_GNOKEY_BACKUP=""
 
 canonical_path() {
     realpath -m -- "$1"
@@ -162,6 +166,35 @@ get_local_rpc_url() {
     echo "http://127.0.0.1:${port:-26657}"
 }
 
+post_start_health_check() {
+    local rpc_url status_json network catching_up version
+
+    if ! version=$(GNOROOT="$GNO_SOURCE_DIR" "$GNOLAND_BIN" version 2>/dev/null); then
+        echo "Post-start validation failed: gnoland version could not be read." >&2
+        return 1
+    fi
+    if [ "$version" != "gnoland version: $BINARY_RELEASE_TAG" ]; then
+        echo "Post-start validation failed: unexpected gnoland version: ${version:-unavailable}." >&2
+        return 1
+    fi
+
+    rpc_url=$(get_local_rpc_url)
+    for _ in $(seq 1 120); do
+        if sudo systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME"; then
+            status_json=$(curl -m 5 -fsS "${rpc_url%/}/status" 2>/dev/null || true)
+            network=$(printf '%s' "$status_json" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+            catching_up=$(printf '%s' "$status_json" | jq -r 'if .result.sync_info.catching_up == null then empty else (.result.sync_info.catching_up | tostring) end' 2>/dev/null || true)
+            if [ "$network" = "onyx-1" ] && [ "$catching_up" = "false" ]; then
+                return 0
+            fi
+        fi
+        sleep 1
+    done
+
+    echo "Post-start validation failed: Onyx RPC did not become synced and healthy within 120 seconds." >&2
+    return 1
+}
+
 safe_stop_preflight() {
     local service_state rpc_base status_json network catching_up
 
@@ -223,15 +256,56 @@ safe_stop_preflight() {
 # Refuse obviously unsafe maintenance before doing network work.
 safe_stop_preflight
 
+if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+    echo "Update blocked: curl and jq are required for staged and post-start validation." >&2
+    exit 1
+fi
+if [ -n "$(git -C "$GNO_SOURCE_DIR" status --porcelain)" ]; then
+    echo "Update blocked: Gno source checkout has local changes; preserve them before updating." >&2
+    exit 1
+fi
+PREVIOUS_SOURCE_COMMIT=$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)
+if [ ! -f "$GNOLAND_BIN" ] || [ ! -f "$GNOKEY_BIN" ]; then
+    echo "Update blocked: existing gnoland and gnokey binaries are required for rollback." >&2
+    exit 1
+fi
+
 tmpdir=$(mktemp -d)
+PREVIOUS_GNOLAND_BACKUP="$tmpdir/previous-gnoland"
+PREVIOUS_GNOKEY_BACKUP="$tmpdir/previous-gnokey"
+cp -p "$GNOLAND_BIN" "$PREVIOUS_GNOLAND_BACKUP"
+cp -p "$GNOKEY_BIN" "$PREVIOUS_GNOKEY_BACKUP"
+
+restore_previous_state() {
+    local restore_failed=0
+    if ! git -C "$GNO_SOURCE_DIR" checkout --detach --force "$PREVIOUS_SOURCE_COMMIT"; then
+        restore_failed=1
+    fi
+    if ! cp -p "$PREVIOUS_GNOLAND_BACKUP" "$GNOLAND_BIN"; then
+        restore_failed=1
+    fi
+    if ! cp -p "$PREVIOUS_GNOKEY_BACKUP" "$GNOKEY_BIN"; then
+        restore_failed=1
+    fi
+    return "$restore_failed"
+}
+
 cleanup_and_recover() {
     local exit_code=$?
-    if [ "$exit_code" -ne 0 ] && [ "$SERVICE_STOPPED" -eq 1 ] && [ "$ACTIVATION_SUCCEEDED" -eq 0 ]; then
-        echo "Update activation failed; attempting to restart ${GNOLAND_TESTNET_SERVICE_NAME}.service." >&2
-        if sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"; then
-            echo "Recovery restart requested for ${GNOLAND_TESTNET_SERVICE_NAME}.service." >&2
+    if [ "$exit_code" -ne 0 ] && [ "$ACTIVATION_ATTEMPTED" -eq 1 ] && [ "$ACTIVATION_SUCCEEDED" -eq 0 ]; then
+        echo "Update activation failed; restoring the previous source and binaries." >&2
+        if restore_previous_state; then
+            if [ "$SERVICE_WAS_ACTIVE" -eq 1 ]; then
+                if sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"; then
+                    echo "Recovery restart requested for ${GNOLAND_TESTNET_SERVICE_NAME}.service." >&2
+                else
+                    echo "Recovery restart failed; inspect ${GNOLAND_TESTNET_SERVICE_NAME}.service manually." >&2
+                fi
+            else
+                sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME" || true
+            fi
         else
-            echo "Recovery restart failed; inspect ${GNOLAND_TESTNET_SERVICE_NAME}.service manually." >&2
+            echo "Recovery restore failed; inspect ${GNOLAND_TESTNET_SERVICE_NAME}.service and source checkout manually." >&2
         fi
     fi
     rm -rf "$tmpdir"
@@ -269,7 +343,7 @@ verify_staged_binary_versions "$tmpdir/gnoland" "$tmpdir/gnokey"
 # before crossing the maintenance boundary.
 safe_stop_preflight
 if systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME"; then
-    SERVICE_STOPPED=1
+    SERVICE_WAS_ACTIVE=1
     sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME"
 fi
 
@@ -308,7 +382,9 @@ if [ "$(command -v gnoland)" != "$GNOLAND_BIN" ] || [ "$(command -v gnokey)" != 
     exit 1
 fi
 
+ACTIVATION_ATTEMPTED=1
 sudo systemctl daemon-reload
 sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"
+post_start_health_check
 ACTIVATION_SUCCEEDED=1
 sudo systemctl status "$GNOLAND_TESTNET_SERVICE_NAME" --no-pager -l || true

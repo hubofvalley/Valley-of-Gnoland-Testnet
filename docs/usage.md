@@ -70,3 +70,4 @@ Reusing/recovering a Pearl operator key is optional **operator-address continuit
 - Never share mnemonics or node secrets.
 - Candidate registration is not active-validator admission.
 - The updater leaves the service running when release metadata, downloads, or checksum verification fail.
+- Source builds use a temporary checkout of the pinned binary-release commit; the Onyx deployment source tree remains the runtime `GNOROOT`.

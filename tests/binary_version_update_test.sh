@@ -44,13 +44,24 @@ gnokey_download=$(grep -nF 'curl -fsSL "https://github.com/gnolang/gno/releases/
 gnoland_check=$(grep -nF 'echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -' "$UPDATER" | cut -d: -f1)
 gnokey_check=$(grep -nF 'echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -' "$UPDATER" | cut -d: -f1)
 version_check=$(grep -nF 'verify_staged_binary_versions "$tmpdir/gnoland" "$tmpdir/gnokey"' "$UPDATER" | cut -d: -f1)
-stop_line=$(grep -nF 'sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME"' "$UPDATER" | cut -d: -f1)
+stop_line=$(grep -nF 'sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME"' "$UPDATER" | tail -n1 | cut -d: -f1)
 [ -n "$metadata_call" ] && [ -n "$gnoland_download" ] && [ -n "$gnokey_download" ] && [ -n "$gnoland_check" ] && [ -n "$gnokey_check" ] && [ -n "$version_check" ] && [ -n "$stop_line" ] || fail 'updater staging markers missing'
 [ "$metadata_call" -lt "$gnoland_download" ] || fail 'release metadata check must precede downloads'
 [ "$gnoland_download" -lt "$gnoland_check" ] && [ "$gnokey_download" -lt "$gnokey_check" ] || fail 'downloads must precede checksum checks'
 [ "$gnoland_check" -lt "$stop_line" ] && [ "$gnokey_check" -lt "$stop_line" ] || fail 'checksums must precede service stop'
 [ "$version_check" -lt "$stop_line" ] || fail 'binary version checks must precede service stop'
+backup_line=$(grep -nF 'cp -p "$GNOLAND_BIN" "$PREVIOUS_GNOLAND_BACKUP"' "$UPDATER" | cut -d: -f1)
+post_start_line=$(grep -nF 'post_start_health_check' "$UPDATER" | tail -n1 | cut -d: -f1)
+[ -n "$backup_line" ] && [ -n "$post_start_line" ] || fail 'rollback/health ordering markers missing'
+[ "$backup_line" -lt "$stop_line" ] || fail 'previous binaries must be backed up before service stop'
+[ "$post_start_line" -gt "$stop_line" ] || fail 'post-start health gate must run after service restart'
 grep -Fq 'cleanup_and_recover' "$UPDATER" || fail 'updater recovery handler missing'
+grep -Fq 'PREVIOUS_GNOLAND_BACKUP' "$UPDATER" || fail 'previous binary backup missing'
+grep -Fq 'restore_previous_state' "$UPDATER" || fail 'rollback restore helper missing'
+grep -Fq 'post_start_health_check' "$UPDATER" || fail 'post-start health gate missing'
+grep -Fq 'ACTIVATION_ATTEMPTED=1' "$UPDATER" || fail 'activation attempt marker missing'
+grep -Fq 'build_binaries_from_release_source' "$INSTALLER" || fail 'source build must use a separate binary-release checkout'
+grep -Fq 'git -C "$binary_source_dir" fetch --depth 1 origin "$BINARY_RELEASE_COMMIT"' "$INSTALLER" || fail 'source build commit pin missing'
 
 grep -Fq "$TAG" "$README" || fail 'README binary tag missing'
 grep -Fq "$COMMIT" "$README" "$NODE_GUIDE" "$USAGE" || fail 'binary release commit missing from docs'

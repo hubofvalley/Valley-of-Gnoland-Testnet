@@ -41,6 +41,9 @@ jobs:
       - name: Run Onyx migration contract test
         run: bash tests/onyx_migration_test.sh
 
+      - name: Run binary version update contract test
+        run: bash tests/binary_version_update_test.sh
+
       - name: Run multi-instance guard regression test
         run: bash tests/multi_instance_test.sh
 

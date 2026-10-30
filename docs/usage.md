@@ -1,6 +1,6 @@
 # Valley of Gnoland - Usage Guide
 
-Valley of Gnoland now targets the Gno.land **Onyx** testnet (`onyx-1`). Testnet-specific overrides are `GNOLAND_TESTNET_SERVICE_NAME` and `GNOLAND_TESTNET_HOME`; they default to `gnoland-testnet` and `~/gno/gnoland-data`. The selected data directory is passed explicitly to every `gnoland` init/start/secrets operation and to the systemd unit.
+Valley of Gnoland now targets the Gno.land **Onyx** testnet (`onyx-1`). The pinned binary release is `v1.7.0-rc.1` at commit `e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319`. Testnet-specific overrides are `GNOLAND_TESTNET_SERVICE_NAME` and `GNOLAND_TESTNET_HOME`; they default to `gnoland-testnet` and `~/gno/gnoland-data`. The selected data directory is passed explicitly to every `gnoland` init/start/secrets operation and to the systemd unit.
 
 ## Run
 
@@ -39,7 +39,7 @@ Reusing/recovering a Pearl operator key is optional **operator-address continuit
 | Option | Behaviour |
 |---|---|
 | `1a` | Fresh-installs Onyx or migrates a Pearl installation to Onyx with backups and explicit confirmation. |
-| `1b` | Updates only an already-Onyx service to the pinned Onyx binaries; stages and verifies network artifacts before stopping the node. |
+| `1b` | Updates only an already-Onyx service to the pinned `v1.7.0-rc.1` binaries; verifies the release commit, checksums, and staged binary version output, stages all network artifacts, and only then stops the node. |
 | `1c` | Retains the snapshot menu, but Onyx snapshot support is currently unavailable and the helper leaves node state unchanged. |
 | `1d` | Adds peers manually or resets to the official Onyx persistent peers. |
 | `1e` | Shows local Onyx chain ID, height, sync state, and peer count. |
@@ -69,3 +69,4 @@ Reusing/recovering a Pearl operator key is optional **operator-address continuit
 - Use one OS user/service name/port prefix per instance.
 - Never share mnemonics or node secrets.
 - Candidate registration is not active-validator admission.
+- The updater leaves the service running when release metadata, downloads, or checksum verification fail.

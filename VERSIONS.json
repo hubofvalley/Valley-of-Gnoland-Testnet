@@ -5,9 +5,9 @@
   "release_tag": "chain/onyx",
   "release_commit": "5cdbc25fcde0b7569911a4e308ae5d2f6e96c399",
   "release_url": "https://github.com/gnolang/gno/releases/tag/chain/onyx",
-  "binary_release_tag": "v1.5.0",
-  "binary_release_commit": "e75fef82c02876a4df92ad6e325c5479b9532168",
-  "binary_release_url": "https://github.com/gnolang/gno/releases/tag/v1.5.0",
+  "binary_release_tag": "v1.7.0-rc.1",
+  "binary_release_commit": "e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319",
+  "binary_release_url": "https://github.com/gnolang/gno/releases/tag/v1.7.0-rc.1",
   "genesis_sha256": "4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5",
   "endpoints": {
     "public_provider": "Gno.land",
@@ -33,8 +33,8 @@
     "script": "resources/apply_snapshot.sh"
   },
   "binaries": {
-    "gnoland_linux_amd64": "8dcff48228a881e398d238e3e14760c175c872fb164e85f21e5b4ee94a8b076d",
-    "gnokey_linux_amd64": "878eb6599161f491a37fdcbd4214477ad28d5d6208f8428f0bffcd3115cd35b4"
+    "gnoland_linux_amd64": "df61577df813d18184d9bfc15f8f28854f37c35bae659bac857d5cae388ea9fa",
+    "gnokey_linux_amd64": "6e0fdeed8829865add8b6c8efef41466ae1f05d0598618b02f67533fe582a643"
   },
   "migration": {
     "from": "Gno.land Pearl",
@@ -43,5 +43,7 @@
     "operator_key_reuse": "optional_address_continuity_only"
   },
   "status": "onyx",
-  "last_reviewed": "2026-09-30"
+  "verification_status": "static_verified_live_rehearsal_pending",
+  "verification_note": "The official v1.7.0-rc.1 tag commit and Linux amd64 checksums are verified, and live Onyx runtime recovery was observed. The exact Valley updater path still needs a clean-host rehearsal before publication.",
+  "last_reviewed": "2026-10-30"
 }

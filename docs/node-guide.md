@@ -13,7 +13,8 @@ Official validator source:
 | RPC | `https://rpc.onyx.testnets.gno.land` |
 | Faucet | `https://onyx.testnets.gno.land/faucet` |
 | Source commit | `5cdbc25fcde0b7569911a4e308ae5d2f6e96c399` |
-| Binary release | `v1.5.0` |
+| Binary release | `v1.7.0-rc.1` |
+| Binary release commit | `e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319` |
 | Genesis SHA256 | `4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5` |
 
 Official persistent peers:
@@ -49,14 +50,21 @@ Pin source to:
 5cdbc25fcde0b7569911a4e308ae5d2f6e96c399
 ```
 
+Download the official Linux amd64 release assets:
+
+```bash
+curl -fsSLO https://github.com/gnolang/gno/releases/download/v1.7.0-rc.1/gnoland_linux_amd64
+curl -fsSLO https://github.com/gnolang/gno/releases/download/v1.7.0-rc.1/gnokey_linux_amd64
+```
+
 Official Linux amd64 binary checksums used by Valley:
 
 ```text
-8dcff48228a881e398d238e3e14760c175c872fb164e85f21e5b4ee94a8b076d  gnoland_linux_amd64
-878eb6599161f491a37fdcbd4214477ad28d5d6208f8428f0bffcd3115cd35b4  gnokey_linux_amd64
+df61577df813d18184d9bfc15f8f28854f37c35bae659bac857d5cae388ea9fa  gnoland_linux_amd64
+6e0fdeed8829865add8b6c8efef41466ae1f05d0598618b02f67533fe582a643  gnokey_linux_amd64
 ```
 
-Initialize a fresh Onyx config and fresh Onyx node secrets, then verify the official Onyx genesis checksum above.
+Initialize a fresh Onyx config and fresh Onyx node secrets, then verify the official Onyx genesis checksum above. The installer and updater also verify the release tag commit, binary version output, and these binary checksums before activation.
 
 ## Required/expected configuration
 

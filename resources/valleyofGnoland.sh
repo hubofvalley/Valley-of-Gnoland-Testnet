@@ -10,8 +10,8 @@ RESET='\033[0m'
 
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
-readonly VALLEY_RUNTIME_REF="3874fe043eedebd4c594a83cc5a91e7cd3851c31"
-readonly VALLEY_RUNTIME_BASE_URL="https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/3874fe043eedebd4c594a83cc5a91e7cd3851c31"
+readonly VALLEY_RUNTIME_REF="616aae9235dc41d71c001cda0c64589eb42bd1b7"
+readonly VALLEY_RUNTIME_BASE_URL="https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/616aae9235dc41d71c001cda0c64589eb42bd1b7"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -378,17 +378,8 @@ function run_repository_script() {
     local relative_path=$1
     local script_file exit_code
 
-    # Onyx has activated upgrades beyond the pinned v1.5.0 runtime.
-    # Both reviewed helpers still install v1.5.0; consult the authoritative
-    # live ledger instead of embedding a possibly stale minimum version.
-    # Refuse these paths before downloading or executing the outdated scripts.
-    case "$relative_path" in
-        resources/gnoland_node_install_testnet.sh|resources/gnoland_update.sh)
-            echo -e "${RED}Onyx install/update blocked: pinned v1.5.0 is obsolete on the active Onyx network.${RESET}" >&2
-            echo "Official Onyx upgrade ledger: https://github.com/gnolang/gno/blob/chain/mainnet/misc/deployments/onyx.gno.land/UPGRADES.md" >&2
-            return 1
-            ;;
-    esac
+    # Every runtime helper is fetched from the reviewed immutable commit above.
+    # Never execute a mutable branch or tag.
     script_file=$(mktemp)
     if ! curl -fsSL "${VALLEY_RUNTIME_BASE_URL}/${relative_path}" -o "$script_file"; then
         rm -f "$script_file"

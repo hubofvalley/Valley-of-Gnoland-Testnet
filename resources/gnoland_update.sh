@@ -344,6 +344,9 @@ verify_staged_binary_versions "$tmpdir/gnoland" "$tmpdir/gnokey"
 safe_stop_preflight
 if systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME"; then
     SERVICE_WAS_ACTIVE=1
+    # Arm rollback before crossing the maintenance boundary. Any local
+    # activation failure after stop must restore the old source and binaries.
+    ACTIVATION_ATTEMPTED=1
     sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME"
 fi
 
@@ -382,7 +385,6 @@ if [ "$(command -v gnoland)" != "$GNOLAND_BIN" ] || [ "$(command -v gnokey)" != 
     exit 1
 fi
 
-ACTIVATION_ATTEMPTED=1
 sudo systemctl daemon-reload
 sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"
 post_start_health_check

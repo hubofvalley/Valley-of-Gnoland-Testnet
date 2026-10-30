@@ -62,7 +62,7 @@ case "$1" in
         printf 'stop\n' >>"$MOCK_EVENTS"
         ;;
     restart)
-        if [ ! -e "$MOCK_RESTART_FAILED" ]; then
+        if [ "${MOCK_FAIL_PRE_RESTART:-0}" != 1 ] && [ ! -e "$MOCK_RESTART_FAILED" ]; then
             : >"$MOCK_RESTART_FAILED"
             printf 'restart-failed\n' >>"$MOCK_EVENTS"
             exit 1
@@ -103,9 +103,15 @@ case "$*" in
     *status*--porcelain*)
         ;;
     *checkout*--detach*--force*FETCH_HEAD*)
+        printf 'new source\n' >"$GNO_SOURCE_DIR/source-marker"
         : >"$MOCK_GIT_STATE"
+        if [ "${MOCK_FAIL_PRE_RESTART:-0}" = 1 ]; then
+            printf 'checkout-failed\n' >>"$MOCK_EVENTS"
+            exit 1
+        fi
         ;;
     *checkout*--detach*--force*)
+        printf 'old source\n' >"$GNO_SOURCE_DIR/source-marker"
         rm -f "$MOCK_GIT_STATE"
         ;;
     *)
@@ -157,8 +163,16 @@ set -e
 if [ "$rc" -eq 0 ]; then cat "$TMP/output" >&2; fail "forced activation failure must return non-zero"; fi
 cat "$TMP/output" >&2
 grep -Fxq stop "$events" || fail "maintenance stop was not attempted"
-grep -Fxq restart-failed "$events" || fail "forced first restart failure was not observed"
+if [ "${MOCK_FAIL_PRE_RESTART:-0}" = 1 ]; then
+    grep -Fxq checkout-failed "$events" || fail "forced pre-restart activation failure was not observed"
+    if grep -Fxq restart-failed "$events"; then
+        fail "pre-restart failure unexpectedly reached the restart failure"
+    fi
+else
+    grep -Fxq restart-failed "$events" || fail "forced first restart failure was not observed"
+fi
 grep -Fxq recovery-restart "$events" || fail "recovery restart was not attempted"
+grep -Fxq 'old source' "$SOURCE_DIR/source-marker" || fail "old source was not restored"
 grep -Fq 'gnoland version: v1.6.0-rc.1' "$BIN_DIR/gnoland" || fail "old gnoland binary was not restored"
 grep -Fq 'gnokey version: v1.6.0-rc.1' "$BIN_DIR/gnokey" || fail "old gnokey binary was not restored"
 

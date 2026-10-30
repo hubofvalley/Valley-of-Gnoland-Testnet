@@ -47,6 +47,9 @@ jobs:
       - name: Run updater activation recovery fixture
         run: bash tests/activation_recovery_test.sh
 
+      - name: Run updater pre-restart recovery fixture
+        run: MOCK_FAIL_PRE_RESTART=1 bash tests/activation_recovery_test.sh
+
       - name: Run multi-instance guard regression test
         run: bash tests/multi_instance_test.sh
 

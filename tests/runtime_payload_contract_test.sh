@@ -13,7 +13,8 @@ runtime_ref=$(sed -n 's/^readonly VALLEY_RUNTIME_REF="\([0-9a-f]\{40\}\)"$/\1/p'
 
 grep -Fq 'safe_stop_preflight' "$UPDATER" || fail "updater safe-stop guard missing"
 grep -Fq 'resources/gnoland_node_install_testnet.sh|resources/gnoland_update.sh)' "$MAIN" || fail "obsolete Onyx helpers are not blocked"
-grep -Fq 'Onyx install/update blocked: pinned v1.5.0' "$MAIN" || fail "missing obsolete Onyx helper error"
+grep -Fq 'Onyx install/update blocked: pinned v1.5.0 is obsolete on the active Onyx network.' "$MAIN" || fail "missing activated-release-neutral Onyx helper error"
+grep -Fq 'Official Onyx upgrade ledger: https://github.com/gnolang/gno/blob/chain/mainnet/misc/deployments/onyx.gno.land/UPGRADES.md' "$MAIN" || fail "missing authoritative Onyx upgrade ledger reference"
 guard_line=$(grep -nF 'resources/gnoland_node_install_testnet.sh|resources/gnoland_update.sh)' "$MAIN" | cut -d: -f1)
 download_line=$(grep -nF '"${VALLEY_RUNTIME_BASE_URL}/${relative_path}" -o "$script_file"' "$MAIN" | cut -d: -f1)
 [ -n "$guard_line" ] && [ -n "$download_line" ] && [ "$guard_line" -lt "$download_line" ] || fail "obsolete Onyx guard must precede helper download"

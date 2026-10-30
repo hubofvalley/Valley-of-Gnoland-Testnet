@@ -1,13 +1,15 @@
 #!/bin/bash
 
-set -euo pipefail
+set -Eeuo pipefail
 
 # shellcheck source=/dev/null
 source "$HOME/.bash_profile" 2>/dev/null || true
 
 readonly RELEASE_COMMIT="5cdbc25fcde0b7569911a4e308ae5d2f6e96c399"
-readonly GNOLAND_SHA256="8dcff48228a881e398d238e3e14760c175c872fb164e85f21e5b4ee94a8b076d"
-readonly GNOKEY_SHA256="878eb6599161f491a37fdcbd4214477ad28d5d6208f8428f0bffcd3115cd35b4"
+readonly BINARY_RELEASE_TAG="v1.7.0-rc.1"
+readonly BINARY_RELEASE_COMMIT="e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319"
+readonly GNOLAND_SHA256="df61577df813d18184d9bfc15f8f28854f37c35bae659bac857d5cae388ea9fa"
+readonly GNOKEY_SHA256="6e0fdeed8829865add8b6c8efef41466ae1f05d0598618b02f67533fe582a643"
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME:-gnoland-testnet}
 GNOLAND_TESTNET_SERVICE_NAME=${GNOLAND_TESTNET_SERVICE_NAME%.service}
 GNO_SOURCE_DIR=${GNO_SOURCE_DIR:-$HOME/gno}
@@ -17,6 +19,12 @@ GNOLAND_BIN=${GNOLAND_BIN:-$HOME/go/bin/gnoland}
 GNOKEY_BIN=${GNOKEY_BIN:-$HOME/go/bin/gnokey}
 OS_USER=$(id -un)
 SERVICE_FILE=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p FragmentPath --value 2>/dev/null || true)
+SERVICE_WAS_ACTIVE=0
+ACTIVATION_ATTEMPTED=0
+ACTIVATION_SUCCEEDED=0
+PREVIOUS_SOURCE_COMMIT=""
+PREVIOUS_GNOLAND_BACKUP=""
+PREVIOUS_GNOKEY_BACKUP=""
 
 canonical_path() {
     realpath -m -- "$1"
@@ -107,6 +115,41 @@ if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then
     exit 1
 fi
 
+verify_binary_release_metadata() {
+    local tag_commit
+    if ! tag_commit=$(git ls-remote https://github.com/gnolang/gno.git "refs/tags/${BINARY_RELEASE_TAG}^{}" | awk 'NR == 1 { print $1 }'); then
+        echo "Unable to read official Gno release metadata for ${BINARY_RELEASE_TAG}." >&2
+        return 1
+    fi
+    if [ "$tag_commit" != "$BINARY_RELEASE_COMMIT" ]; then
+        echo "Unexpected Gno binary release commit for ${BINARY_RELEASE_TAG}: ${tag_commit:-unavailable}." >&2
+        echo "Expected: $BINARY_RELEASE_COMMIT" >&2
+        return 1
+    fi
+}
+
+verify_staged_binary_versions() {
+    local gnoland_path=$1 gnokey_path=$2 gnoland_version gnokey_version
+    if ! gnoland_version=$(GNOROOT="$GNO_SOURCE_DIR" "$gnoland_path" version 2>/dev/null); then
+        echo "Unable to execute staged gnoland version check." >&2
+        return 1
+    fi
+    if [ "$gnoland_version" != "gnoland version: $BINARY_RELEASE_TAG" ]; then
+        echo "Staged gnoland reports an unexpected version: ${gnoland_version:-unavailable}." >&2
+        echo "Expected: gnoland version: $BINARY_RELEASE_TAG" >&2
+        return 1
+    fi
+    if ! gnokey_version=$(GNOROOT="$GNO_SOURCE_DIR" "$gnokey_path" version 2>/dev/null); then
+        echo "Unable to execute staged gnokey version check." >&2
+        return 1
+    fi
+    if [ "$gnokey_version" != "gnokey version: $BINARY_RELEASE_TAG" ]; then
+        echo "Staged gnokey reports an unexpected version: ${gnokey_version:-unavailable}." >&2
+        echo "Expected: gnokey version: $BINARY_RELEASE_TAG" >&2
+        return 1
+    fi
+}
+
 get_local_rpc_url() {
     local cfg="$GNOLAND_TESTNET_HOME/config/config.toml" port=""
     if [ -f "$cfg" ]; then
@@ -121,6 +164,35 @@ get_local_rpc_url() {
         ' "$cfg")
     fi
     echo "http://127.0.0.1:${port:-26657}"
+}
+
+post_start_health_check() {
+    local rpc_url status_json network catching_up version
+
+    if ! version=$(GNOROOT="$GNO_SOURCE_DIR" "$GNOLAND_BIN" version 2>/dev/null); then
+        echo "Post-start validation failed: gnoland version could not be read." >&2
+        return 1
+    fi
+    if [ "$version" != "gnoland version: $BINARY_RELEASE_TAG" ]; then
+        echo "Post-start validation failed: unexpected gnoland version: ${version:-unavailable}." >&2
+        return 1
+    fi
+
+    rpc_url=$(get_local_rpc_url)
+    for _ in $(seq 1 120); do
+        if sudo systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME"; then
+            status_json=$(curl -m 5 -fsS "${rpc_url%/}/status" 2>/dev/null || true)
+            network=$(printf '%s' "$status_json" | jq -r '.result.node_info.network // empty' 2>/dev/null || true)
+            catching_up=$(printf '%s' "$status_json" | jq -r 'if .result.sync_info.catching_up == null then empty else (.result.sync_info.catching_up | tostring) end' 2>/dev/null || true)
+            if [ "$network" = "onyx-1" ] && [ "$catching_up" = "false" ]; then
+                return 0
+            fi
+        fi
+        sleep 1
+    done
+
+    echo "Post-start validation failed: Onyx RPC did not become synced and healthy within 120 seconds." >&2
+    return 1
 }
 
 safe_stop_preflight() {
@@ -184,8 +256,63 @@ safe_stop_preflight() {
 # Refuse obviously unsafe maintenance before doing network work.
 safe_stop_preflight
 
+if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+    echo "Update blocked: curl and jq are required for staged and post-start validation." >&2
+    exit 1
+fi
+if [ -n "$(git -C "$GNO_SOURCE_DIR" status --porcelain)" ]; then
+    echo "Update blocked: Gno source checkout has local changes; preserve them before updating." >&2
+    exit 1
+fi
+PREVIOUS_SOURCE_COMMIT=$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)
+if [ ! -f "$GNOLAND_BIN" ] || [ ! -f "$GNOKEY_BIN" ]; then
+    echo "Update blocked: existing gnoland and gnokey binaries are required for rollback." >&2
+    exit 1
+fi
+
 tmpdir=$(mktemp -d)
-trap 'rm -rf "$tmpdir"' EXIT
+PREVIOUS_GNOLAND_BACKUP="$tmpdir/previous-gnoland"
+PREVIOUS_GNOKEY_BACKUP="$tmpdir/previous-gnokey"
+cp -p "$GNOLAND_BIN" "$PREVIOUS_GNOLAND_BACKUP"
+cp -p "$GNOKEY_BIN" "$PREVIOUS_GNOKEY_BACKUP"
+
+restore_previous_state() {
+    local restore_failed=0
+    if ! git -C "$GNO_SOURCE_DIR" checkout --detach --force "$PREVIOUS_SOURCE_COMMIT"; then
+        restore_failed=1
+    fi
+    if ! cp -p "$PREVIOUS_GNOLAND_BACKUP" "$GNOLAND_BIN"; then
+        restore_failed=1
+    fi
+    if ! cp -p "$PREVIOUS_GNOKEY_BACKUP" "$GNOKEY_BIN"; then
+        restore_failed=1
+    fi
+    return "$restore_failed"
+}
+
+cleanup_and_recover() {
+    local exit_code=$?
+    if [ "$exit_code" -ne 0 ] && [ "$ACTIVATION_ATTEMPTED" -eq 1 ] && [ "$ACTIVATION_SUCCEEDED" -eq 0 ]; then
+        echo "Update activation failed; restoring the previous source and binaries." >&2
+        if restore_previous_state; then
+            if [ "$SERVICE_WAS_ACTIVE" -eq 1 ]; then
+                if sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"; then
+                    echo "Recovery restart requested for ${GNOLAND_TESTNET_SERVICE_NAME}.service." >&2
+                else
+                    echo "Recovery restart failed; inspect ${GNOLAND_TESTNET_SERVICE_NAME}.service manually." >&2
+                fi
+            else
+                sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME" || true
+            fi
+        else
+            echo "Recovery restore failed; inspect ${GNOLAND_TESTNET_SERVICE_NAME}.service and source checkout manually." >&2
+        fi
+    fi
+    rm -rf "$tmpdir"
+    trap - EXIT
+    exit "$exit_code"
+}
+trap cleanup_and_recover EXIT
 
 # Stage and verify every network-dependent artifact while the node is still
 # running. A GitHub/release outage or checksum failure must not create downtime.
@@ -203,17 +330,23 @@ if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse FETCH_HEAD)" != "$RELEASE_COMMIT" ]; 
     echo "Fetched Gno source does not match the pinned Onyx commit." >&2
     exit 1
 fi
+verify_binary_release_metadata
 
-curl -fsSL "https://github.com/gnolang/gno/releases/download/v1.5.0/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-curl -fsSL "https://github.com/gnolang/gno/releases/download/v1.5.0/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/${BINARY_RELEASE_TAG}/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+curl -fsSL "https://github.com/gnolang/gno/releases/download/${BINARY_RELEASE_TAG}/gnokey_linux_amd64" -o "$tmpdir/gnokey"
 echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
 echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
 chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
+verify_staged_binary_versions "$tmpdir/gnoland" "$tmpdir/gnokey"
 
 # Sync state may have changed while artifacts were staged, so re-check immediately
 # before crossing the maintenance boundary.
 safe_stop_preflight
 if systemctl is-active --quiet "$GNOLAND_TESTNET_SERVICE_NAME"; then
+    SERVICE_WAS_ACTIVE=1
+    # Arm rollback before crossing the maintenance boundary. Any local
+    # activation failure after stop must restore the old source and binaries.
+    ACTIVATION_ATTEMPTED=1
     sudo systemctl stop "$GNOLAND_TESTNET_SERVICE_NAME"
 fi
 
@@ -254,4 +387,6 @@ fi
 
 sudo systemctl daemon-reload
 sudo systemctl restart "$GNOLAND_TESTNET_SERVICE_NAME"
+post_start_health_check
+ACTIVATION_SUCCEEDED=1
 sudo systemctl status "$GNOLAND_TESTNET_SERVICE_NAME" --no-pager -l || true

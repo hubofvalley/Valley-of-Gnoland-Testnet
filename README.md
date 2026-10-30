@@ -8,7 +8,8 @@ Interactive terminal tool by **Grand Valley** to deploy, migrate, inspect, and m
 - Chain ID: `onyx-1`
 - Native denom: `ugnot`
 - Release: `chain/onyx`
-- Binary release: `v1.5.0`
+- Binary release: `v1.7.0-rc.1`
+- Binary release commit: `e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319`
 - Pinned upstream commit: `5cdbc25fcde0b7569911a4e308ae5d2f6e96c399`
 - Source tree / `GNOROOT`: `~/gno`
 - Node directory: `~/gno/gnoland-data` (override with `GNOLAND_TESTNET_HOME`)
@@ -94,7 +95,8 @@ Before any active Onyx service is stopped, the tooling verifies a local loopback
 ## Upstream sources
 
 - Onyx validator guide: https://github.com/gnolang/gno/blob/chain/onyx/misc/deployments/onyx.gno.land/VALIDATOR.md
-- Onyx release: https://github.com/gnolang/gno/releases/tag/chain/onyx
+- Onyx source release: https://github.com/gnolang/gno/releases/tag/chain/onyx
+- Onyx binary release: https://github.com/gnolang/gno/releases/tag/v1.7.0-rc.1
 
 ## Connect with Grand Valley
 

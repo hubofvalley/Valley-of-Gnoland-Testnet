@@ -16,8 +16,10 @@ facts=(
   'chain/onyx'
   '5cdbc25fcde0b7569911a4e308ae5d2f6e96c399'
   '4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5'
-  '8dcff48228a881e398d238e3e14760c175c872fb164e85f21e5b4ee94a8b076d'
-  '878eb6599161f491a37fdcbd4214477ad28d5d6208f8428f0bffcd3115cd35b4'
+  'v1.7.0-rc.1'
+  'e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319'
+  'df61577df813d18184d9bfc15f8f28854f37c35bae659bac857d5cae388ea9fa'
+  '6e0fdeed8829865add8b6c8efef41466ae1f05d0598618b02f67533fe582a643'
   'g1x5mlj5ava0dw9vkf4j6admjlzswm6f06p44krn@seed-1.onyx.testnets.gno.land:26656'
   'g1grq5zswt0dlwwe7clr4359w70k2ewgse0gcwck@seed-2.onyx.testnets.gno.land:26656'
 )
@@ -40,6 +42,7 @@ grep -Fq -- '-gas-wanted "$suggested_gas"' "$MAIN" || fail "Onyx valoper retry d
 [ "$(jq -r '.migration.from' "$VERSIONS")" = 'Gno.land Pearl' ] || fail "migration source is not Pearl"
 [ "$(jq -r '.migration.to' "$VERSIONS")" = 'Gno.land Onyx' ] || fail "migration target is not Onyx"
 [ "$(jq -r '.migration.state_reuse' "$VERSIONS")" = 'false' ] || fail "state reuse must be false"
+[ "$(jq -r '.verification_status' "$VERSIONS")" = 'static_verified_live_rehearsal_pending' ] || fail "binary verification status is not explicit"
 
 active_runtime=("$INSTALLER" "$MAIN" "$UPDATER" "$SNAPSHOT" "$DOCTOR")
 if grep -En 'MIGRATE-TO-PEARL|rpc\.pearl\.testnets\.gno\.land|chain/pearl/(gnoland|gnokey|genesis)' "${active_runtime[@]}"; then

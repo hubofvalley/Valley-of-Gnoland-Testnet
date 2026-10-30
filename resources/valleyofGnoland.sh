@@ -10,8 +10,8 @@ RESET='\033[0m'
 
 # Security boundary: runtime-downloaded executable helpers are pinned to an
 # immutable Git commit. Bump this only after reviewing the helper scripts and CI.
-readonly VALLEY_RUNTIME_REF="3874fe043eedebd4c594a83cc5a91e7cd3851c31"
-readonly VALLEY_RUNTIME_BASE_URL="https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/3874fe043eedebd4c594a83cc5a91e7cd3851c31"
+readonly VALLEY_RUNTIME_REF="616aae9235dc41d71c001cda0c64589eb42bd1b7"
+readonly VALLEY_RUNTIME_BASE_URL="https://raw.githubusercontent.com/hubofvalley/Valley-of-Gnoland-Testnet/616aae9235dc41d71c001cda0c64589eb42bd1b7"
 NODE_DOCTOR_RELATIVE_PATH="resources/gnoland_node_doctor.sh"
 
 run_node_doctor_script() {
@@ -377,6 +377,9 @@ function prompt_back_or_continue() {
 function run_repository_script() {
     local relative_path=$1
     local script_file exit_code
+
+    # Every runtime helper is fetched from the reviewed immutable commit above.
+    # Never execute a mutable branch or tag.
     script_file=$(mktemp)
     if ! curl -fsSL "${VALLEY_RUNTIME_BASE_URL}/${relative_path}" -o "$script_file"; then
         rm -f "$script_file"

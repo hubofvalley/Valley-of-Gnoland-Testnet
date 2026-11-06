@@ -72,6 +72,30 @@ record() {
     esac
 }
 
+# Only accept a single active [p2p] table with one unambiguous quoted
+# persistent_peers value. Unknown TOML forms warn rather than false-PASS.
+read_active_persistent_peers() {
+    awk '
+        /^[[:space:]]*\[p2p\][[:space:]]*(#.*)?$/ { in_p2p = 1; sections++; next }
+        /^[[:space:]]*\[/ { in_p2p = 0; next }
+        in_p2p && /^[[:space:]]*persistent_peers[[:space:]]*=/ {
+            count++
+            value = $0
+            sub(/^[[:space:]]*persistent_peers[[:space:]]*=[[:space:]]*/, "", value)
+            if (substr(value, 1, 1) != "\"") { invalid = 1; next }
+            value = substr(value, 2)
+            closing = index(value, "\"")
+            if (closing == 0) { invalid = 1; next }
+            trailing = substr(value, closing + 1)
+            if (trailing !~ /^[[:space:]]*(#.*)?$/) { invalid = 1; next }
+            peers = substr(value, 1, closing - 1)
+        }
+        END {
+            if (sections == 1 && count == 1 && !invalid) print peers
+        }
+    ' "$1"
+}
+
 if [ -x "$GNOLAND_BIN" ] && [ -x "$GNOKEY_BIN" ]; then
     record PASS binaries "gnoland and gnokey are executable under $HOME/go/bin"
 else
@@ -101,10 +125,11 @@ else
 fi
 
 if [ -f "$CONFIG_FILE" ]; then
-    if grep -Fq "persistent_peers = \"$EXPECTED_PEERS\"" "$CONFIG_FILE"; then
-        record PASS peers "official Onyx persistent peers are configured"
+    configured_peers=$(read_active_persistent_peers "$CONFIG_FILE")
+    if [ "$configured_peers" = "$EXPECTED_PEERS" ]; then
+        record PASS peers "active [p2p].persistent_peers matches the official Onyx seed list"
     else
-        record WARN peers "persistent peers differ from the pinned Onyx defaults"
+        record WARN peers "active [p2p].persistent_peers is missing, ambiguous, or differs from the official Onyx seed list"
     fi
     grep -Fq 'prune_strategy = "syncable"' "$CONFIG_FILE" && record PASS prune "prune_strategy is syncable" || record FAIL prune "application.prune_strategy is not syncable"
     grep -Fq 'timeout_commit = "3s"' "$CONFIG_FILE" && record PASS timeout_commit "consensus timeout_commit is 3s" || record FAIL timeout_commit "consensus.timeout_commit is not 3s"

@@ -41,7 +41,14 @@ The doctor checks:
 - local RPC reports `onyx-1`;
 - public Onyx RPC reachability/network;
 - NTP synchronization when available;
-- basic free-disk safety signal.
+- basic free-disk safety signal: PASS at 20 GiB or more available, WARN below
+  20 GiB or if `df -Pk` fails or returns an unparseable available-capacity value.
+  The check runs only when the node home exists.
+
+A disk WARN means capacity is low **or not verified**; it does not prove that
+the filesystem is full. The probe is read-only, checks the filesystem hosting
+the configured node home, and is not a storage-growth forecast. In
+`--strict` mode, WARN results produce a non-zero exit status.
 
 ## Exit codes
 

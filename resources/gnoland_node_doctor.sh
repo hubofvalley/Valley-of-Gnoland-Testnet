@@ -160,14 +160,23 @@ if command -v timedatectl >/dev/null 2>&1; then
     [ "$ntp_state" = "yes" ] && record PASS time_sync "system clock reports NTP synchronized" || record WARN time_sync "NTP synchronization could not be confirmed"
 fi
 
-if [ -d "$GNOLAND_TESTNET_HOME" ]; then
-    free_kb=$(df -Pk "$GNOLAND_TESTNET_HOME" 2>/dev/null | awk 'NR==2 {print $4}')
-    if [[ "$free_kb" =~ ^[0-9]+$ ]] && [ "$free_kb" -lt 20971520 ]; then
+# A failed or malformed capacity probe is unknown health, never a PASS.
+# Keep this diagnostic read-only and skip it when the node home is absent.
+check_disk_capacity() {
+    local free_kb
+    [ -d "$GNOLAND_TESTNET_HOME" ] || return 0
+
+    if ! free_kb=$(df -Pk "$GNOLAND_TESTNET_HOME" 2>/dev/null | awk 'NR==2 {print $4}'); then
+        record WARN disk "node filesystem free capacity could not be verified"
+    elif [[ ! "$free_kb" =~ ^[0-9]{1,15}$ ]]; then
+        record WARN disk "node filesystem free capacity could not be verified"
+    elif [ "$free_kb" -lt 20971520 ]; then
         record WARN disk "less than 20 GiB free on the node filesystem"
     else
-        record PASS disk "node filesystem has at least 20 GiB free or capacity was not constrained"
+        record PASS disk "node filesystem has at least 20 GiB free"
     fi
-fi
+}
+check_disk_capacity
 
 if $JSON_MODE; then
     printf '{"network":"%s","runtime_ref":"%s","node_home":' "$EXPECTED_CHAIN_ID" "$NODE_DOCTOR_REF"

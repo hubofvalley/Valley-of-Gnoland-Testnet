@@ -39,7 +39,7 @@ df() {
     esac
 }
 
-GNOLAND_TESTNET_HOME="$ROOT"
+export GNOLAND_TESTNET_HOME="$ROOT"
 run_case() {
     PROBE_MODE="$1"
     OBSERVED=""
@@ -54,7 +54,7 @@ run_case empty 'WARN|disk|node filesystem free capacity could not be verified'
 run_case invalid 'WARN|disk|node filesystem free capacity could not be verified'
 run_case oversized 'WARN|disk|node filesystem free capacity could not be verified'
 
-GNOLAND_TESTNET_HOME="$ROOT/nonexistent-disk-probe-fixture-dir"
+export GNOLAND_TESTNET_HOME="$ROOT/nonexistent-disk-probe-fixture-dir"
 PROBE_MODE=failed
 OBSERVED=""
 check_disk_capacity

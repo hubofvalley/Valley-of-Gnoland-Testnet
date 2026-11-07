@@ -47,6 +47,9 @@ jobs:
       - name: Run Onyx Node Doctor regression test
         run: bash tests/node_doctor_test.sh
 
+      - name: Run Onyx disk probe regression fixtures
+        run: bash tests/disk_probe_guard_test.sh
+
       - name: Run Onyx snapshot regression test
         run: bash tests/apply_snapshot_test.sh
 

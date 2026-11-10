@@ -47,6 +47,9 @@ jobs:
       - name: Run Onyx Node Doctor regression test
         run: bash tests/node_doctor_test.sh
 
+      - name: Run Onyx console RPC boolean regression test
+        run: bash tests/rpc_sync_boolean_test.sh
+
       - name: Run Onyx snapshot regression test
         run: bash tests/apply_snapshot_test.sh
 

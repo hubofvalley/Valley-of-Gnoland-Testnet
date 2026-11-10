@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 CONSOLE="$ROOT/resources/valleyofGnoland.sh"
 
 fail() { echo "ONYX_RPC_BOOLEAN_TEST_FAIL: $*" >&2; exit 1; }

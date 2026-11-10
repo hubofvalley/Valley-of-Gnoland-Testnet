@@ -51,6 +51,8 @@ Reusing/recovering a Pearl operator key is optional **operator-address continuit
 | `2d` | Queries a path or shows Onyx candidate/active-validator realms. |
 | `3a`–`3d` | Restart, stop, delete Onyx node data, or back up Onyx node secrets. These actions use `GNOLAND_TESTNET_SERVICE_NAME` and `GNOLAND_TESTNET_HOME`. |
 
+The operator menu and option `1e` preserve the RPC's boolean `catching_up=false` instead of treating it as missing. Missing, non-boolean, or invalid RPC values are displayed as unknown. This is a local status observation, **not** proof that the node is at the network head; compare heights and timestamps before relying on it.
+
 ## Recommended validator flow
 
 1. Back up the Pearl operator mnemonic offline if you intend to reuse that address.

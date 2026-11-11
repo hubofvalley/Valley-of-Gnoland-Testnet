@@ -30,7 +30,7 @@ The doctor checks:
 - source checkout commit `5cdbc25fcde0b7569911a4e308ae5d2f6e96c399`;
 - Onyx genesis SHA-256 `4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5`;
 - official Onyx persistent peers;
-- `application.prune_strategy = syncable`;
+- the active `application.prune_strategy = syncable` setting (not merely a commented example or a matching value in another section);
 - `consensus.timeout_commit = 3s`;
 - `consensus.peer_gossip_sleep_duration = 10ms`;
 - `p2p.flush_throttle_timeout = 10ms`;
@@ -42,6 +42,12 @@ The doctor checks:
 - public Onyx RPC reachability/network;
 - NTP synchronization when available;
 - basic free-disk safety signal.
+
+## Pruning drift check
+
+The official Onyx validator guide requires `application.prune_strategy = syncable`. Node Doctor reads one active, quoted `prune_strategy` value inside the `[application]` TOML section. A missing, changed, duplicated, commented-out, or unsupported value produces FAIL, rather than treating a matching line anywhere in the file as healthy. The check does not parse every TOML form or prove how the node's database is actually pruned; review the real configuration before any live changes.
+
+This check is available when running the Node Doctor directly from a checkout containing this change. The download-only console can use an older immutable helper ref until that pin is separately reviewed and updated; do not assume this improvement is already distributed through that path.
 
 ## Exit codes
 

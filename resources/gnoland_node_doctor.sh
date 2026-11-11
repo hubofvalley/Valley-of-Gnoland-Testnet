@@ -64,6 +64,7 @@ read_active_prune_strategy() {
     awk '
         /^[[:space:]]*\[/ {
             in_application = ($0 ~ /^[[:space:]]*\[application\][[:space:]]*(#.*)?$/)
+            if (in_application) application_sections++
             next
         }
         in_application && /^[[:space:]]*prune_strategy[[:space:]]*=/ {
@@ -81,7 +82,7 @@ read_active_prune_strategy() {
             }
             parsed = substr(value, 1, close_quote - 1)
         }
-        END { if (count == 1 && !invalid && parsed != "") print parsed }
+        END { if (application_sections == 1 && count == 1 && !invalid && parsed != "") print parsed }
     ' "$1"
 }
 

@@ -49,7 +49,18 @@ assert_case "other section cannot override drift" "nothing" $'[rpc]\nprune_strat
 assert_case "unquoted value is unsupported" "" $'[application]\nprune_strategy = syncable\n'
 assert_case "trailing invalid syntax" "" $'[application]\nprune_strategy = "syncable" invalid\n'
 assert_case "duplicate active key" "" $'[application]\nprune_strategy = "syncable"\nprune_strategy = "syncable"\n'
-assert_case "nested section does not override" "syncable" $'[application]\nprune_strategy = "syncable"\n[application.extra]\nprune_strategy = "nothing"\n'
+assert_case "nested section does not override" "syncable" assert_case "root-level key is not active" "" $'prune_strategy = "syncable"\n[p2p]\npex = true\n'
+assert_case "empty value is unverified" "" $'[application]\nprune_strategy = ""\n'
+assert_case "unterminated quote is unverified" "" $'[application]\nprune_strategy = "syncable\n'
+
+printf '%s\n' "ONYX_PRUNE_STRATEGY_TEST_OK"
+[application]\nprune_strategy = "syncable"\n[application.extra]\nprune_strategy = "nothing"\n'
+assert_case "duplicate application section is unverified" "" assert_case "root-level key is not active" "" $'prune_strategy = "syncable"\n[p2p]\npex = true\n'
+assert_case "empty value is unverified" "" $'[application]\nprune_strategy = ""\n'
+assert_case "unterminated quote is unverified" "" $'[application]\nprune_strategy = "syncable\n'
+
+printf '%s\n' "ONYX_PRUNE_STRATEGY_TEST_OK"
+[application]\nprune_strategy = "syncable"\n[application]\n# duplicate table declaration\n'
 assert_case "root-level key is not active" "" $'prune_strategy = "syncable"\n[p2p]\npex = true\n'
 assert_case "empty value is unverified" "" $'[application]\nprune_strategy = ""\n'
 assert_case "unterminated quote is unverified" "" $'[application]\nprune_strategy = "syncable\n'

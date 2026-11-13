@@ -26,6 +26,7 @@ for fact in "${facts[@]}"; do
 done
 
 grep -Fq 'MIGRATE-TO-ONYX' "$INSTALLER" || fail "Onyx migration confirmation missing"
+grep -R -Fq 'https://gpas.onyx.testnets.gno.land/' "$ROOT/README.md" "$ROOT/docs" "$ROOT/resources" || fail "Onyx package approval status URL missing"
 grep -Fq 'pearl-node-secrets.tar.gz' "$INSTALLER" || fail "Pearl source backup naming missing"
 grep -Fq -- '--data-dir $GNOLAND_TESTNET_HOME --chainid $CHAIN_ID --genesis $GENESIS_FILE --skip-genesis-sig-verification' "$INSTALLER" || fail "Onyx service startup/data-dir contract missing"
 grep -Fq 'config init -config-path "$CONFIG_FILE" -force' "$INSTALLER" || fail "config init is not pinned to GNOLAND_TESTNET_HOME"

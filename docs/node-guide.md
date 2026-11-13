@@ -11,6 +11,7 @@ Official validator source:
 |---|---|
 | Chain ID | `onyx-1` |
 | RPC | `https://rpc.onyx.testnets.gno.land` |
+| Package approval status | `https://gpas.onyx.testnets.gno.land/` |
 | Faucet | `https://onyx.testnets.gno.land/faucet` |
 | Source commit | `5cdbc25fcde0b7569911a4e308ae5d2f6e96c399` |
 | Binary release | `v1.5.0` |

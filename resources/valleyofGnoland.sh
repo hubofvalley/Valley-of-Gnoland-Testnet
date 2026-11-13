@@ -260,6 +260,7 @@ Gno.land useful links:${RESET}
 - Onyx Release: ${BLUE}https://github.com/gnolang/gno/releases/tag/chain/onyx${RESET}
 - Onyx Validator Docs: ${BLUE}https://github.com/gnolang/gno/blob/chain/onyx/misc/deployments/onyx.gno.land/VALIDATOR.md${RESET}
 - Faucet: ${BLUE}https://onyx.testnets.gno.land/faucet${RESET}
+- Package approval status: ${BLUE}https://gpas.onyx.testnets.gno.land/${RESET}
 - Valoper Candidates: ${BLUE}https://onyx.testnets.gno.land/r/gnops/valopers${RESET}
 - Active Validators Realm: ${BLUE}https://onyx.testnets.gno.land/r/sys/validators/v0${RESET}
 

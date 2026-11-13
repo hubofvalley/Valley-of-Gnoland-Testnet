@@ -17,6 +17,7 @@ Interactive terminal tool by **Grand Valley** to deploy, migrate, inspect, and m
 - Service: user-selected, default `gnoland-testnet.service`
 - Per-user binaries: `~/go/bin/gnoland`, `~/go/bin/gnokey`
 - RPC: `https://rpc.onyx.testnets.gno.land`
+- Package approval status: `https://gpas.onyx.testnets.gno.land/`
 - Faucet: https://onyx.testnets.gno.land/faucet
 
 Onyx is a **fresh chain**, not a Pearl hardfork. Testnet-specific runtime overrides are `GNOLAND_TESTNET_HOME` and `GNOLAND_TESTNET_SERVICE_NAME`; the defaults are `~/gno/gnoland-data` and `gnoland-testnet.service`. Pearl chain data, db/wal, consensus state, and snapshots cannot be reused. Valley of Gnoland can preserve/recover the existing operator key if you want the same `g1...` operator address, but key reuse does **not** migrate validator status. Onyx candidate registration and GovDAO admission are separate new-chain steps.

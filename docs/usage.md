@@ -51,6 +51,10 @@ Reusing/recovering a Pearl operator key is optional **operator-address continuit
 | `2d` | Queries a path or shows Onyx candidate/active-validator realms. |
 | `3a`–`3d` | Restart, stop, delete Onyx node data, or back up Onyx node secrets. These actions use `GNOLAND_TESTNET_SERVICE_NAME` and `GNOLAND_TESTNET_HOME`. |
 
+## Package approval status
+
+For a package submission, use the public Onyx review-stage page: <https://gpas.onyx.testnets.gno.land/>. It intentionally omits security-sensitive details.
+
 ## Recommended validator flow
 
 1. Back up the Pearl operator mnemonic offline if you intend to reuse that address.

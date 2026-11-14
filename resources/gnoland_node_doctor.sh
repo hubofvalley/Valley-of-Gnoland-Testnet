@@ -72,6 +72,41 @@ record() {
     esac
 }
 
+# Read only top-level TOML keys: a nested section's identically named key
+# must not be mistaken for a node-wide upgrade override.
+check_local_upgrade_overrides() {
+    local config=$1 key raw
+    while IFS='|' read -r key raw; do
+        [ -n "$key" ] || continue
+        # The documented default is zero. Anything else, including an
+        # unrecognized value, warrants an operator review; do not change it.
+        if [[ "$raw" =~ ^0+$ ]]; then
+            continue
+        fi
+        case "$key" in
+            halt_height)
+                record WARN local_halt_override "config.toml has a nonzero or unrecognized local halt_height; this may stop the node independently of governance"
+                ;;
+            skip_upgrade_height)
+                record WARN upgrade_gate_bypass "config.toml has a nonzero or unrecognized skip_upgrade_height; matching a governance halt height bypasses binary-version startup gates"
+                ;;
+        esac
+    done < <(awk '
+        BEGIN { root = 1 }
+        /^[[:space:]]*\[/ { root = 0 }
+        root && /^[[:space:]]*(halt_height|skip_upgrade_height)[[:space:]]*=/ {
+            key = $0
+            sub(/^[[:space:]]*/, "", key)
+            sub(/[[:space:]]*=.*/, "", key)
+            value = $0
+            sub(/^[^=]*=/, "", value)
+            sub(/[[:space:]]*#.*/, "", value)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+            print key "|" value
+        }
+    ' "$config")
+}
+
 if [ -x "$GNOLAND_BIN" ] && [ -x "$GNOKEY_BIN" ]; then
     record PASS binaries "gnoland and gnokey are executable under $HOME/go/bin"
 else
@@ -111,6 +146,7 @@ if [ -f "$CONFIG_FILE" ]; then
     grep -Fq 'peer_gossip_sleep_duration = "10ms"' "$CONFIG_FILE" && record PASS gossip "peer gossip sleep is 10ms" || record FAIL gossip "consensus.peer_gossip_sleep_duration is not 10ms"
     grep -Fq 'flush_throttle_timeout = "10ms"' "$CONFIG_FILE" && record PASS flush "P2P flush throttle is 10ms" || record FAIL flush "p2p.flush_throttle_timeout is not 10ms"
     grep -Fq 'pex = true' "$CONFIG_FILE" && record PASS pex "P2P exchange is enabled" || record WARN pex "p2p.pex is not enabled"
+    check_local_upgrade_overrides "$CONFIG_FILE"
 else
     record FAIL config "config.toml is missing at $CONFIG_FILE"
 fi

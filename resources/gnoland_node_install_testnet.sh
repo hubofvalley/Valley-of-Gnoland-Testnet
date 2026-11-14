@@ -25,12 +25,13 @@ on_error() {
 trap 'on_error "$LINENO" "$BASH_COMMAND"' ERR
 
 readonly CHAIN_ID="onyx-1"
-readonly RELEASE_TAG="chain/onyx"
 readonly RELEASE_COMMIT="5cdbc25fcde0b7569911a4e308ae5d2f6e96c399"
+readonly BINARY_RELEASE_TAG="v1.7.0-rc.1"
+readonly BINARY_RELEASE_COMMIT="e4c2e7d9fe0f6f7aeeda54885ca1fe5cea991319"
 readonly GENESIS_URL="https://github.com/gnolang/gno/releases/download/chain/onyx/genesis.json"
 readonly GENESIS_SHA256="4b006fd7ccdec052865accc84dd29b2b76f8b57b2560789a15eedaa88f0e26c5"
-readonly GNOLAND_SHA256="8dcff48228a881e398d238e3e14760c175c872fb164e85f21e5b4ee94a8b076d"
-readonly GNOKEY_SHA256="878eb6599161f491a37fdcbd4214477ad28d5d6208f8428f0bffcd3115cd35b4"
+readonly GNOLAND_SHA256="df61577df813d18184d9bfc15f8f28854f37c35bae659bac857d5cae388ea9fa"
+readonly GNOKEY_SHA256="6e0fdeed8829865add8b6c8efef41466ae1f05d0598618b02f67533fe582a643"
 readonly OFFICIAL_ONYX_PEERS="g1x5mlj5ava0dw9vkf4j6admjlzswm6f06p44krn@seed-1.onyx.testnets.gno.land:26656,g1grq5zswt0dlwwe7clr4359w70k2ewgse0gcwck@seed-2.onyx.testnets.gno.land:26656"
 readonly PUBLIC_RPC="https://rpc.onyx.testnets.gno.land"
 
@@ -92,6 +93,53 @@ if [ -n "${SUDO_USER:-}" ]; then
     echo "The installer requests sudo only for packages, firewall, and systemd." >&2
     false
 fi
+
+verify_binary_release_metadata() {
+    local tag_commit
+    if ! tag_commit=$(git ls-remote https://github.com/gnolang/gno.git "refs/tags/${BINARY_RELEASE_TAG}^{}" | awk 'NR == 1 { print $1 }'); then
+        echo -e "${RED}Unable to read official Gno release metadata for ${BINARY_RELEASE_TAG}.${RESET}" >&2
+        return 1
+    fi
+    if [ "$tag_commit" != "$BINARY_RELEASE_COMMIT" ]; then
+        echo -e "${RED}Unexpected Gno binary release commit for ${BINARY_RELEASE_TAG}: ${tag_commit:-unavailable}.${RESET}" >&2
+        echo "Expected: $BINARY_RELEASE_COMMIT" >&2
+        return 1
+    fi
+}
+
+verify_staged_binary_versions() {
+    local gnoland_path=$1 gnokey_path=$2 gnoland_version gnokey_version
+    if ! gnoland_version=$(GNOROOT="$GNO_SOURCE_DIR" "$gnoland_path" version 2>/dev/null); then
+        echo -e "${RED}Unable to execute staged gnoland version check.${RESET}" >&2
+        return 1
+    fi
+    if [ "$gnoland_version" != "gnoland version: $BINARY_RELEASE_TAG" ]; then
+        echo -e "${RED}Staged gnoland reports an unexpected version: ${gnoland_version:-unavailable}.${RESET}" >&2
+        echo "Expected: gnoland version: $BINARY_RELEASE_TAG" >&2
+        return 1
+    fi
+    if ! gnokey_version=$(GNOROOT="$GNO_SOURCE_DIR" "$gnokey_path" version 2>/dev/null); then
+        echo -e "${RED}Unable to execute staged gnokey version check.${RESET}" >&2
+        return 1
+    fi
+    if [ "$gnokey_version" != "gnokey version: $BINARY_RELEASE_TAG" ]; then
+        echo -e "${RED}Staged gnokey reports an unexpected version: ${gnokey_version:-unavailable}.${RESET}" >&2
+        echo "Expected: gnokey version: $BINARY_RELEASE_TAG" >&2
+        return 1
+    fi
+}
+
+build_binaries_from_release_source() {
+    local binary_source_dir="$tmpdir/binary-release-source"
+    git clone --filter=blob:none --no-checkout --depth 1 https://github.com/gnolang/gno.git "$binary_source_dir"
+    git -C "$binary_source_dir" fetch --depth 1 origin "$BINARY_RELEASE_COMMIT"
+    git -C "$binary_source_dir" checkout --detach --force FETCH_HEAD
+    if [ "$(git -C "$binary_source_dir" rev-parse HEAD)" != "$BINARY_RELEASE_COMMIT" ]; then
+        echo -e "${RED}Binary build source does not match the official ${BINARY_RELEASE_TAG} commit.${RESET}" >&2
+        false
+    fi
+    (cd "$binary_source_dir" && make -C gno.land VERSION="$BINARY_RELEASE_TAG" install.gnoland install.gnokey)
+}
 
 path_is_under_home() {
     local canonical_home canonical_path
@@ -283,23 +331,29 @@ if [ "$(git -C "$GNO_SOURCE_DIR" rev-parse HEAD)" != "$RELEASE_COMMIT" ]; then e
 if [ ! -d "$GNO_SOURCE_DIR/gnovm/stdlibs/errors" ]; then echo -e "${RED}Missing Onyx stdlibs at $GNO_SOURCE_DIR/gnovm/stdlibs.${RESET}" >&2; false; fi
 
 CURRENT_STAGE="install verified Onyx binaries"
+verify_binary_release_metadata
 if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
     if ! command -v go >/dev/null 2>&1; then echo -e "${RED}Go is required for source builds. Install Go or rerun with prebuilt binaries.${RESET}" >&2; false; fi
-    echo -e "${CYAN}Building gnoland and gnokey from ${RELEASE_TAG}.${RESET}"
-    (cd "$GNO_SOURCE_DIR" && make -C gno.land install.gnoland install.gnokey)
+    echo -e "${CYAN}Building gnoland and gnokey from official ${BINARY_RELEASE_TAG} source.${RESET}"
+    build_binaries_from_release_source
 else
     if [ "$(uname -s)" != "Linux" ] || [ "$(uname -m)" != "x86_64" ]; then echo -e "${RED}The prebuilt path currently supports Linux amd64 only. Use source build on this host.${RESET}" >&2; false; fi
-    echo -e "${CYAN}Downloading official Onyx release binaries.${RESET}"
-    curl -fsSL "https://github.com/gnolang/gno/releases/download/v1.5.0/gnoland_linux_amd64" -o "$tmpdir/gnoland"
-    curl -fsSL "https://github.com/gnolang/gno/releases/download/v1.5.0/gnokey_linux_amd64" -o "$tmpdir/gnokey"
+    echo -e "${CYAN}Downloading official Gno ${BINARY_RELEASE_TAG} binaries.${RESET}"
+
+    curl -fsSL "https://github.com/gnolang/gno/releases/download/${BINARY_RELEASE_TAG}/gnoland_linux_amd64" -o "$tmpdir/gnoland"
+    curl -fsSL "https://github.com/gnolang/gno/releases/download/${BINARY_RELEASE_TAG}/gnokey_linux_amd64" -o "$tmpdir/gnokey"
     echo "${GNOLAND_SHA256}  $tmpdir/gnoland" | sha256sum -c -
     echo "${GNOKEY_SHA256}  $tmpdir/gnokey" | sha256sum -c -
     chmod +x "$tmpdir/gnoland" "$tmpdir/gnokey"
+    verify_staged_binary_versions "$tmpdir/gnoland" "$tmpdir/gnokey"
     install "$tmpdir/gnoland" "$GNOLAND_BIN"
     install "$tmpdir/gnokey" "$GNOKEY_BIN"
 fi
 
 if [ ! -x "$GNOLAND_BIN" ] || [ ! -x "$GNOKEY_BIN" ]; then echo -e "${RED}Per-user Gnoland binaries are missing or not executable.${RESET}" >&2; false; fi
+if [[ "$INSTALL_METHOD" =~ ^[Ss]$ ]]; then
+    verify_staged_binary_versions "$GNOLAND_BIN" "$GNOKEY_BIN"
+fi
 export GNOROOT
 export PATH="$HOME/go/bin:$PATH"
 hash -r

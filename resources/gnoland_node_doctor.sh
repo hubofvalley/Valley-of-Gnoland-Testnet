@@ -57,6 +57,35 @@ extract_service_data_dir() {
     fi
 }
 
+# Only one active, quoted [application].prune_strategy value is trusted.
+# Comments, other TOML sections, duplicate keys, and unsupported syntax
+# must not satisfy the required Onyx validator configuration check.
+read_active_prune_strategy() {
+    awk '
+        /^[[:space:]]*\[/ {
+            in_application = ($0 ~ /^[[:space:]]*\[application\][[:space:]]*(#.*)?$/)
+            if (in_application) application_sections++
+            next
+        }
+        in_application && /^[[:space:]]*prune_strategy[[:space:]]*=/ {
+            count++
+            value = $0
+            if (value !~ /^[[:space:]]*prune_strategy[[:space:]]*=[[:space:]]*"/) {
+                invalid = 1
+                next
+            }
+            sub(/^[[:space:]]*prune_strategy[[:space:]]*=[[:space:]]*"/, "", value)
+            close_quote = index(value, "\"")
+            if (close_quote == 0 || substr(value, close_quote + 1) !~ /^[[:space:]]*(#.*)?$/) {
+                invalid = 1
+                next
+            }
+            parsed = substr(value, 1, close_quote - 1)
+        }
+        END { if (application_sections == 1 && count == 1 && !invalid && parsed != "") print parsed }
+    ' "$1"
+}
+
 PASS_COUNT=0
 WARN_COUNT=0
 FAIL_COUNT=0
@@ -106,7 +135,12 @@ if [ -f "$CONFIG_FILE" ]; then
     else
         record WARN peers "persistent peers differ from the pinned Onyx defaults"
     fi
-    grep -Fq 'prune_strategy = "syncable"' "$CONFIG_FILE" && record PASS prune "prune_strategy is syncable" || record FAIL prune "application.prune_strategy is not syncable"
+    configured_pruning=$(read_active_prune_strategy "$CONFIG_FILE")
+    if [ "$configured_pruning" = "syncable" ]; then
+        record PASS prune "active application.prune_strategy is syncable"
+    else
+        record FAIL prune "active application.prune_strategy is missing, unreadable, or not syncable"
+    fi
     grep -Fq 'timeout_commit = "3s"' "$CONFIG_FILE" && record PASS timeout_commit "consensus timeout_commit is 3s" || record FAIL timeout_commit "consensus.timeout_commit is not 3s"
     grep -Fq 'peer_gossip_sleep_duration = "10ms"' "$CONFIG_FILE" && record PASS gossip "peer gossip sleep is 10ms" || record FAIL gossip "consensus.peer_gossip_sleep_duration is not 10ms"
     grep -Fq 'flush_throttle_timeout = "10ms"' "$CONFIG_FILE" && record PASS flush "P2P flush throttle is 10ms" || record FAIL flush "p2p.flush_throttle_timeout is not 10ms"

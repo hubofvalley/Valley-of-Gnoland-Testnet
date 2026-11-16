@@ -47,6 +47,9 @@ jobs:
       - name: Run Onyx Node Doctor regression test
         run: bash tests/node_doctor_test.sh
 
+      - name: Verify active Onyx consensus and P2P config fixtures
+        run: bash tests/active_timings_guard_test.sh
+
       - name: Run Onyx snapshot regression test
         run: bash tests/apply_snapshot_test.sh
 

@@ -43,6 +43,21 @@ The doctor checks:
 - NTP synchronization when available;
 - basic free-disk safety signal.
 
+## Active consensus and P2P settings
+
+Node Doctor verifies one active, quoted `consensus.timeout_commit = "3s"`,
+`consensus.peer_gossip_sleep_duration = "10ms"`, and
+`p2p.flush_throttle_timeout = "10ms"` value in the expected TOML table.
+A commented example, matching setting in another table, duplicate declaration,
+missing value, or unsupported syntax cannot produce a false PASS.
+The required timing settings retain FAIL on drift; `p2p.pex` is checked as
+an active TOML boolean and retains WARN when disabled or unverified.
+
+This is a read-only check of standard single-line `config.toml` values, not
+a complete TOML parser or proof of live node state. It does not reconfigure
+the validator. A download-only launcher with an older immutable helper pin
+does not automatically receive this change; distribution needs separate review.
+
 ## Exit codes
 
 - `0`: no FAIL results; in normal mode WARN is allowed.

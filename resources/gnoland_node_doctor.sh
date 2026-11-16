@@ -57,6 +57,42 @@ extract_service_data_dir() {
     fi
 }
 
+# Read only a single active TOML table/key in the standard generated config form.
+# Unsupported syntax, duplicates and comments must not yield a false PASS.
+read_active_config_value() {
+    local config=$1 section=$2 key=$3 kind=$4
+    awk -v expected_section="$section" -v expected_key="$key" -v expected_kind="$kind" '
+        /^[[:space:]]*\[/ {
+            in_section = ($0 ~ "^[[:space:]]*\\[" expected_section "\\][[:space:]]*(#.*)?$")
+            if (in_section) section_count++
+            next
+        }
+        in_section && $0 ~ "^[[:space:]]*" expected_key "[[:space:]]*=" {
+            key_count++
+            raw = $0
+            sub("^[[:space:]]*" expected_key "[[:space:]]*=[[:space:]]*", "", raw)
+            if (expected_kind == "string" && raw ~ /^"/) {
+                raw = substr(raw, 2)
+                closing = index(raw, "\"")
+                if (!closing || substr(raw, closing + 1) !~ /^[[:space:]]*(#.*)?$/) {
+                    invalid = 1
+                    next
+                }
+                parsed = substr(raw, 1, closing - 1)
+            } else if (expected_kind == "bool" && raw ~ /^true[[:space:]]*(#.*)?$/) {
+                parsed = "true"
+            } else if (expected_kind == "bool" && raw ~ /^false[[:space:]]*(#.*)?$/) {
+                parsed = "false"
+            } else {
+                invalid = 1
+            }
+        }
+        END {
+            if (section_count == 1 && key_count == 1 && !invalid && parsed != "") print parsed
+        }
+    ' "$config"
+}
+
 PASS_COUNT=0
 WARN_COUNT=0
 FAIL_COUNT=0
@@ -107,10 +143,30 @@ if [ -f "$CONFIG_FILE" ]; then
         record WARN peers "persistent peers differ from the pinned Onyx defaults"
     fi
     grep -Fq 'prune_strategy = "syncable"' "$CONFIG_FILE" && record PASS prune "prune_strategy is syncable" || record FAIL prune "application.prune_strategy is not syncable"
-    grep -Fq 'timeout_commit = "3s"' "$CONFIG_FILE" && record PASS timeout_commit "consensus timeout_commit is 3s" || record FAIL timeout_commit "consensus.timeout_commit is not 3s"
-    grep -Fq 'peer_gossip_sleep_duration = "10ms"' "$CONFIG_FILE" && record PASS gossip "peer gossip sleep is 10ms" || record FAIL gossip "consensus.peer_gossip_sleep_duration is not 10ms"
-    grep -Fq 'flush_throttle_timeout = "10ms"' "$CONFIG_FILE" && record PASS flush "P2P flush throttle is 10ms" || record FAIL flush "p2p.flush_throttle_timeout is not 10ms"
-    grep -Fq 'pex = true' "$CONFIG_FILE" && record PASS pex "P2P exchange is enabled" || record WARN pex "p2p.pex is not enabled"
+    configured_timeout=$(read_active_config_value "$CONFIG_FILE" consensus timeout_commit string)
+    if [ "$configured_timeout" = "3s" ]; then
+        record PASS timeout_commit "active consensus.timeout_commit is 3s"
+    else
+        record FAIL timeout_commit "active consensus.timeout_commit is missing, unreadable, or not 3s"
+    fi
+    configured_gossip=$(read_active_config_value "$CONFIG_FILE" consensus peer_gossip_sleep_duration string)
+    if [ "$configured_gossip" = "10ms" ]; then
+        record PASS gossip "active consensus.peer_gossip_sleep_duration is 10ms"
+    else
+        record FAIL gossip "active consensus.peer_gossip_sleep_duration is missing, unreadable, or not 10ms"
+    fi
+    configured_flush=$(read_active_config_value "$CONFIG_FILE" p2p flush_throttle_timeout string)
+    if [ "$configured_flush" = "10ms" ]; then
+        record PASS flush "active p2p.flush_throttle_timeout is 10ms"
+    else
+        record FAIL flush "active p2p.flush_throttle_timeout is missing, unreadable, or not 10ms"
+    fi
+    configured_pex=$(read_active_config_value "$CONFIG_FILE" p2p pex bool)
+    if [ "$configured_pex" = "true" ]; then
+        record PASS pex "active p2p.pex is enabled"
+    else
+        record WARN pex "active p2p.pex is disabled or cannot be verified"
+    fi
 else
     record FAIL config "config.toml is missing at $CONFIG_FILE"
 fi

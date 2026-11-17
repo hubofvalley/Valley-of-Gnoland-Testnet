@@ -72,6 +72,56 @@ record() {
     esac
 }
 
+# Onyx v1.7.1-rc.1 rejects nonzero P2P buffers below 8 MiB + 64 KiB.
+# Inspect the active [p2p] table; fail closed on unsupported syntax.
+check_p2p_buffer_limits() {
+    local cfg=$1 probe key status value
+    probe=$(awk '
+        /^[[:space:]]*\[p2p\][[:space:]]*(#.*)?$/ { in_p2p = 1; sections++; next }
+        /^[[:space:]]*\[/ { in_p2p = 0 }
+        in_p2p && /^[[:space:]]*max_(recv|send)_buffer_bytes[[:space:]]*=/ {
+            key = $0
+            sub(/[[:space:]]*=.*/, "", key)
+            gsub(/[[:space:]]/, "", key)
+            raw = $0
+            sub(/^[^=]*=/, "", raw)
+            sub(/[[:space:]]+#.*$/, "", raw)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", raw)
+            count[key]++
+            vals[key] = raw
+        }
+        END {
+            emit("max_recv_buffer_bytes")
+            emit("max_send_buffer_bytes")
+        }
+        function emit(name, raw) {
+            if (sections != 1 || count[name] > 1) {
+                print name "|unverified|"
+            } else if (count[name] == 0) {
+                print name "|default|"
+            } else {
+                raw = vals[name]
+                if (raw == "0") print name "|disabled|0"
+                else if (raw !~ /^[1-9][0-9]*$/ || length(raw) > 15) print name "|unverified|"
+                else if (length(raw) < 7 || (length(raw) == 7 && raw < "8454144")) print name "|small|" raw
+                else print name "|valid|" raw
+            }
+        }
+    ' "$cfg" 2>/dev/null) || {
+        record WARN p2p_buffer_limits "unable to inspect P2P buffer settings"
+        return
+    }
+    while IFS='|' read -r key status value; do
+        case "$status" in
+            default) record PASS "p2p_$key" "$key has no override; the v1.7.1-rc.1 default of 20971520 bytes is compatible" ;;
+            valid) record PASS "p2p_$key" "$key=$value meets the v1.7.1-rc.1 minimum" ;;
+            disabled) record WARN "p2p_$key" "$key=0 is accepted by v1.7.1-rc.1 but disables the per-connection budget" ;;
+            small) record WARN "p2p_$key" "v1.7.1-rc.1 rejects $key=$value at startup (must be 0 or at least 8454144)" ;;
+            *) record WARN "p2p_$key" "$key cannot be verified in the active [p2p] table" ;;
+        esac
+    done <<< "$probe"
+}
+
 if [ -x "$GNOLAND_BIN" ] && [ -x "$GNOKEY_BIN" ]; then
     record PASS binaries "gnoland and gnokey are executable under $HOME/go/bin"
 else
@@ -111,6 +161,7 @@ if [ -f "$CONFIG_FILE" ]; then
     grep -Fq 'peer_gossip_sleep_duration = "10ms"' "$CONFIG_FILE" && record PASS gossip "peer gossip sleep is 10ms" || record FAIL gossip "consensus.peer_gossip_sleep_duration is not 10ms"
     grep -Fq 'flush_throttle_timeout = "10ms"' "$CONFIG_FILE" && record PASS flush "P2P flush throttle is 10ms" || record FAIL flush "p2p.flush_throttle_timeout is not 10ms"
     grep -Fq 'pex = true' "$CONFIG_FILE" && record PASS pex "P2P exchange is enabled" || record WARN pex "p2p.pex is not enabled"
+    check_p2p_buffer_limits "$CONFIG_FILE"
 else
     record FAIL config "config.toml is missing at $CONFIG_FILE"
 fi

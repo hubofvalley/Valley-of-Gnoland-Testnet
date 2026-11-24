@@ -55,6 +55,28 @@ Reusing/recovering a Pearl operator key is optional **operator-address continuit
 
 For a package submission, use the public Onyx review-stage page: <https://gpas.onyx.testnets.gno.land/>. It intentionally omits security-sensitive details.
 
+If the status page is unavailable or a submission appears stuck, query the package's on-chain metadata directly. Use a release-compatible `gnokey` client (Onyx `v1.8.0-rc.1` at the time of writing); this does not require installing or upgrading a local node through Valley. Replace the example with your exact submitted package path:
+
+```bash
+gnokey query vm/qpkgmeta_json \
+  -data "gno.land/p/examplenamespace/hello_world" \
+  -remote "https://rpc.onyx.testnets.gno.land"
+```
+
+Inspect the JSON in the returned `data` field:
+
+| Result | Meaning |
+|---|---|
+| `status: live`, `pending` absent or false | The package is live with no parked submission reported. |
+| `status: live`, `pending: true` | A live private realm has a parked redeployment; do not assume the replacement is active. |
+| `status: inert`, `pending: true` | The submission is stored but not enabled. Check the `reason` field and query its submitted dependencies individually. |
+| `status: absent` | The responding node reports no stored package at that path. Check the path and network. |
+| RPC/query error | Status is unknown; do not interpret it as `absent` or a rejection. |
+
+The optional `reason` describes on-chain activation conditions, not the approver's private verification logs or service health. An inert dependency can leave its dependents pending. Do not resubmit solely because a package is inert; if the state persists, report the package paths, submission heights or transaction hashes, and observed metadata to the approver/operator. Never include credentials or key material.
+
+This is a read-only diagnostic, not a deployment or approval action. It cannot establish whether an approval service is running, funded, or will enable a particular submission. See the [Onyx release ledger](https://github.com/gnolang/gno/blob/chain/mainnet/misc/deployments/onyx.gno.land/UPGRADES.md), [versioned package metadata implementation](https://github.com/gnolang/gno/blob/v1.8.0-rc.1/gno.land/pkg/sdk/vm/keeper_inert.go#L548-L621), and [approver behavior](https://github.com/gnolang/gno/blob/v1.8.0-rc.1/contribs/gpao/README.md#stranded-packages).
+
 ## Recommended validator flow
 
 1. Back up the Pearl operator mnemonic offline if you intend to reuse that address.

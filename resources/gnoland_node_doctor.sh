@@ -67,6 +67,7 @@ extract_effective_log_level() {
     argv=${argv%%' ; ignore_errors='*}
     # Do not interpret quoting, escapes, expansions, or wrapper commands.
     [[ "$argv" =~ ^[[:alnum:]_./:=@,+\ -]+$ ]] || return 1
+    [[ "$argv" == /* ]] || return 1
     read -r -a args <<< "$argv"
     [[ ${#args[@]} -ge 2 ]] || return 1
     [[ ${args[0]##*/} == gnoland && ${args[1]} == start ]] || return 1

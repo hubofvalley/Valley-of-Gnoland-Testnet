@@ -57,6 +57,39 @@ extract_service_data_dir() {
     fi
 }
 
+extract_effective_log_level() {
+    local exec_line=$1 argv tail token level='' count=0 i
+    local -a args=()
+    [[ "$exec_line" == '{ path='*' ; argv[]='*' ; ignore_errors='*' }' ]] || return 1
+    argv=${exec_line#*' ; argv[]='}
+    tail=${argv#*' ; ignore_errors='}
+    [[ "$tail" != *'argv[]='* ]] || return 1
+    argv=${argv%%' ; ignore_errors='*}
+    # Do not interpret quoting, escapes, expansions, or wrapper commands.
+    [[ "$argv" =~ ^[[:alnum:]_./:=@,+\ -]+$ ]] || return 1
+    read -r -a args <<< "$argv"
+    [[ ${#args[@]} -ge 2 ]] || return 1
+    [[ ${args[0]##*/} == gnoland && ${args[1]} == start ]] || return 1
+    [[ "$exec_line" == "{ path=${args[0]} ; argv[]="* ]] || return 1
+    for ((i=2; i<${#args[@]}; i++)); do
+        token=${args[i]}
+        case "$token" in
+            -log-level|--log-level)
+                count=$((count + 1))
+                i=$((i + 1))
+                level=${args[i]:-}
+                ;;
+            -log-level=*|--log-level=*)
+                count=$((count + 1))
+                level=${token#*=}
+                ;;
+            --) return 1 ;;
+        esac
+    done
+    [[ $count -eq 1 ]] || return 1
+    case "$level" in info|warn|error) printf '%s\n' "$level" ;; *) return 1 ;; esac
+}
+
 PASS_COUNT=0
 WARN_COUNT=0
 FAIL_COUNT=0
@@ -133,6 +166,13 @@ if [ -n "$service_file" ] && [ -f "$service_file" ]; then
     fi
     grep -Fq -- '--chainid onyx-1' "$service_file" && record PASS service_chain "systemd starts onyx-1" || record FAIL service_chain "systemd does not start onyx-1"
     grep -Fq -- '--skip-genesis-sig-verification' "$service_file" && record PASS genesis_flag "required Onyx genesis signature-skip flag is present" || record FAIL genesis_flag "required --skip-genesis-sig-verification flag is missing"
+    # Inspect the effective start command, including systemd drop-ins.
+    if effective_exec=$(systemctl show "$GNOLAND_TESTNET_SERVICE_NAME" -p ExecStart --value 2>/dev/null) &&
+        log_level=$(extract_effective_log_level "$effective_exec"); then
+        record PASS service_log_level "effective systemd command explicitly sets log level $log_level"
+    else
+        record WARN service_log_level "effective log level is debug or unverified; inspect logging and journal disk usage"
+    fi
 else
     record FAIL service "systemd unit for ${GNOLAND_TESTNET_SERVICE_NAME}.service was not found"
 fi

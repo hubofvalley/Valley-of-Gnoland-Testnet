@@ -43,6 +43,8 @@ The doctor checks:
 - NTP synchronization when available;
 - basic free-disk safety signal.
 
+Node Doctor also inspects systemd's effective `ExecStart` (including drop-ins) for an explicit `info`, `warn`, or `error` log level. The pinned `v1.5.0` binary and the `v1.8.0-rc.1` release default to `debug` if the flag is omitted. The installer already sets `--log-level info`; this check detects configuration drift. Debug, missing, duplicate, unsupported or unreadable settings produce WARN. Wrapped or ambiguously serialized commands are not interpreted. The check does not measure journal usage or change logging settings.
+
 ## Exit codes
 
 - `0`: no FAIL results; in normal mode WARN is allowed.

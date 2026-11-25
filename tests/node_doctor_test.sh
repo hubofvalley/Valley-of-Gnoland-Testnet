@@ -66,4 +66,7 @@ check_flags WARN '-- --log-level info'
 check_exec WARN '{ path=/bin/bash ; argv[]=/bin/bash start --log-level info ; ignore_errors=no ; }'
 check_exec WARN '{ path=/usr/bin/gnoland ; argv[]=/usr/bin/gnoland start --log-level info ; ignore_errors=no ; }' 1
 
+check_exec WARN '{ path=/usr/bin/gnoland ; argv[]=    ; ignore_errors=no ; }'
+check_exec WARN '{ path=/bin/bash ; argv[]=/usr/bin/gnoland start --log-level info ; ignore_errors=no ; }'
+
 echo "NODE_DOCTOR_TEST_OK"

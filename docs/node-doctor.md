@@ -43,6 +43,8 @@ The doctor checks:
 - NTP synchronization when available;
 - basic free-disk safety signal.
 
+The doctor also reports the age of the latest block timestamp for local and public Onyx RPC responses that report the expected chain ID. It reuses the existing status requests. A timestamp older than 300 seconds, ahead of the host clock, missing, or unparseable produces WARN. The five-minute threshold is a local advisory, not a Gnoland protocol limit or proof of consensus health. A coordinated halt can leave RPC reachable while blocks stop advancing; both endpoints may be stale, and clock skew can affect the result. See [upstream halt behavior](https://github.com/gnolang/gno/blob/v1.8.0-rc.1/gno.land/cmd/gnoland/UPGRADES.md#what-a-halt-actually-looks-like). The check never restarts or modifies a node.
+
 ## Exit codes
 
 - `0`: no FAIL results; in normal mode WARN is allowed.
